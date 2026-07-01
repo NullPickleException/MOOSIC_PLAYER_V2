@@ -1,0 +1,34 @@
+# Build directories
+build/
+out/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# Visual Studio
+.vs/
+
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Debug symbols
+*.pdb
+
+# Object files
+*.obj
+*.o
+*.d
+
+# Ninja
+.ninja_*
+
+# OS files
+.DS_Store
+Thumbs.db
