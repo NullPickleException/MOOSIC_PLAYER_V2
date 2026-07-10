@@ -20,10 +20,13 @@ MainLayout::MainLayout(MusicLibrary& library, PlaybackController& playbackContro
     m_playbackController.SetCurrentTrackList(trackList);
 }
 
-void MainLayout::Draw()
+void MainLayout::Draw(SDL_Renderer* renderer)
 {
     // Update player bar state every frame
     m_playerBar.UpdatePlaybackState();
+    
+    // Set renderer for player bar
+    m_playerBar.SetRenderer(renderer);
     
     // Sync playing track with library window
     const MusicTrack* currentTrack = m_playbackController.GetCurrentTrack();

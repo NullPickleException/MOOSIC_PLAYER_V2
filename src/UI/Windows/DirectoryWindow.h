@@ -9,7 +9,6 @@
 #include <thread>
 #include <vector>
 #include <filesystem>
-#include <future>
 
 namespace moosic
 {
@@ -25,25 +24,24 @@ public:
 private:
     void AddDirectory();
     void StartImport(const std::filesystem::path& folder);
-    void CommitFinishedImport();
+    void CommitImport();
 
 private:
     MusicLibrary& m_library;
     DirectoryScanner m_scanner;
     MetadataReader m_reader;
 
-    // Worker Thread
+    // Import state
     std::thread m_importThread;
-    std::atomic<bool> m_importing{false};
-    std::atomic<bool> m_finished{false};
+    std::atomic<bool> m_isImporting{false};
+    std::atomic<bool> m_isFinished{false};
     std::atomic<int> m_totalFiles{0};
     std::atomic<int> m_processedFiles{0};
     std::atomic<int> m_successfulFiles{0};
-
-    // Temporary results
+    
+    // Results
     std::filesystem::path m_pendingDirectory;
     std::vector<MusicTrack> m_importedTracks;
-    std::mutex m_tracksMutex;
 };
 
 } // namespace moosic

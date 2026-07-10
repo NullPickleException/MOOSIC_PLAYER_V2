@@ -36,7 +36,7 @@ namespace moosic
         style.AlbumWidth = 180.0f;
         style.ExtensionWidth = 50.0f;
         style.DurationWidth = 80.0f;
-        style.RowHeight = 15.0f;
+        style.RowHeight = 18.0f;
         style.RowPlaying = ImVec4(0.0f, 0.70f, 0.0f, 0.80f);
         m_trackTable.ApplyStyle(style);
         

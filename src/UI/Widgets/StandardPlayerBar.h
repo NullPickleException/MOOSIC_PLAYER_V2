@@ -1,5 +1,4 @@
 #pragma once
-
 #include "IPlayerBar.h"
 
 namespace moosic

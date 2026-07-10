@@ -150,13 +150,36 @@ namespace moosic
     //==============================================================================
     // Rows
     //==============================================================================
-
     void TrackTable::DrawRows(const std::vector<const MusicTrack *> &tracks)
     {
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
 
-        static bool debugPrinted = false;
+        // Helper lambda to truncate text with ellipsis
+        auto TruncateText = [](const std::string &text, float maxWidth) -> std::string
+        {
+            if (text.empty())
+                return text;
+
+            ImFont *font = ImGui::GetFont();
+            float textWidth = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, text.c_str()).x;
+
+            if (textWidth <= maxWidth)
+                return text;
+
+            std::string truncated = text;
+            while (!truncated.empty())
+            {
+                truncated.pop_back();
+                float truncatedWidth = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f,
+                                                           (truncated + "...").c_str())
+                                           .x;
+
+                if (truncatedWidth <= maxWidth)
+                    return truncated + "...";
+            }
+            return text.substr(0, 1) + "...";
+        };
 
         for (size_t i = 0; i < tracks.size(); ++i)
         {
@@ -169,14 +192,25 @@ namespace moosic
             bool isPlaying = (m_playingRow == rowIndex);
             bool isHovered = false;
 
+            // Fixed row height - NO GROWING!
             ImGui::TableNextRow(0, m_style.RowHeight);
 
-            // Column 0: Title
+            // Get column widths for truncation
+            float titleWidth = GetColumnWidth(TrackColumn::Title) - 10.0f;
+            float artistWidth = GetColumnWidth(TrackColumn::Artist) - 10.0f;
+            float albumWidth = GetColumnWidth(TrackColumn::Album) - 10.0f;
+
+            // Column 0: Title (truncated)
             ImGui::TableNextColumn();
+            std::string title = track->GetTitle();
+            std::string truncatedTitle = TruncateText(title, titleWidth);
+
             bool clicked = ImGui::Selectable(
-                track->GetTitle().c_str(),
+                truncatedTitle.c_str(),
                 false,
-                ImGuiSelectableFlags_AllowDoubleClick);
+                ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns,
+                ImVec2(0, 0) // Fixed size - no expansion
+            );
 
             if (ImGui::IsItemHovered())
             {
@@ -184,6 +218,14 @@ namespace moosic
                 m_hoveredRow = rowIndex;
                 if (m_onRowHover)
                     m_onRowHover(track, rowIndex);
+
+                // Show tooltip with full text on hover
+                if (title.length() > truncatedTitle.length())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted(title.c_str());
+                    ImGui::EndTooltip();
+                }
             }
 
             if (clicked)
@@ -200,7 +242,7 @@ namespace moosic
                     m_onRowDoubleClick(track, rowIndex);
             }
 
-            // Row color priority: Playing > Selected > Hovered > Default
+            // Row color
             ImVec4 rowColor;
             if (isPlaying)
                 rowColor = m_style.RowPlaying;
@@ -213,15 +255,31 @@ namespace moosic
 
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(rowColor));
 
-            // Column 1: Artist
+            // Column 1: Artist (truncated)
             ImGui::TableNextColumn();
-            ImGui::TextUnformatted(track->GetArtist().c_str());
+            std::string artist = track->GetArtist();
+            std::string truncatedArtist = TruncateText(artist, artistWidth);
+            ImGui::TextUnformatted(truncatedArtist.c_str());
+            if (artist.length() > truncatedArtist.length() && ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(artist.c_str());
+                ImGui::EndTooltip();
+            }
 
-            // Column 2: Album
+            // Column 2: Album (truncated)
             ImGui::TableNextColumn();
-            ImGui::TextUnformatted(track->GetAlbum().c_str());
+            std::string album = track->GetAlbum();
+            std::string truncatedAlbum = TruncateText(album, albumWidth);
+            ImGui::TextUnformatted(truncatedAlbum.c_str());
+            if (album.length() > truncatedAlbum.length() && ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(album.c_str());
+                ImGui::EndTooltip();
+            }
 
-            // Column 3: Extension
+            // Column 3: Extension (fixed, no truncation needed)
             ImGui::TableNextColumn();
             std::string ext = track->GetExtension();
             if (!ext.empty())
@@ -234,17 +292,9 @@ namespace moosic
                 ImGui::TextUnformatted("--");
             }
 
-            // Column 4: Duration
+            // Column 4: Duration (fixed)
             ImGui::TableNextColumn();
             unsigned int duration = track->GetDuration();
-            
-            // Debug: Print first few tracks with duration
-            if (!debugPrinted && i < 3)
-            {
-                std::cout << "[TrackTable] Track " << i << ": " << track->GetTitle() 
-                          << " | Duration: " << duration << "s" << std::endl;
-                if (i == 2) debugPrinted = true;
-            }
 
             if (duration > 0)
             {
@@ -259,6 +309,7 @@ namespace moosic
 
         ImGui::PopStyleColor(2);
     }
+
     //==============================================================================
     // Sort Handling
     //==============================================================================
@@ -347,7 +398,7 @@ namespace moosic
     {
         unsigned int minutes = seconds / 60;
         unsigned int secs = seconds % 60;
-        
+
         std::ostringstream stream;
         stream << std::setw(2) << std::setfill('0') << minutes
                << ":" << std::setw(2) << std::setfill('0') << secs;

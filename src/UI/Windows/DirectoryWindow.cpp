@@ -4,10 +4,8 @@
 #include <imgui.h>
 #include <nfd.h>
 
-#include <filesystem>
 #include <iostream>
 #include <future>
-#include <mutex>
 
 namespace moosic
 {
@@ -33,25 +31,16 @@ DirectoryWindow::~DirectoryWindow()
 
 void DirectoryWindow::Draw()
 {
-    // Commit finished import on UI thread
-    if (m_finished)
-    {
-        CommitFinishedImport();
-    }
-
-    //==========================================================================
-    // Header
-    //==========================================================================
+    // Commit finished import
+    if (m_isFinished)
+        CommitImport();
 
     ImGui::Text("Directories");
     ImGui::Separator();
 
-    //==========================================================================
-    // Action Buttons
-    //==========================================================================
+    bool isImporting = m_isImporting.load();
 
-    bool isImporting = m_importing.load();
-
+    // Action buttons
     if (ImGui::Button(isImporting ? "Scanning..." : "Add Folder"))
     {
         if (!isImporting)
@@ -63,20 +52,14 @@ void DirectoryWindow::Draw()
     if (ImGui::Button("Clear All") && !m_library.GetDirectories().empty())
     {
         if (!isImporting)
-        {
             m_library.Clear();
-            std::cout << "[DirectoryWindow] Library cleared.\n";
-        }
     }
 
-    //==========================================================================
     // Progress
-    //==========================================================================
-
     if (isImporting)
     {
         ImGui::Spacing();
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Importing music...");
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Importing...");
 
         float progress = 0.0f;
         int total = m_totalFiles.load();
@@ -91,12 +74,8 @@ void DirectoryWindow::Draw()
         ImGui::Separator();
     }
 
-    //==========================================================================
-    // Directory List
-    //==========================================================================
-
+    // Directory list
     const auto& directories = m_library.GetDirectories();
-
     ImGui::Text("Added Directories (%d)", static_cast<int>(directories.size()));
 
     if (directories.empty())
@@ -123,15 +102,16 @@ void DirectoryWindow::Draw()
     }
 }
 
+//==============================================================================
+// Add Directory
+//==============================================================================
+
 void DirectoryWindow::AddDirectory()
 {
     NFD_Init();
 
     nfdu8char_t* outPath = nullptr;
-    nfdpickfolderu8args_t args{};
-    args.defaultPath = nullptr;
-
-    nfdresult_t result = NFD_PickFolderU8_With(&outPath, &args);
+    nfdresult_t result = NFD_PickFolderU8(&outPath, nullptr);
 
     if (result == NFD_OKAY)
     {
@@ -139,70 +119,50 @@ void DirectoryWindow::AddDirectory()
         NFD_FreePathU8(outPath);
 
         if (!m_library.HasDirectory(folder))
-        {
             StartImport(folder);
-        }
-        else
-        {
-            std::cout << "[DirectoryWindow] Directory already added.\n";
-        }
-    }
-    else if (result != NFD_CANCEL)
-    {
-        std::cout << "[DirectoryWindow] Error: " << NFD_GetError() << '\n';
     }
 
     NFD_Quit();
 }
 
+//==============================================================================
+// Import
+//==============================================================================
+
 void DirectoryWindow::StartImport(const std::filesystem::path& folder)
 {
-    if (m_importing) return;
+    if (m_isImporting) return;
 
     if (m_importThread.joinable())
         m_importThread.join();
 
+    // Reset state
     m_pendingDirectory = folder;
     m_importedTracks.clear();
     m_totalFiles = 0;
     m_processedFiles = 0;
     m_successfulFiles = 0;
-    m_finished = false;
-    m_importing = true;
+    m_isFinished = false;
+    m_isImporting = true;
 
     m_importThread = std::thread([this, folder]()
     {
-        try
+        // Scan
+        auto files = m_scanner.Scan(folder);
+        int total = static_cast<int>(files.size());
+        m_totalFiles = total;
+
+        if (total > 0)
         {
-            std::cout << "[DirectoryWindow] Scanning: " << folder.string() << '\n';
-            auto files = m_scanner.Scan(folder);
-            int total = static_cast<int>(files.size());
-            m_totalFiles = total;
-
-            std::cout << "[DirectoryWindow] Found " << total << " files\n";
-
-            if (total == 0)
-            {
-                m_finished = true;
-                m_importing = false;
-                return;
-            }
-
-            //==========================================================================
-            // MULTI-THREADED PROCESSING - Like the previous app!
-            //==========================================================================
-            
-            // Use hardware concurrency for max speed
+            // Process in parallel
             unsigned int numThreads = std::max(1u, std::min(std::thread::hardware_concurrency(), 8u));
-            std::cout << "[DirectoryWindow] Using " << numThreads << " threads\n";
-
+            
             std::vector<std::future<void>> futures;
             std::mutex tracksMutex;
-            std::atomic<int> processedCount{0};
-            std::vector<MusicTrack> tempTracks;
-            tempTracks.reserve(total);
+            std::atomic<int> processed{0};
+            std::vector<MusicTrack> tracks;
+            tracks.reserve(total);
 
-            // Process in parallel using std::async
             size_t chunkSize = (total + numThreads - 1) / numThreads;
 
             for (unsigned int t = 0; t < numThreads; ++t)
@@ -212,61 +172,40 @@ void DirectoryWindow::StartImport(const std::filesystem::path& folder)
                 size_t end = std::min(start + chunkSize, files.size());
 
                 futures.push_back(std::async(std::launch::async, 
-                    [this, &files, start, end, &processedCount, &tracksMutex, &tempTracks]()
+                    [this, &files, start, end, &processed, &tracksMutex, &tracks]()
                     {
                         for (size_t i = start; i < end; ++i)
                         {
-                            const auto& file = files[i];
-
                             try
                             {
-                                MusicTrack track = m_reader.ReadMetadataForSingleTrack(file);
-                                
+                                auto track = m_reader.ReadMetadataForSingleTrack(files[i]);
                                 std::lock_guard<std::mutex> lock(tracksMutex);
-                                tempTracks.push_back(std::move(track));
+                                tracks.push_back(std::move(track));
                             }
-                            catch (...)
-                            {
-                                // Silent fail for individual files
-                            }
+                            catch (...) {}
 
-                            // Increment processed count
-                            int newCount = processedCount.fetch_add(1) + 1;
-                            
-                            // Update atomic values using store()
-                            m_processedFiles.store(newCount);
-                            m_successfulFiles.store(static_cast<int>(tempTracks.size()));
+                            int count = processed.fetch_add(1) + 1;
+                            m_processedFiles.store(count);
+                            m_successfulFiles.store(static_cast<int>(tracks.size()));
                         }
                     }
                 ));
             }
 
-            // Wait for all threads to complete
             for (auto& f : futures)
-            {
-                if (f.valid())
-                    f.get();
-            }
+                if (f.valid()) f.get();
 
-            // Move all tracks to main vector
-            m_importedTracks = std::move(tempTracks);
-
-            std::cout << "[DirectoryWindow] Successfully read " 
-                      << m_importedTracks.size() << " out of " << total << " files\n";
-        }
-        catch (const std::exception& e)
-        {
-            std::cout << "[DirectoryWindow] Error: " << e.what() << '\n';
+            m_importedTracks = std::move(tracks);
         }
 
-        m_finished = true;
-        m_importing = false;
+        m_isFinished = true;
+        m_isImporting = false;
     });
 }
 
-void DirectoryWindow::CommitFinishedImport()
+void DirectoryWindow::CommitImport()
 {
-    if (!m_finished) return;
+    if (!m_isFinished) return;
 
     if (m_importThread.joinable())
         m_importThread.join();
@@ -274,20 +213,13 @@ void DirectoryWindow::CommitFinishedImport()
     if (!m_importedTracks.empty())
     {
         m_library.AddDirectory(m_pendingDirectory);
-
+        
         for (auto& track : m_importedTracks)
-        {
             m_library.AddTrack(track);
-        }
-
-        std::cout << "[DirectoryWindow] Imported " 
-                  << m_importedTracks.size() 
-                  << " tracks from "
-                  << m_pendingDirectory.filename().string() << '\n';
     }
 
     m_importedTracks.clear();
-    m_finished = false;
+    m_isFinished = false;
 }
 
 } // namespace moosic

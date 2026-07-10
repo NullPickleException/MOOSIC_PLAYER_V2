@@ -72,6 +72,12 @@ void MusicTrack::SetHasAlbumArt(bool value)
     m_hasAlbumArt = value;
 }
 
+void MusicTrack::SetAlbumArtData(const std::vector<unsigned char>& data)
+{
+    m_albumArtData = data;
+    m_hasAlbumArt = !data.empty();
+}
+
 void MusicTrack::SetFavourite(bool value)
 {
     m_isFavourite = value;
@@ -100,7 +106,7 @@ std::string MusicTrack::GetExtension() const
 {
     std::string ext = m_path.extension().string();
     if (!ext.empty() && ext[0] == '.')
-        ext = ext.substr(1);  // Remove the dot
+        ext = ext.substr(1);
     return ext;
 }
 
@@ -157,6 +163,11 @@ unsigned int MusicTrack::GetChannels() const
 bool MusicTrack::HasAlbumArt() const
 {
     return m_hasAlbumArt;
+}
+
+const std::vector<unsigned char>& MusicTrack::GetAlbumArtData() const
+{
+    return m_albumArtData;
 }
 
 bool MusicTrack::IsFavourite() const

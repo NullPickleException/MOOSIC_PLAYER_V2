@@ -162,7 +162,7 @@ namespace moosic
         ImGui::NewFrame();
 
         // Draw UI
-        m_ui.Draw();
+        m_ui.Draw(m_renderer);
 
         // Render ImGui
         ImGui::Render();

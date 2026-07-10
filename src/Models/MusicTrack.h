@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace moosic
 {
@@ -33,6 +34,7 @@ public:
     void SetChannels(unsigned int channels);
 
     void SetHasAlbumArt(bool value);
+    void SetAlbumArtData(const std::vector<unsigned char>& data);
     void SetFavourite(bool value);
 
     //----------------------------------------------------------
@@ -58,6 +60,7 @@ public:
     unsigned int GetChannels() const;
 
     bool HasAlbumArt() const;
+    const std::vector<unsigned char>& GetAlbumArtData() const;
     bool IsFavourite() const;
 
 private:
@@ -78,6 +81,8 @@ private:
 
     bool m_hasAlbumArt = false;
     bool m_isFavourite = false;
+    
+    std::vector<unsigned char> m_albumArtData;  // Raw image data
 
     std::size_t m_id = 0;
 };

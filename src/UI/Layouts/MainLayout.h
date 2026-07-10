@@ -5,6 +5,7 @@
 #include "../Windows/LibraryWindow.h"
 #include "../Widgets/StandardPlayerBar.h"
 #include "../../Services/PlaybackController.h"
+#include <SDL.h>  // ADD THIS
 
 namespace moosic
 {
@@ -13,7 +14,7 @@ class MainLayout
 {
 public:
     MainLayout(MusicLibrary& library, PlaybackController& playbackController);
-    void Draw();
+    void Draw(SDL_Renderer* renderer);  
 
 private:
     enum class ActiveWindow

@@ -4,13 +4,13 @@ namespace moosic
 {
 
 UI::UI(MusicLibrary& library, PlaybackController& playbackController)
-    : m_mainLayout(library, playbackController)  // Pass to main layout
+    : m_mainLayout(library, playbackController)
 {
 }
 
-void UI::Draw()
+void UI::Draw(SDL_Renderer* renderer)
 {
-    m_mainLayout.Draw();
+    m_mainLayout.Draw(renderer);  
 }
 
 }

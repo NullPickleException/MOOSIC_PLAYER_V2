@@ -30,22 +30,31 @@ endif()
 
 set(APP_SOURCES
     src/main.cpp
+    
     src/Core/Application.cpp
     src/Core/Input/InputManager.cpp
+    
     src/Models/MusicLibrary.cpp
     src/Models/MusicTrack.cpp
+
     src/Services/DirectoryScanner.cpp
     src/Services/MetadataReader.cpp
     src/Services/SavingSystem.cpp
     src/Services/AudioEngine.cpp
     src/Services/PlaybackController.cpp
+    src/Services/ImageLoader.cpp
+    
     src/UI/UI.cpp
+    
     src/UI/Layouts/MainLayout.cpp
+    
     src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/LibraryWindow.cpp
+
     src/UI/Widgets/IPlayerBar.cpp
     src/UI/Widgets/StandardPlayerBar.cpp
     src/UI/Widgets/TrackTable.cpp
+    src/UI/Widgets/AlbumArtLightBox.cpp
 )
 
 # =============================================================================
@@ -92,6 +101,10 @@ set(BASS_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/BASS)
 # FFmpeg
 set(FFMPEG_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/ffmpeg/${PLATFORM_DIR})
 
+# STB - using modern version
+set(STB_DIR ${CMAKE_SOURCE_DIR}/thirdparty/stb)
+set(STB_DEPRECATED_DIR ${STB_DIR}/deprecated)
+
 # =============================================================================
 # Native File Dialog Extended
 # =============================================================================
@@ -121,6 +134,8 @@ target_include_directories(
         ${SDL2_ROOT}/include
         ${BASS_ROOT}/include
         ${FFMPEG_ROOT}/include
+        ${STB_DIR}
+        ${STB_DEPRECATED_DIR}
 )
 
 # =============================================================================
