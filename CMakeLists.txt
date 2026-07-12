@@ -38,11 +38,19 @@ set(APP_SOURCES
     src/Models/MusicTrack.cpp
 
     src/Services/DirectoryScanner.cpp
-    src/Services/MetadataReader.cpp
     src/Services/SavingSystem.cpp
     src/Services/AudioEngine.cpp
     src/Services/PlaybackController.cpp
     src/Services/ImageLoader.cpp
+
+    src/Services/Metadata/MetadataReader.cpp
+    src/Services/Metadata/Mp3MetadataParser.cpp
+    src/Services/Metadata/FlacMetadataParser.cpp
+    src/Services/Metadata/Mp4MetadataParser.cpp
+    src/Services/Metadata/OggMetadataParser.cpp
+    src/Services/Metadata/WavMetadataParser.cpp
+    src/Services/Metadata/AiffMetadataParser.cpp
+    src/Services/Metadata/WavPackMetadataParser.cpp
     
     src/UI/UI.cpp
     
@@ -101,9 +109,12 @@ set(BASS_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/BASS)
 # FFmpeg
 set(FFMPEG_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/ffmpeg/${PLATFORM_DIR})
 
-# STB - using modern version
+# STB
 set(STB_DIR ${CMAKE_SOURCE_DIR}/thirdparty/stb)
 set(STB_DEPRECATED_DIR ${STB_DIR}/deprecated)
+
+# TagLib
+set(TAGLIB_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/taglib-2.3)
 
 # =============================================================================
 # Native File Dialog Extended
@@ -142,10 +153,7 @@ target_include_directories(
 # Platform-Specific Linking
 # =============================================================================
 
-# -------------------------------------------------------------------------
 # SDL2
-# -------------------------------------------------------------------------
-
 if(WIN32)
     target_link_libraries(
         MOOSIC_PLAYER
@@ -177,10 +185,7 @@ elseif(UNIX)
     )
 endif()
 
-# -------------------------------------------------------------------------
-# BASS Audio Library
-# -------------------------------------------------------------------------
-
+# BASS
 if(WIN32)
     target_link_libraries(
         MOOSIC_PLAYER
@@ -218,10 +223,7 @@ elseif(UNIX)
     )
 endif()
 
-# -------------------------------------------------------------------------
-# FFmpeg Metadata Reader
-# -------------------------------------------------------------------------
-
+# FFmpeg
 if(WIN32)
     target_link_libraries(
         MOOSIC_PLAYER
@@ -263,10 +265,51 @@ elseif(UNIX)
     )
 endif()
 
-# -------------------------------------------------------------------------
-# Native File Dialog Extended
-# -------------------------------------------------------------------------
+# =============================================================================
+# TagLib (from thirdparty/taglib-2.3/windows/) - Shared (DLL) build
+# =============================================================================
 
+if(WIN32)
+    # Determine architecture
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(TAGLIB_VARIANT "taglib_x64-windows")
+    else()
+        set(TAGLIB_VARIANT "taglib_x86-windows")
+    endif()
+    
+    # Add TagLib include directory
+    target_include_directories(
+        MOOSIC_PLAYER
+        PRIVATE
+            ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/include
+    )
+
+    # Determine Debug/Release library path
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(TAGLIB_LIB_DIR ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/debug/lib)
+    else()
+        set(TAGLIB_LIB_DIR ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/lib)
+    endif()
+
+    # Link TagLib (import library for DLL)
+    target_link_libraries(
+        MOOSIC_PLAYER
+        PRIVATE
+            ${TAGLIB_LIB_DIR}/tag.lib
+    )
+
+    # Copy TagLib DLL to output directory
+    add_custom_command(
+        TARGET MOOSIC_PLAYER POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/bin/tag.dll
+            $<TARGET_FILE_DIR:MOOSIC_PLAYER>
+    )
+
+    # No TAGLIB_STATIC needed - this is a shared (DLL) build
+endif()
+
+# Native File Dialog Extended
 target_link_libraries(
     MOOSIC_PLAYER
     PRIVATE
@@ -285,16 +328,6 @@ target_compile_definitions(
 )
 
 # =============================================================================
-# Copy Visual Studio Runtime (Windows only)
-# =============================================================================
-
-if(WIN32 AND MSVC)
-    # Optional: Copy MSVC runtime DLLs if needed
-    # include(InstallRequiredSystemLibraries)
-    # install(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin)
-endif()
-
-# =============================================================================
 # Configuration Summary
 # =============================================================================
 
@@ -309,5 +342,13 @@ message(STATUS "  SDL2              : ${SDL2_ROOT}")
 message(STATUS "  BASS              : ${BASS_ROOT}")
 message(STATUS "  FFmpeg            : ${FFMPEG_ROOT}")
 message(STATUS "  ImGui             : ${IMGUI_DIR}")
+
+if(WIN32)
+    message(STATUS "  TagLib Variant    : ${TAGLIB_VARIANT}")
+    message(STATUS "  TagLib Include    : ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/include")
+    message(STATUS "  TagLib Library    : ${TAGLIB_LIB_DIR}/tag.lib")
+    message(STATUS "  TagLib Type       : Shared (DLL)")
+endif()
+
 message(STATUS "========================================")
 message(STATUS "")

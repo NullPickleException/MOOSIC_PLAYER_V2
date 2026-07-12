@@ -15,11 +15,9 @@ namespace moosic
 
     void IPlayerBar::LoadAlbumArt(const MusicTrack *track)
     {
-        // Check if we already have a texture for this track
         if (track && track->GetId() != 0 && m_lastAlbumArtTrackId == track->GetId() && m_albumArtTexture)
             return;
 
-        // Destroy old texture
         if (m_albumArtTexture)
         {
             m_imageLoader.DestroyImGuiTexture(m_albumArtTexture);
@@ -34,7 +32,6 @@ namespace moosic
             return;
         }
 
-        // Get album art data
         const auto &artData = track->GetAlbumArtData();
         if (artData.empty())
         {
@@ -42,48 +39,24 @@ namespace moosic
             return;
         }
 
-        // Load image from memory
         ImageData image = m_imageLoader.LoadFromMemory(artData.data(), artData.size());
         if (image.data.empty())
         {
             m_lastAlbumArtTrackId = 0;
-            std::cout << "[PlayerBar] Failed to load album art data\n";
             return;
         }
 
-        // Calculate target size maintaining aspect ratio
-        int targetSize = static_cast<int>(m_theme.AlbumArtSize);
-        int newWidth = image.width;
-        int newHeight = image.height;
+        // Store original dimensions
+        int originalWidth = image.width;
+        int originalHeight = image.height;
 
-        // Only resize if image is larger than target or too small
-        if (image.width != targetSize || image.height != targetSize)
+        // Resize to a max dimension to save GPU memory (but keep aspect ratio)
+        int maxDimension = 512; // Max texture size
+        if (image.width > maxDimension || image.height > maxDimension)
         {
-            // Maintain aspect ratio
-            float aspect = static_cast<float>(image.width) / image.height;
-
-            if (aspect > 1.0f)
-            {
-                // Wider than tall
-                newWidth = targetSize;
-                newHeight = static_cast<int>(targetSize / aspect);
-            }
-            else
-            {
-                // Taller than wide or square
-                newHeight = targetSize;
-                newWidth = static_cast<int>(targetSize * aspect);
-            }
-
-            // Ensure minimum size
-            if (newWidth < 1)
-                newWidth = 1;
-            if (newHeight < 1)
-                newHeight = 1;
-
-            std::cout << "[PlayerBar] Resizing art from " << image.width << "x" << image.height
-                      << " to " << newWidth << "x" << newHeight << "\n";
-
+            float scale = static_cast<float>(maxDimension) / (std::max)(image.width, image.height);
+            int newWidth = static_cast<int>(image.width * scale);
+            int newHeight = static_cast<int>(image.height * scale);
             image = m_imageLoader.Resize(image, newWidth, newHeight);
         }
 
@@ -92,21 +65,17 @@ namespace moosic
         if (m_albumArtTexture)
         {
             m_lastAlbumArtTrackId = track->GetId();
+            // Store the ACTUAL image dimensions for UV calculations
             m_albumArtWidth = image.width;
             m_albumArtHeight = image.height;
-            
-            // Update lightbox
-            m_lightbox.SetTexture(m_albumArtTexture, m_albumArtWidth, m_albumArtHeight);
+
+            m_lightbox.SetTexture(m_albumArtTexture, image.width, image.height);
             m_lightbox.SetInfo(m_songTitle, m_artistName);
             m_lightbox.SetTheme(m_theme.Lightbox);
-            
-            std::cout << "[PlayerBar] Album art loaded successfully for track ID: " << track->GetId()
-                      << " (" << m_albumArtWidth << "x" << m_albumArtHeight << ")\n";
         }
         else
         {
             m_lastAlbumArtTrackId = 0;
-            std::cout << "[PlayerBar] Failed to create texture for album art\n";
         }
     }
 
@@ -167,7 +136,7 @@ namespace moosic
                 m_songTitle = track->GetTitle().c_str();
                 m_artistName = track->GetArtist().c_str();
                 m_songDuration = static_cast<float>(track->GetDuration());
-                
+
                 // Update lightbox info
                 m_lightbox.SetInfo(m_songTitle, m_artistName);
             }
@@ -285,58 +254,62 @@ namespace moosic
     {
         PushAlbumArtStyle();
 
-        // Use a fixed display size for the album art container
+        // FIXED display size - never changes
         ImVec2 displaySize(m_theme.AlbumArtSize, m_theme.AlbumArtSize);
 
         if (m_albumArtTexture && m_albumArtWidth > 0 && m_albumArtHeight > 0)
         {
-            // Calculate the actual image size to maintain aspect ratio
-            float aspect = static_cast<float>(m_albumArtWidth) / m_albumArtHeight;
-            if (aspect > 1.0f)
+            // Use InvisibleButton for click detection (fixed size)
+            ImGui::InvisibleButton("##AlbumArtHitbox", displaySize, ImGuiButtonFlags_None);
+
+            // Draw image centered and scaled to FIT within the fixed size (no cropping)
+            ImVec2 btnMin = ImGui::GetItemRectMin();
+            ImVec2 btnMax = ImGui::GetItemRectMax();
+
+            float imgAspect = static_cast<float>(m_albumArtWidth) / static_cast<float>(m_albumArtHeight);
+            float boxSize = m_theme.AlbumArtSize;
+
+            ImVec2 imageSize;
+            if (imgAspect > 1.0f)
             {
-                // Wider than tall
-                displaySize.x = m_theme.AlbumArtSize;
-                displaySize.y = m_theme.AlbumArtSize / aspect;
+                // Wider than tall - fit width, center vertically
+                imageSize.x = boxSize;
+                imageSize.y = boxSize / imgAspect;
             }
             else
             {
-                // Taller than wide or square
-                displaySize.y = m_theme.AlbumArtSize;
-                displaySize.x = m_theme.AlbumArtSize * aspect;
+                // Taller than wide - fit height, center horizontally
+                imageSize.y = boxSize;
+                imageSize.x = boxSize * imgAspect;
             }
 
-            // Make the album art clickable
-            ImGui::PushID("AlbumArt");
-            
-            // Display actual album art with proper aspect ratio
-            if (ImGui::ImageButton(
+            // Center the image within the fixed box
+            ImVec2 imagePos;
+            imagePos.x = btnMin.x + (boxSize - imageSize.x) * 0.5f;
+            imagePos.y = btnMin.y + (boxSize - imageSize.y) * 0.5f;
+
+            ImGui::GetWindowDrawList()->AddImage(
                 m_albumArtTexture,
-                displaySize,
-                ImVec2(0.0f, 0.0f),
-                ImVec2(1.0f, 1.0f),
-                -1,  // No border
-                ImVec4(0, 0, 0, 0),  // No background
-                ImVec4(1, 1, 1, 1)   // Tint color
-            ))
+                imagePos,
+                ImVec2(imagePos.x + imageSize.x, imagePos.y + imageSize.y),
+                ImVec2(0, 0),
+                ImVec2(1, 1),
+                IM_COL32(255, 255, 255, 255));
+
+            // Handle click on the InvisibleButton
+            if (ImGui::IsItemClicked())
             {
                 OnAlbumArtClicked();
             }
-            
-            // Add tooltip
+
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetTooltip("Click to enlarge album art");
             }
-            
-            ImGui::PopID();
-
-            // Debug info
-            ImGui::SameLine();
-            ImGui::TextDisabled("ID: %zu", m_lastAlbumArtTrackId);
         }
         else
         {
-            // Display placeholder - not clickable
+            // Placeholder - same fixed size
             ImGui::Button("No Art", displaySize);
         }
 

@@ -2,7 +2,7 @@
 
 #include "../../Models/MusicLibrary.h"
 #include "../../Services/DirectoryScanner.h"
-#include "../../Services/MetadataReader.h"
+#include "../../Services/Metadata/MetadataReader.h"
 #include "IWindow.h"
 
 #include <atomic>

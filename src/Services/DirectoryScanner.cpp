@@ -1,6 +1,6 @@
 #include "DirectoryScanner.h"
 #include "../Models/MusicTrack.h"
-#include "../Services/MetadataReader.h"
+#include "../Services/Metadata/MetadataReader.h"
 
 #include <algorithm>
 #include <iostream>

@@ -81,7 +81,6 @@ ImageData ImageLoader::LoadFromMemory(const unsigned char* data, size_t size)
     
     return result;
 }
-
 ImageData ImageLoader::ToRGBA(const ImageData& image)
 {
     if (image.channels == 4)
@@ -92,21 +91,23 @@ ImageData ImageLoader::ToRGBA(const ImageData& image)
     result.height = image.height;
     result.channels = 4;
     
-    size_t size = static_cast<size_t>(image.width) * image.height * 4;
-    result.data.resize(size);
+    size_t pixelCount = static_cast<size_t>(image.width) * image.height;
+    result.data.resize(pixelCount * 4);
     
-    // Simple old API - no return value to check
-    stbir_resize_uint8(
-        image.data.data(),
-        image.width,
-        image.height,
-        0,
-        result.data.data(),
-        result.width,
-        result.height,
-        0,
-        image.channels
-    );
+    // Manual RGB to RGBA conversion (no resize needed, same dimensions)
+    const unsigned char* src = image.data.data();
+    unsigned char* dst = result.data.data();
+    
+    for (size_t i = 0; i < pixelCount; ++i)
+    {
+        dst[0] = src[0];  // R
+        dst[1] = src[1];  // G
+        dst[2] = src[2];  // B
+        dst[3] = 255;     // A (fully opaque)
+        
+        src += image.channels;
+        dst += 4;
+    }
     
     return result;
 }
