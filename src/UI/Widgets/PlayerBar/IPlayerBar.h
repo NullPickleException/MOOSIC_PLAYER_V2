@@ -2,6 +2,8 @@
 #include "../../../Services/PlaybackController.h"
 #include "../../../Services/ImageLoader.h"
 #include "../AlbumArtLightbox.h"
+#include "../AlbumArtBox.h"
+#include "../WaveVisualizer.h"
 #include <imgui.h>
 #include <SDL.h>
 
@@ -35,6 +37,8 @@ namespace moosic
         float ButtonHeightExtra = 3.0f;
 
         LightboxTheme Lightbox;
+        AlbumArtBoxStyle AlbumArtBox;
+        WaveVisualizerStyle Visualizer;  // Add this
     };
 
     class IPlayerBar
@@ -49,6 +53,10 @@ namespace moosic
         void UpdatePlaybackState();
 
     protected:
+        //--------------------------------------------------------------------------
+        // Style Helpers
+        //--------------------------------------------------------------------------
+
         void PushNormalButtonStyle();
         void PushPrimaryButtonStyle();
         void PushSliderStyle();
@@ -56,20 +64,37 @@ namespace moosic
         void PopStyle();
         void PopStyleVarOnly();
 
+        //--------------------------------------------------------------------------
+        // Drawing Methods - Modular
+        //--------------------------------------------------------------------------
+
         void DrawAlbumArt();
+        void DrawSongInfo();           // Title + Artist in a group
+        void DrawPlaybackTimeline();   // Elapsed | Slider | Total
+        void DrawControls();           // Prev | Play | Next | Mode | Volume
+        void DrawVisualizer();         // Waveform/Spectrum visualizer
+        
+        // Individual control drawers
+        void DrawPreviousButton();
+        void DrawPlayPauseButton();
+        void DrawNextButton();
+        void DrawPlayModeButton();
+        void DrawVolumeIcon();
+        void DrawVolumeSlider();
+
+        //--------------------------------------------------------------------------
+        // Drawing - Song Info Helpers
+        //--------------------------------------------------------------------------
+
         void DrawSongTitle();
         void DrawArtistName();
         void DrawElapsedTime();
         void DrawTotalTime();
         void DrawPlaybackSlider();
 
-        void DrawPreviousButton();
-        void DrawPlayPauseButton();
-        void DrawNextButton();
-        void DrawPlayModeButton();
-
-        void DrawVolumeIcon();
-        void DrawVolumeSlider();
+        //--------------------------------------------------------------------------
+        // Event Handlers
+        //--------------------------------------------------------------------------
 
         virtual void OnPreviousButtonPressed();
         virtual void OnPlayPauseButtonPressed();
@@ -79,6 +104,10 @@ namespace moosic
         virtual void OnVolumeSliderChanged(float value);
         virtual void OnPlayModeButtonPressed();
         virtual void OnAlbumArtClicked();
+
+        //--------------------------------------------------------------------------
+        // Internal
+        //--------------------------------------------------------------------------
 
         void LoadAlbumArt(const MusicTrack *track);
         void UpdateAlbumArtTexture();
@@ -107,6 +136,8 @@ namespace moosic
         int m_albumArtHeight = 0;
 
         AlbumArtLightbox m_lightbox;
+        AlbumArtBox m_albumArtBox;
+        WaveVisualizer m_visualizer;  // Add this
     };
 
 } // namespace moosic

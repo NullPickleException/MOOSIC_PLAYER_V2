@@ -78,6 +78,9 @@ set(APP_SOURCES
     
     src/UI/Widgets/TrackTable.cpp
     src/UI/Widgets/AlbumArtLightBox.cpp
+    src/UI/Widgets/AlbumArtBox.cpp
+    src/UI/Widgets/WaveVisualizer.cpp
+
 )
 
 # =============================================================================

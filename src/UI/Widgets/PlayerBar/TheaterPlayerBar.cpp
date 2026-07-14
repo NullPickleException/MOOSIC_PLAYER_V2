@@ -14,41 +14,22 @@ void TheaterPlayerBar::Draw()
     float availHeight = ImGui::GetContentRegionAvail().y;
 
     //==================================================================
-    // Large Album Art - centered
+    // Large Album Art - centered using AlbumArtBox
     //==================================================================
     float maxArtSize = (std::min)(availWidth * 0.7f, availHeight * 0.65f);
     float artSize = (std::min)(maxArtSize, 400.0f);
 
-    if (m_albumArtTexture && m_albumArtWidth > 0 && m_albumArtHeight > 0)
+    float offsetX = (availWidth - artSize) * 0.5f;
+    ImGui::SetCursorPosX(offsetX);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20.0f);
+
+    // Draw with custom size for theater mode, rounded corners, border, background
+    m_albumArtBox.Draw(artSize, 8.0f, true, true);
+    
+    // Handle click for lightbox
+    if (m_albumArtBox.IsClicked() && m_albumArtTexture)
     {
-        float imgAspect = static_cast<float>(m_albumArtWidth) / static_cast<float>(m_albumArtHeight);
-        ImVec2 imageSize;
-        if (imgAspect > 1.0f)
-            { imageSize.x = artSize; imageSize.y = artSize / imgAspect; }
-        else
-            { imageSize.y = artSize; imageSize.x = artSize * imgAspect; }
-
-        float offsetX = (availWidth - imageSize.x) * 0.5f;
-        ImGui::SetCursorPosX(offsetX);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20.0f);
-
-        ImGui::InvisibleButton("##TheaterArt", imageSize, ImGuiButtonFlags_None);
-        ImVec2 btnMin = ImGui::GetItemRectMin();
-
-        ImGui::GetWindowDrawList()->AddImageRounded(
-            m_albumArtTexture, btnMin,
-            ImVec2(btnMin.x + imageSize.x, btnMin.y + imageSize.y),
-            ImVec2(0, 0), ImVec2(1, 1),
-            IM_COL32(255, 255, 255, 255), 8.0f);
-
-        if (ImGui::IsItemClicked()) OnAlbumArtClicked();
-    }
-    else
-    {
-        float offsetX = (availWidth - artSize) * 0.5f;
-        ImGui::SetCursorPosX(offsetX);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20.0f);
-        ImGui::Button("No Album Art", ImVec2(artSize, artSize));
+        OnAlbumArtClicked();
     }
 
     ImGui::Spacing();
@@ -153,7 +134,7 @@ void TheaterPlayerBar::Draw()
         OnVolumeSliderChanged(tempVolume);
     PopStyle();
 
-    // Lightbox
+    // Lightbox (on top of everything)
     m_lightbox.Draw();
 }
 

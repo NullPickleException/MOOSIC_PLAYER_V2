@@ -16,43 +16,47 @@ namespace moosic
         float centerX = (sidebarWidth - contentWidth) * 0.5f;
         float artSize = contentWidth - 4.0f;
 
+        //==================================================================
+        // Visualizer scaling factor
+        //==================================================================
+        // This scales the visualizer proportionally relative to the sidebar width.
+        // 1.0 = full width, 0.8 = 80% of content width, etc.
+        // Adjust this value or make it part of the theme/style.
+        constexpr float VISUALIZER_SCALE = 0.85f;  // 85% of content width
+        
+        // Calculate scaled visualizer dimensions
+        const auto& visStyle = m_visualizer.GetStyle();
+        float visWidth = contentWidth * VISUALIZER_SCALE;
+        float visHeight = visStyle.BoxHeight * VISUALIZER_SCALE;
+        float visOffsetX = (contentWidth - visWidth) * 0.5f;
+
         ImGui::Spacing();
 
         //==================================================================
-        // Album Art
+        // Album Art - Using AlbumArtBox with custom size
         //==================================================================
-        if (m_albumArtTexture && m_albumArtWidth > 0 && m_albumArtHeight > 0)
+        m_albumArtBox.Draw(artSize, 6.0f, true, true);
+        
+        if (m_albumArtBox.IsClicked() && m_albumArtTexture)
         {
-            float imgAspect = static_cast<float>(m_albumArtWidth) / static_cast<float>(m_albumArtHeight);
-            ImVec2 imageSize;
-            if (imgAspect > 1.0f)
-                { imageSize.x = artSize; imageSize.y = artSize / imgAspect; }
-            else
-                { imageSize.y = artSize; imageSize.x = artSize * imgAspect; }
-
-            float offsetX = (sidebarWidth - imageSize.x) * 0.5f;
-            ImGui::SetCursorPosX(offsetX);
-
-            ImGui::InvisibleButton("##SideArtHitbox", imageSize, ImGuiButtonFlags_None);
-            ImVec2 btnMin = ImGui::GetItemRectMin();
-
-            ImGui::GetWindowDrawList()->AddImageRounded(
-                m_albumArtTexture, btnMin,
-                ImVec2(btnMin.x + imageSize.x, btnMin.y + imageSize.y),
-                ImVec2(0, 0), ImVec2(1, 1),
-                IM_COL32(255, 255, 255, 255), 6.0f);
-
-            if (ImGui::IsItemClicked()) OnAlbumArtClicked();
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Click to enlarge");
+            OnAlbumArtClicked();
         }
-        else
+        
+        if (m_albumArtBox.IsHovered() && m_albumArtTexture)
         {
-            float offsetX = (sidebarWidth - artSize) * 0.5f;
-            ImGui::SetCursorPosX(offsetX);
-            ImGui::Button("No Art", ImVec2(artSize, artSize));
+            ImGui::SetTooltip("Click to enlarge");
         }
 
         ImGui::Spacing();
+
+        //==================================================================
+        // Visualizer - Scaled width, centered in content area
+        //==================================================================
+        m_visualizer.SetBoxSize(visWidth, visHeight);
+        
+        ImGui::SetCursorPosX(centerX + visOffsetX);
+        DrawVisualizer();
+
         ImGui::Spacing();
 
         //==================================================================
@@ -166,7 +170,7 @@ namespace moosic
         ImGui::Spacing();
 
         //==================================================================
-        // Lightbox
+        // Lightbox (on top of everything)
         //==================================================================
         m_lightbox.Draw();
     }
