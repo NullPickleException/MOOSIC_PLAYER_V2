@@ -161,8 +161,8 @@ namespace moosic
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // Draw UI
-        m_ui.Draw(m_renderer);
+        // Draw UI (pass input for layout switching)
+        m_ui.Draw(m_renderer, m_input);
 
         // Render ImGui
         ImGui::Render();

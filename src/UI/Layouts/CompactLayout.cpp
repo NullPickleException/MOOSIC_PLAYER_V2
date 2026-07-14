@@ -1,23 +1,28 @@
-#include "MainLayout.h"
+//==============================================================================
+// CompactLayout.cpp
+//==============================================================================
+
+#include "CompactLayout.h"
 #include <imgui.h>
 
 namespace moosic
 {
 
-MainLayout::MainLayout(MusicLibrary& library, PlaybackController& playbackController)
+CompactLayout::CompactLayout(MusicLibrary& library, PlaybackController& playbackController)
     : m_playbackController(playbackController)
     , m_contentPanel(library, &playbackController)
 {
     m_playerBar.SetPlaybackController(&playbackController);
-    
+
     const auto& tracks = library.GetTracks();
     std::vector<const MusicTrack*> trackList;
     trackList.reserve(tracks.size());
-    for (const auto& track : tracks) trackList.push_back(&track);
+    for (const auto& track : tracks)
+        trackList.push_back(&track);
     m_playbackController.SetCurrentTrackList(trackList);
 }
 
-void MainLayout::Draw(SDL_Renderer* renderer)
+void CompactLayout::Draw(SDL_Renderer* renderer)
 {
     m_playerBar.UpdatePlaybackState();
     m_playerBar.SetRenderer(renderer);
@@ -26,11 +31,12 @@ void MainLayout::Draw(SDL_Renderer* renderer)
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
+
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
-    ImGui::Begin("MainLayout", nullptr, flags);
+    ImGui::Begin("CompactLayout", nullptr, flags);
 
-    constexpr float PLAYER_HEIGHT = 160.0f;
+    constexpr float PLAYER_HEIGHT = 130.0f;
     ImGui::BeginChild("Content", ImVec2(0, -PLAYER_HEIGHT), true);
     m_contentPanel.Draw();
     ImGui::EndChild();

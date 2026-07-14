@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Services/PlaybackController.h"
-#include "../../Services/ImageLoader.h"
-#include "AlbumArtLightbox.h"
+#include "../../../Services/PlaybackController.h"
+#include "../../../Services/ImageLoader.h"
+#include "../AlbumArtLightbox.h"
 #include <imgui.h>
 #include <SDL.h>
 

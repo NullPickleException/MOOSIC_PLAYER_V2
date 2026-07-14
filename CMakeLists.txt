@@ -55,12 +55,27 @@ set(APP_SOURCES
     src/UI/UI.cpp
     
     src/UI/Layouts/MainLayout.cpp
+    src/UI/Layouts/SidebarLeftLayout.cpp
+    src/UI/Layouts/CompactLayout.cpp
+    src/UI/Layouts/MiniPlayerLayout.cpp
+    src/UI/Layouts/TheaterLayout.cpp
+    src/UI/Layouts/StandardArtLeftLayout.cpp
     
+    
+    src/UI/Windows/WindowContentPanel.cpp
     src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/LibraryWindow.cpp
+    src/UI/Windows/SettingsWindow.cpp
 
-    src/UI/Widgets/IPlayerBar.cpp
-    src/UI/Widgets/StandardPlayerBar.cpp
+
+    src/UI/Widgets/PlayerBar/IPlayerBar.cpp
+    src/UI/Widgets/PlayerBar/StandardPlayerBar.cpp
+    src/UI/Widgets/PlayerBar/CompactPlayerBar.cpp
+    src/UI/Widgets/PlayerBar/StandardArtLeftPlayerBar.cpp
+    src/UI/Widgets/PlayerBar/SidePlayerBar.cpp
+    src/UI/Widgets/PlayerBar/MiniPlayerBar.cpp
+    src/UI/Widgets/PlayerBar/TheaterPlayerBar.cpp
+    
     src/UI/Widgets/TrackTable.cpp
     src/UI/Widgets/AlbumArtLightBox.cpp
 )

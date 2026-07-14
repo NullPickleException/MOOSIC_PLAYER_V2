@@ -13,6 +13,9 @@
 namespace moosic
 {
 
+// Forward declare Theme
+struct Theme;
+
 class DirectoryWindow : public IWindow
 {
 public:
@@ -20,6 +23,7 @@ public:
     ~DirectoryWindow();
 
     void Draw() override;
+    void ApplyTheme(const Theme& theme) override {}  // Simple override
 
 private:
     void AddDirectory();
@@ -31,7 +35,6 @@ private:
     DirectoryScanner m_scanner;
     MetadataReader m_reader;
 
-    // Import state
     std::thread m_importThread;
     std::atomic<bool> m_isImporting{false};
     std::atomic<bool> m_isFinished{false};
@@ -39,7 +42,6 @@ private:
     std::atomic<int> m_processedFiles{0};
     std::atomic<int> m_successfulFiles{0};
     
-    // Results
     std::filesystem::path m_pendingDirectory;
     std::vector<MusicTrack> m_importedTracks;
 };

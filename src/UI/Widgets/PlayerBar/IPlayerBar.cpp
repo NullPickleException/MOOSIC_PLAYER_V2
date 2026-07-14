@@ -1,5 +1,4 @@
 #include "IPlayerBar.h"
-#include "../../Services/ImageLoader.h"
 #include <imgui.h>
 #include <iostream>
 #include <iomanip>
