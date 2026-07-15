@@ -1,6 +1,8 @@
 //==============================================================================
 // SidebarLeftLayout.h
 //==============================================================================
+// Layout with left sidebar containing player controls
+//==============================================================================
 
 #pragma once
 
@@ -8,16 +10,28 @@
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/SidePlayerBar.h"
 #include "../../Services/PlaybackController.h"
+#include "../Theme/Theme.h"
+#include "../Layouts/ILayout.h"
+
 #include <SDL.h>
 
 namespace moosic
 {
 
-class SidebarLeftLayout
+class SidebarLeftLayout : public ILayout
 {
 public:
     SidebarLeftLayout(MusicLibrary& library, PlaybackController& playbackController);
-    void Draw(SDL_Renderer* renderer);
+
+    void Draw(SDL_Renderer* renderer) override;
+
+    void ApplyTheme(const Theme& theme) override
+    {
+        m_contentPanel.ApplyTheme(theme);
+        m_playerBar.ApplyTheme(theme.PlayerBar);
+    }
+
+    WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
 
 private:
     WindowContentPanel m_contentPanel;

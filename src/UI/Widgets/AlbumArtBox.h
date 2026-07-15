@@ -13,10 +13,10 @@ namespace moosic
 {
 
 //==============================================================================
-// AlbumArtBoxStyle
+// AlbumArtBoxTheme
 //==============================================================================
 
-struct AlbumArtBoxStyle
+struct AlbumArtBoxTheme
 {
     // Border
     ImVec4 BorderColor = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
@@ -48,8 +48,9 @@ public:
     AlbumArtBox();
     ~AlbumArtBox();
 
-    // Configuration
-    void SetStyle(const AlbumArtBoxStyle& style);
+    // Theme application - inline
+    void ApplyTheme(const AlbumArtBoxTheme& theme) { m_theme = theme; }
+    
     void SetTexture(void* texture, int width, int height);
     void ClearTexture();
 
@@ -65,10 +66,10 @@ private:
     void DrawShadow(const ImVec2& pos, const ImVec2& size, float rounding);
     void DrawBackground(const ImVec2& pos, const ImVec2& size, float rounding);
     void DrawBorder(const ImVec2& pos, const ImVec2& size, float rounding);
-    void DrawImage(const ImVec2& pos, const ImVec2& size, float rounding);  // Updated signature
+    void DrawImage(const ImVec2& pos, const ImVec2& size, float rounding);
     void DrawPlaceholder(const ImVec2& pos, const ImVec2& size);
 
-    AlbumArtBoxStyle m_style;
+    AlbumArtBoxTheme m_theme;
     void* m_texture = nullptr;
     int m_textureWidth = 0;
     int m_textureHeight = 0;

@@ -36,22 +36,26 @@ void SidebarLeftLayout::Draw(SDL_Renderer* renderer)
                              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
     ImGui::Begin("SidebarLeftLayout", nullptr, flags);
 
+    // Spacing/padding between sidebar and content
+    constexpr float SIDEBAR_CONTENT_SPACING = 8.0f;
+
     //------------------------------------------------------------------
     // Left Sidebar (Player)
     //------------------------------------------------------------------
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.12f, 0.12f, 0.13f, 1.0f));
     ImGui::BeginChild("Sidebar", ImVec2(m_sidebarWidth, 0), true);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 10.0f));
     m_playerBar.Draw();
     ImGui::PopStyleVar();
     ImGui::EndChild();
-    ImGui::PopStyleColor();
 
+    //------------------------------------------------------------------
+    // Spacing between sidebar and splitter
+    //------------------------------------------------------------------
+    ImGui::SameLine(0.0f, SIDEBAR_CONTENT_SPACING);
+    
     //------------------------------------------------------------------
     // Draggable splitter
     //------------------------------------------------------------------
-    ImGui::SameLine(0.0f, 0.0f);
-    
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.40f, 0.40f, 0.42f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.50f, 0.52f, 1.0f));
@@ -71,9 +75,13 @@ void SidebarLeftLayout::Draw(SDL_Renderer* renderer)
     ImGui::PopStyleColor(3);
 
     //------------------------------------------------------------------
+    // Spacing between splitter and content
+    //------------------------------------------------------------------
+    ImGui::SameLine(0.0f, SIDEBAR_CONTENT_SPACING);
+
+    //------------------------------------------------------------------
     // Right Content Area
     //------------------------------------------------------------------
-    ImGui::SameLine(0.0f, 0.0f);
     ImGui::BeginChild("Content", ImVec2(0, 0), true);
     m_contentPanel.Draw();
     ImGui::EndChild();

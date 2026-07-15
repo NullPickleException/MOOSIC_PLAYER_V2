@@ -28,7 +28,7 @@ namespace moosic
         style.DurationWidth = 80.0f;
         style.RowHeight = 18.0f;
         style.RowPlaying = ImVec4(0.0f, 0.70f, 0.0f, 0.80f);
-        m_trackTable.ApplyStyle(style);
+        m_trackTable.ApplyTheme(style);
         
         m_trackTable.OnRowClick([this](const MusicTrack *track, int rowIndex)
         {

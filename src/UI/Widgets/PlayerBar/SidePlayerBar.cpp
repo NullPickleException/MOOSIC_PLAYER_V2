@@ -12,17 +12,15 @@ namespace moosic
     void SidePlayerBar::Draw()
     {
         float sidebarWidth = ImGui::GetContentRegionAvail().x;
-        float contentWidth = sidebarWidth - 8.0f;
-        float centerX = (sidebarWidth - contentWidth) * 0.5f;
-        float artSize = contentWidth - 4.0f;
+        float padding = 4.0f;
+        float contentWidth = sidebarWidth - (padding * 2.0f);
+        float artSize = contentWidth;
+        float centerX = padding;  // Start of content area
 
         //==================================================================
         // Visualizer scaling factor
         //==================================================================
-        // This scales the visualizer proportionally relative to the sidebar width.
-        // 1.0 = full width, 0.8 = 80% of content width, etc.
-        // Adjust this value or make it part of the theme/style.
-        constexpr float VISUALIZER_SCALE = 0.85f;  // 85% of content width
+        constexpr float VISUALIZER_SCALE = 0.85f;
         
         // Calculate scaled visualizer dimensions
         const auto& visStyle = m_visualizer.GetStyle();
@@ -33,8 +31,10 @@ namespace moosic
         ImGui::Spacing();
 
         //==================================================================
-        // Album Art - Using AlbumArtBox with custom size
+        // Album Art - Centered in content area
         //==================================================================
+        float artX = (sidebarWidth - artSize) * 0.5f;
+        ImGui::SetCursorPosX(artX);
         m_albumArtBox.Draw(artSize, 6.0f, true, true);
         
         if (m_albumArtBox.IsClicked() && m_albumArtTexture)

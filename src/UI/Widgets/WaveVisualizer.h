@@ -34,10 +34,10 @@ namespace moosic
         //------------------------------------------------------------------
         // Per-mode scaling factors
         //------------------------------------------------------------------
-        float OscilloscopeScaleX = 1.0f; // Horizontal scale (1.0 = full box width)
-        float OscilloscopeScaleY = 1.0f; // Vertical scale (1.0 = full box height)
-        float SpectrumScaleX = 1.0f;     // Horizontal scale for spectrum bars
-        float SpectrumScaleY = 1.0f;     // Vertical scale for spectrum bars
+        float OscilloscopeScaleX = 1.0f;
+        float OscilloscopeScaleY = 1.0f;
+        float SpectrumScaleX = 1.0f;
+        float SpectrumScaleY = 1.0f;
 
         // Spectrum Bar Layout
         int SpectrumBands = 16;
@@ -64,7 +64,7 @@ namespace moosic
         // Colors
         ImVec4 BackgroundColor = ImVec4(0.04f, 0.04f, 0.06f, 1.0f);
         ImVec4 WaveformColor = ImVec4(0.15f, 0.45f, 0.85f, 1.0f);
-        ImVec4 WaveformFillColor = ImVec4(0.08f, 0.25f, 0.50f, 0.15f); // Reduced alpha
+        ImVec4 WaveformFillColor = ImVec4(0.08f, 0.25f, 0.50f, 0.15f);
         ImVec4 SpectrumColor = ImVec4(0.12f, 0.40f, 0.80f, 1.0f);
         ImVec4 SpectrumColorHigh = ImVec4(0.25f, 0.60f, 1.0f, 1.0f);
         ImVec4 GridColor = ImVec4(0.08f, 0.08f, 0.10f, 0.4f);
@@ -72,7 +72,7 @@ namespace moosic
         ImVec4 PlaceholderColor = ImVec4(0.30f, 0.30f, 0.35f, 0.6f);
 
         // Grid & Misc
-        VisualizerMode Mode = VisualizerMode::Oscilloscope;
+        VisualizerMode Mode = VisualizerMode::Spectrum;
         bool ShowGrid = false;
         int GridLinesHorizontal = 2;
         int GridLinesVertical = 4;
@@ -86,7 +86,9 @@ namespace moosic
         explicit WaveVisualizer(const WaveVisualizerStyle &style);
         ~WaveVisualizer();
 
-        void SetStyle(const WaveVisualizerStyle &style);
+        // Theme application - inline
+        void ApplyTheme(const WaveVisualizerStyle &style) { m_style = style; }
+        
         void SetAudioStream(HSTREAM stream);
         void SetVolume(float volume);
         void SetMode(VisualizerMode mode);

@@ -1,55 +1,74 @@
 //==============================================================================
 // WindowContentPanel.h
 //==============================================================================
+// Content panel with tabs for Library, Directories, and Settings
+//==============================================================================
 
 #pragma once
 
 #include "../../Models/MusicLibrary.h"
+#include "../../Services/PlaybackController.h"
 #include "IWindow.h"
 #include "DirectoryWindow.h"
 #include "LibraryWindow.h"
 #include "SettingsWindow.h"
-#include "../../Services/PlaybackController.h"
+#include "../Theme/Theme.h"
 
 namespace moosic
 {
 
 //==============================================================================
-// ContentPanelTheme - Styling only (hardcoded)
-//==============================================================================
-
-struct ContentPanelTheme
-{
-    ImVec4 TabActive = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
-    ImVec4 TabInactive = ImVec4(0.10f, 0.22f, 0.40f, 1.0f);
-    ImVec4 TabHovered = ImVec4(0.18f, 0.40f, 0.70f, 1.0f);
-    ImVec4 TabText = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    ImVec4 TabTextInactive = ImVec4(0.60f, 0.65f, 0.75f, 1.00f);
-    ImVec4 BorderColor = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
-    float BorderThickness = 2.0f;
-    float TabSpacing = 2.0f;
-};
-
-//==============================================================================
-// WindowContentPanel - No theme logic
+// WindowContentPanel
 //==============================================================================
 
 class WindowContentPanel
 {
 public:
-    WindowContentPanel(MusicLibrary& library, PlaybackController* playbackController);
-    
+    WindowContentPanel(MusicLibrary &library,
+                       PlaybackController *playbackController);
+
     void Draw();
-    void UpdatePlayingTrack(const MusicTrack* track);
+    void UpdatePlayingTrack(const MusicTrack *track);
+
+    void ApplyTheme(const Theme &theme)
+    {
+        m_theme = theme.ContentPanel;
+
+        m_libraryWindow.ApplyTheme(theme.Window);
+        m_libraryWindow.ApplyTrackTableTheme(theme.TrackTable);
+        m_directoryWindow.ApplyTheme(theme.Window);
+        m_settingsWindow.ApplyTheme(theme.Window);
+    }
+
+    //--------------------------------------------------------------------------
+    // Accessors
+    //--------------------------------------------------------------------------
+
+    SettingsWindow &GetSettingsWindow() { return m_settingsWindow; }
 
 private:
-    enum class Tab { Library, Directory, Settings };
+    //--------------------------------------------------------------------------
+    // Tab Management
+    //--------------------------------------------------------------------------
 
+    enum class Tab
+    {
+        Library,
+        Directory,
+        Settings
+    };
+
+    void DrawTabBar();
+    void DrawTabButtons();
+
+private:
     Tab m_activeTab = Tab::Library;
+
     DirectoryWindow m_directoryWindow;
-    LibraryWindow   m_libraryWindow;
-    SettingsWindow  m_settingsWindow;
-    ContentPanelTheme m_theme; 
+    LibraryWindow m_libraryWindow;
+    SettingsWindow m_settingsWindow;
+
+    WindowContentPanelTheme m_theme;
 };
 
 } // namespace moosic

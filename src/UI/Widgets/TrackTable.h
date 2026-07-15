@@ -1,3 +1,7 @@
+//==============================================================================
+// TrackTable.h
+//==============================================================================
+
 #pragma once
 
 #include "../../Models/MusicTrack.h"
@@ -49,13 +53,13 @@ namespace moosic
         float ArtistWidth = 200.0f;
         float AlbumWidth = 200.0f;
         float ExtensionWidth = 60.0f;
-        float DurationWidth = 80.0f;  // FIXED: Increased for proper display
+        float DurationWidth = 80.0f;
         float DefaultColumnWidth = 150.0f;
-        float RowHeight = 12.0f;
+        float RowHeight = 9.0f;
     };
 
     //==============================================================================
-    // Config
+    // Config - Separate from style (not theme)
     //==============================================================================
 
     struct TrackTableConfig
@@ -106,11 +110,14 @@ namespace moosic
         void OnRowHover(RowHoverCallback callback);
 
         //--------------------------------------------------------------------------
-        // Configuration
+        // Configuration - All inline
         //--------------------------------------------------------------------------
 
-        void ApplyStyle(const TrackTableStyle &style);
-        void ApplyConfig(const TrackTableConfig &config);
+        // Theme application
+        void ApplyTheme(const TrackTableStyle &style) { m_style = style; }
+        
+        // Config is NOT part of theming - kept separate
+        void ApplyConfig(const TrackTableConfig &config) { m_config = config; }
 
         void Draw(const std::vector<const MusicTrack *> &tracks);
 

@@ -1,4 +1,3 @@
-
 #include "AlbumArtLightbox.h"
 
 #include <imgui.h>
@@ -23,10 +22,7 @@ void AlbumArtLightbox::SetInfo(const char* title, const char* artist)
     m_artist = artist ? artist : "";
 }
 
-void AlbumArtLightbox::SetTheme(const LightboxTheme& theme)
-{
-    m_theme = theme;
-}
+// REMOVED: SetTheme implementation - now inline in header
 
 void AlbumArtLightbox::Toggle()
 {

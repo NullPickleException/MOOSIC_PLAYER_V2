@@ -1,3 +1,9 @@
+//==============================================================================
+// Application.h
+//==============================================================================
+// Main application class declaration
+//==============================================================================
+
 #pragma once
 
 #include "UI/UI.h"
@@ -9,26 +15,32 @@
 
 namespace moosic
 {
-    class Application
-    {
-    public:
-        Application();
-        ~Application();
-        int Run();
 
-    private:
-        bool init();
-        void Shutdown();
-        void Update();
-        void Render();
+//==============================================================================
+// Application
+//==============================================================================
 
-    private:
-        SDL_Window* m_window = nullptr;
-        SDL_Renderer* m_renderer = nullptr;
-        
-        InputManager m_input;
-        MusicLibrary m_library;
-        PlaybackController m_playbackController;  
-        UI m_ui;
-    };
-}
+class Application
+{
+public:
+    Application();
+    ~Application();
+    int Run();
+
+private:
+    bool init();
+    void Shutdown();
+    void Update();
+    void Render();
+
+private:
+    SDL_Window* m_window = nullptr;
+    SDL_Renderer* m_renderer = nullptr;
+    
+    InputManager m_input;
+    MusicLibrary m_library;
+    PlaybackController m_playbackController;  
+    UI m_ui;
+};
+
+} // namespace moosic

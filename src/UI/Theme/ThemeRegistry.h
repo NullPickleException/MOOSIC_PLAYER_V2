@@ -1,0 +1,146 @@
+//==============================================================================
+// ThemeManager.h
+//==============================================================================
+// Central theme management with theme registration and switching
+//==============================================================================
+
+#pragma once
+
+#include "Theme.h"
+#include <vector>
+#include <string>
+#include <functional>
+#include <unordered_map>
+
+namespace moosic
+{
+
+//==============================================================================
+// ThemeEntry
+//==============================================================================
+
+struct ThemeEntry
+{
+    std::string Name;
+    std::function<Theme()> Factory;
+};
+
+//==============================================================================
+// ThemeManager
+//==============================================================================
+
+class ThemeManager
+{
+public:
+    ThemeManager()
+    {
+        RegisterThemes();
+        m_currentTheme = CreateDarkTheme();
+    }
+
+    //--------------------------------------------------------------------------
+    // Theme Registration
+    //--------------------------------------------------------------------------
+
+    void RegisterTheme(const std::string& name, std::function<Theme()> factory)
+    {
+        m_themes.push_back({name, factory});
+    }
+
+    void RegisterThemes()
+    {
+        RegisterTheme("Dark", CreateDarkTheme);
+        RegisterTheme("Light", CreateLightTheme);
+        // RegisterTheme("Dracula", CreateDraculaTheme);
+        // RegisterTheme("Nord", CreateNordTheme);
+        // RegisterTheme("Gruvbox", CreateGruvboxTheme);
+        // RegisterTheme("Catppuccin", CreateCatppuccinTheme);
+        // RegisterTheme("Solarized Dark", CreateSolarizedDarkTheme);
+        // RegisterTheme("Solarized Light", CreateSolarizedLightTheme);
+    }
+
+    //--------------------------------------------------------------------------
+    // Theme Access
+    //--------------------------------------------------------------------------
+
+    const std::vector<ThemeEntry>& GetAvailableThemes() const
+    {
+        return m_themes;
+    }
+
+    const std::vector<std::string> GetThemeNames() const
+    {
+        std::vector<std::string> names;
+        names.reserve(m_themes.size());
+        for (const auto& theme : m_themes)
+        {
+            names.push_back(theme.Name);
+        }
+        return names;
+    }
+
+    //--------------------------------------------------------------------------
+    // Theme Switching
+    //--------------------------------------------------------------------------
+
+    bool SetTheme(const std::string& name)
+    {
+        for (const auto& theme : m_themes)
+        {
+            if (theme.Name == name)
+            {
+                m_currentTheme = theme.Factory();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void SetTheme(const Theme& theme)
+    {
+        m_currentTheme = theme;
+    }
+
+    const Theme& GetTheme() const
+    {
+        return m_currentTheme;
+    }
+
+    int GetCurrentThemeIndex() const
+    {
+        for (size_t i = 0; i < m_themes.size(); ++i)
+        {
+            if (m_themes[i].Name == GetCurrentThemeName())
+            {
+                return static_cast<int>(i);
+            }
+        }
+        return -1;
+    }
+
+    std::string GetCurrentThemeName() const
+    {
+        // Try to find the name by comparing factory results
+        // Simple approach: store the name when SetTheme is called with a name
+        return m_currentThemeName.empty() ? "Dark" : m_currentThemeName;
+    }
+
+    bool SetThemeByIndex(int index)
+    {
+        if (index >= 0 && index < static_cast<int>(m_themes.size()))
+        {
+            const auto& entry = m_themes[index];
+            m_currentTheme = entry.Factory();
+            m_currentThemeName = entry.Name;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    std::vector<ThemeEntry> m_themes;
+    Theme m_currentTheme;
+    std::string m_currentThemeName = "Dark";
+};
+
+} // namespace moosic

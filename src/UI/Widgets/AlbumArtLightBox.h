@@ -28,7 +28,9 @@ public:
     
     void SetTexture(void* texture, int width, int height);
     void SetInfo(const char* title, const char* artist);
-    void SetTheme(const LightboxTheme& theme);
+    
+    // Theme application - inline (no duplicate in cpp)
+    void ApplyTheme(const LightboxTheme& theme) { m_theme = theme; }
     
     void Toggle();
     void Show();
@@ -48,15 +50,3 @@ private:
 };
 
 } // namespace moosic
-
-
-
-
-
-
-
-
-
-
-
-

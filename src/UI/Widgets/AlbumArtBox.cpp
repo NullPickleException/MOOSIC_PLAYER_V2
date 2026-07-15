@@ -1,6 +1,8 @@
 //==============================================================================
 // AlbumArtBox.cpp
 //==============================================================================
+// Implementation of a flexible album art widget that adapts to any layout size
+//==============================================================================
 
 #include "AlbumArtBox.h"
 #include <imgui.h>
@@ -16,10 +18,7 @@ AlbumArtBox::~AlbumArtBox() = default;
 // Configuration
 //==============================================================================
 
-void AlbumArtBox::SetStyle(const AlbumArtBoxStyle& style)
-{
-    m_style = style;
-}
+// REMOVED: AlbumArtBox::ApplyTheme - Now defined inline in header
 
 void AlbumArtBox::SetTexture(void* texture, int width, int height)
 {
@@ -50,11 +49,11 @@ void AlbumArtBox::Draw(float size, float rounding, bool showBorder, bool showBac
     // Reserve space
     ImGui::Dummy(boxSize);
 
-    // Apply rounding: use provided rounding or style's border rounding
-    float r = (rounding > 0.0f) ? rounding : m_style.BorderRounding;
+    // Apply rounding: use provided rounding or theme's border rounding
+    float r = (rounding > 0.0f) ? rounding : m_theme.BorderRounding;
 
     // Draw shadow
-    if (m_style.ShowShadow)
+    if (m_theme.ShowShadow)
         DrawShadow(pos, boxSize, r);
 
     // Draw background
@@ -63,7 +62,7 @@ void AlbumArtBox::Draw(float size, float rounding, bool showBorder, bool showBac
 
     // Draw image or placeholder
     if (m_texture && m_textureWidth > 0 && m_textureHeight > 0)
-        DrawImage(pos, boxSize, r);  // Pass rounding for clipping
+        DrawImage(pos, boxSize, r);
     else
         DrawPlaceholder(pos, boxSize);
 
@@ -91,9 +90,9 @@ void AlbumArtBox::DrawShadow(const ImVec2& pos, const ImVec2& size, float roundi
     for (int i = steps; i > 0; --i)
     {
         float t = static_cast<float>(i) / static_cast<float>(steps);
-        float blur = t * m_style.ShadowBlur;
-        float offsetX = t * m_style.ShadowOffsetX;
-        float offsetY = t * m_style.ShadowOffsetY;
+        float blur = t * m_theme.ShadowBlur;
+        float offsetX = t * m_theme.ShadowOffsetX;
+        float offsetY = t * m_theme.ShadowOffsetY;
 
         ImVec2 shadowPos = ImVec2(
             pos.x + offsetX - blur * 0.5f,
@@ -104,8 +103,8 @@ void AlbumArtBox::DrawShadow(const ImVec2& pos, const ImVec2& size, float roundi
             size.y + blur
         );
 
-        float alpha = 0.5f * (1.0f - t) * m_style.ShadowColor.w;
-        ImVec4 color = m_style.ShadowColor;
+        float alpha = 0.5f * (1.0f - t) * m_theme.ShadowColor.w;
+        ImVec4 color = m_theme.ShadowColor;
         color.w = alpha;
 
         drawList->AddRectFilled(
@@ -125,7 +124,7 @@ void AlbumArtBox::DrawBackground(const ImVec2& pos, const ImVec2& size, float ro
     drawList->AddRectFilled(
         pos,
         ImVec2(pos.x + size.x, pos.y + size.y),
-        ImGui::GetColorU32(m_style.BackgroundColor),
+        ImGui::GetColorU32(m_theme.BackgroundColor),
         rounding,
         ImDrawFlags_RoundCornersAll
     );
@@ -138,21 +137,22 @@ void AlbumArtBox::DrawBorder(const ImVec2& pos, const ImVec2& size, float roundi
     drawList->AddRect(
         pos,
         ImVec2(pos.x + size.x, pos.y + size.y),
-        ImGui::GetColorU32(m_style.BorderColor),
+        ImGui::GetColorU32(m_theme.BorderColor),
         rounding,
         ImDrawFlags_RoundCornersAll,
-        m_style.BorderThickness
+        m_theme.BorderThickness
     );
 }
 
 //==============================================================================
-// FIXED: DrawImage with proper clipping using AddImageRounded
+// DrawImage - Uses AddImageRounded for proper clipping
 //==============================================================================
 
 void AlbumArtBox::DrawImage(const ImVec2& pos, const ImVec2& size, float rounding)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
+    // Calculate aspect ratio preserving fit
     float imgAspect = static_cast<float>(m_textureWidth) / static_cast<float>(m_textureHeight);
     float containerWidth = size.x;
     float containerHeight = size.y;
@@ -171,6 +171,7 @@ void AlbumArtBox::DrawImage(const ImVec2& pos, const ImVec2& size, float roundin
         imageSize.x = containerHeight * imgAspect;
     }
 
+    // Center the image
     ImVec2 imagePos = ImVec2(
         pos.x + (containerWidth - imageSize.x) * 0.5f,
         pos.y + (containerHeight - imageSize.y) * 0.5f
@@ -192,7 +193,7 @@ void AlbumArtBox::DrawPlaceholder(const ImVec2& pos, const ImVec2& size)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    const char* text = m_style.PlaceholderText ? m_style.PlaceholderText : "No Art";
+    const char* text = m_theme.PlaceholderText ? m_theme.PlaceholderText : "No Art";
     ImVec2 textSize = ImGui::CalcTextSize(text);
     ImVec2 textPos = ImVec2(
         pos.x + (size.x - textSize.x) * 0.5f,
@@ -201,9 +202,9 @@ void AlbumArtBox::DrawPlaceholder(const ImVec2& pos, const ImVec2& size)
 
     drawList->AddText(
         textPos,
-        ImGui::GetColorU32(m_style.PlaceholderTextColor),
+        ImGui::GetColorU32(m_theme.PlaceholderTextColor),
         text
     );
 }
 
-} // namespace moosic
+} // namespace moosic  // <-- Make sure this closing brace exists!

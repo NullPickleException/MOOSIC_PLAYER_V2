@@ -6,18 +6,7 @@
 
 namespace moosic
 {
-    //==============================================================================
-    // Configuration
-    //==============================================================================
-    void TrackTable::ApplyStyle(const TrackTableStyle &style)
-    {
-        m_style = style;
-    }
-    void TrackTable::ApplyConfig(const TrackTableConfig &config)
-    {
-        m_config = config;
-    }
-
+   
     //==============================================================================
     // Callbacks
     //==============================================================================

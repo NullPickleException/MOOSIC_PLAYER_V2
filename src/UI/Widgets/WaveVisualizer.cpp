@@ -1,6 +1,8 @@
 //==============================================================================
 // WaveVisualizer.cpp
 //==============================================================================
+// Implementation of waveform/spectrum visualizer for audio playback using BASS FFT
+//==============================================================================
 
 #include "WaveVisualizer.h"
 #include <imgui.h>
@@ -9,6 +11,10 @@
 
 namespace moosic
 {
+
+//==============================================================================
+// Construction
+//==============================================================================
 
 WaveVisualizer::WaveVisualizer()
 {
@@ -22,18 +28,16 @@ WaveVisualizer::WaveVisualizer()
 WaveVisualizer::WaveVisualizer(const WaveVisualizerStyle& style)
     : WaveVisualizer()
 {
-    SetStyle(style);
+    ApplyTheme(style);
 }
 
 WaveVisualizer::~WaveVisualizer() {}
 
-void WaveVisualizer::SetStyle(const WaveVisualizerStyle& style)
-{
-    m_style = style;
-    m_waveformData.resize(m_style.WaveformSamples, 0.0f);
-    m_spectrumPeaks.resize(m_style.SpectrumBands, 0.0f);
-    m_smoothSpectrum.resize(m_style.SpectrumBands, 0.0f);
-}
+//==============================================================================
+// Configuration
+//==============================================================================
+
+// REMOVED: SetStyle - Now using ApplyTheme from header
 
 void WaveVisualizer::SetAudioStream(HSTREAM stream)
 {
@@ -41,21 +45,92 @@ void WaveVisualizer::SetAudioStream(HSTREAM stream)
     if (stream == 0) { m_hasData = false; Reset(); }
 }
 
-void WaveVisualizer::SetVolume(float volume) { m_volume = std::clamp(volume, 0.0f, 1.0f); }
-void WaveVisualizer::SetMode(VisualizerMode mode) { m_style.Mode = mode; }
-void WaveVisualizer::SetScaleMultiplier(float multiplier) { m_style.ScaleMultiplier = (std::max)(0.1f, multiplier); }
-void WaveVisualizer::SetVolumeAffectsScale(bool affects) { m_style.VolumeAffectsScale = affects; }
-void WaveVisualizer::SetBoxSize(float width, float height) { m_style.BoxWidth = width; m_style.BoxHeight = height; }
-void WaveVisualizer::SetBoxWidth(float width) { m_style.BoxWidth = width; }
-void WaveVisualizer::SetBoxHeight(float height) { m_style.BoxHeight = height; }
-void WaveVisualizer::SetOffset(float x, float y) { m_style.OffsetX = x; m_style.OffsetY = y; }
-void WaveVisualizer::SetBarDimensions(float width, float gap) { m_style.BarWidth = (std::max)(1.0f, width); m_style.BarGap = (std::max)(0.0f, gap); }
-void WaveVisualizer::SetBarWidth(float width) { m_style.BarWidth = (std::max)(1.0f, width); }
-void WaveVisualizer::SetBarGap(float gap) { m_style.BarGap = (std::max)(0.0f, gap); }
-void WaveVisualizer::SetBarCount(int count) { m_style.SpectrumBands = (std::max)(4, (std::min)(count, 64)); m_spectrumPeaks.resize(m_style.SpectrumBands, 0.0f); m_smoothSpectrum.resize(m_style.SpectrumBands, 0.0f); }
-void WaveVisualizer::SetPadding(float top, float bottom) { m_style.BarTopPadding = (std::max)(0.0f, top); m_style.BarBottomPadding = (std::max)(0.0f, bottom); }
-void WaveVisualizer::SetOscilloscopeScale(float scaleX, float scaleY) { m_style.OscilloscopeScaleX = scaleX; m_style.OscilloscopeScaleY = scaleY; }
-void WaveVisualizer::SetSpectrumScale(float scaleX, float scaleY) { m_style.SpectrumScaleX = scaleX; m_style.SpectrumScaleY = scaleY; }
+void WaveVisualizer::SetVolume(float volume) 
+{ 
+    m_volume = std::clamp(volume, 0.0f, 1.0f); 
+}
+
+void WaveVisualizer::SetMode(VisualizerMode mode) 
+{ 
+    m_style.Mode = mode; 
+}
+
+void WaveVisualizer::SetScaleMultiplier(float multiplier) 
+{ 
+    m_style.ScaleMultiplier = (std::max)(0.1f, multiplier); 
+}
+
+void WaveVisualizer::SetVolumeAffectsScale(bool affects) 
+{ 
+    m_style.VolumeAffectsScale = affects; 
+}
+
+void WaveVisualizer::SetBoxSize(float width, float height) 
+{ 
+    m_style.BoxWidth = width; 
+    m_style.BoxHeight = height; 
+}
+
+void WaveVisualizer::SetBoxWidth(float width) 
+{ 
+    m_style.BoxWidth = width; 
+}
+
+void WaveVisualizer::SetBoxHeight(float height) 
+{ 
+    m_style.BoxHeight = height; 
+}
+
+void WaveVisualizer::SetOffset(float x, float y) 
+{ 
+    m_style.OffsetX = x; 
+    m_style.OffsetY = y; 
+}
+
+void WaveVisualizer::SetBarDimensions(float width, float gap) 
+{ 
+    m_style.BarWidth = (std::max)(1.0f, width); 
+    m_style.BarGap = (std::max)(0.0f, gap); 
+}
+
+void WaveVisualizer::SetBarWidth(float width) 
+{ 
+    m_style.BarWidth = (std::max)(1.0f, width); 
+}
+
+void WaveVisualizer::SetBarGap(float gap) 
+{ 
+    m_style.BarGap = (std::max)(0.0f, gap); 
+}
+
+void WaveVisualizer::SetBarCount(int count) 
+{ 
+    m_style.SpectrumBands = (std::max)(4, (std::min)(count, 64)); 
+    m_spectrumPeaks.resize(m_style.SpectrumBands, 0.0f); 
+    m_smoothSpectrum.resize(m_style.SpectrumBands, 0.0f); 
+}
+
+void WaveVisualizer::SetPadding(float top, float bottom) 
+{ 
+    m_style.BarTopPadding = (std::max)(0.0f, top); 
+    m_style.BarBottomPadding = (std::max)(0.0f, bottom); 
+}
+
+void WaveVisualizer::SetOscilloscopeScale(float scaleX, float scaleY) 
+{ 
+    m_style.OscilloscopeScaleX = scaleX; 
+    m_style.OscilloscopeScaleY = scaleY; 
+}
+
+void WaveVisualizer::SetSpectrumScale(float scaleX, float scaleY) 
+{ 
+    m_style.SpectrumScaleX = scaleX; 
+    m_style.SpectrumScaleY = scaleY; 
+}
+
+//==============================================================================
+// Main Draw
+//==============================================================================
 
 void WaveVisualizer::Draw(float width)
 {
@@ -99,10 +174,15 @@ void WaveVisualizer::Reset()
     m_hasData = false;
 }
 
+//==============================================================================
+// Audio Processing
+//==============================================================================
+
 void WaveVisualizer::ProcessAudioData()
 {
     if (m_stream == 0) return;
 
+    // Process FFT data
     float fft[FFT_SIZE];
     DWORD fftResult = BASS_ChannelGetData(m_stream, fft, BASS_DATA_FFT512);
     if (fftResult != (DWORD)-1)
@@ -121,6 +201,7 @@ void WaveVisualizer::ProcessAudioData()
         for (int i = 0; i < FFT_SIZE; ++i) m_fftData[i] *= 0.95f;
     }
 
+    // Process PCM data for waveform
     float pcm[1024];
     DWORD pcmResult = BASS_ChannelGetData(m_stream, pcm, sizeof(pcm) | BASS_DATA_FLOAT);
     if (pcmResult != (DWORD)-1 && pcmResult > 0)
@@ -150,6 +231,7 @@ void WaveVisualizer::ProcessWaveform()
     int samples = m_style.WaveformSamples;
     m_waveformData.resize(samples);
     if (samples <= 0 || m_pcmData.empty()) return;
+    
     int pcmSize = (int)m_pcmData.size();
     for (int i = 0; i < samples; ++i)
     {
@@ -160,6 +242,7 @@ void WaveVisualizer::ProcessWaveform()
         if (startIdx >= pcmSize) startIdx = pcmSize - 1;
         if (endIdx > pcmSize) endIdx = pcmSize;
         if (endIdx <= startIdx) endIdx = startIdx + 1;
+        
         float maxAbs = 0.0f;
         float bestVal = 0.0f;
         for (int j = startIdx; j < endIdx; ++j)
@@ -167,6 +250,7 @@ void WaveVisualizer::ProcessWaveform()
             float absVal = std::abs(m_pcmData[j]);
             if (absVal > maxAbs) { maxAbs = absVal; bestVal = m_pcmData[j]; }
         }
+        
         if (i > 0 && m_style.Smoothing > 0.0f)
         {
             float prev = m_waveformData[i - 1];
@@ -182,6 +266,7 @@ void WaveVisualizer::UpdateSpectrumPeaks()
     m_spectrumPeaks.resize(bands);
     m_smoothSpectrum.resize(bands);
     const int fftBins = FFT_SIZE;
+    
     for (int i = 0; i < bands; ++i)
     {
         float t0 = (float)i / bands;
@@ -195,30 +280,44 @@ void WaveVisualizer::UpdateSpectrumPeaks()
         if (startBin < 0) startBin = 0;
         if (endBin > fftBins) endBin = fftBins;
         if (endBin <= startBin) endBin = startBin + 1;
+        
         float peak = 0.0f;
-        for (int j = startBin; j < endBin; ++j) peak = (std::max)(peak, m_fftData[j]);
-        if (m_style.ClampToBounds) peak = std::clamp(peak, 0.0f, 1.0f);
+        for (int j = startBin; j < endBin; ++j) 
+            peak = (std::max)(peak, m_fftData[j]);
+        
+        if (m_style.ClampToBounds) 
+            peak = std::clamp(peak, 0.0f, 1.0f);
+        
         m_spectrumPeaks[i] *= m_style.SpectrumDecay;
-        if (peak > m_spectrumPeaks[i]) m_spectrumPeaks[i] = peak;
+        if (peak > m_spectrumPeaks[i]) 
+            m_spectrumPeaks[i] = peak;
+        
         m_smoothSpectrum[i] += (peak - m_smoothSpectrum[i]) * (1.0f - m_style.Smoothing);
     }
 }
 
+//==============================================================================
+// Drawing Helpers
+//==============================================================================
+
 void WaveVisualizer::DrawBackground(const ImVec2& pos, const ImVec2& size)
 {
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(m_style.BackgroundColor));
+    dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), 
+                      ImGui::GetColorU32(m_style.BackgroundColor));
 }
 
 void WaveVisualizer::DrawGrid(const ImVec2& pos, const ImVec2& size)
 {
     ImDrawList* dl = ImGui::GetWindowDrawList();
     ImU32 gridCol = ImGui::GetColorU32(m_style.GridColor);
+    
     for (int i = 0; i <= m_style.GridLinesHorizontal; ++i)
     {
         float y = pos.y + (size.y * i) / m_style.GridLinesHorizontal;
         dl->AddLine(ImVec2(pos.x, y), ImVec2(pos.x + size.x, y), gridCol);
     }
+    
     for (int i = 0; i <= m_style.GridLinesVertical; ++i)
     {
         float x = pos.x + (size.x * i) / m_style.GridLinesVertical;
@@ -228,7 +327,11 @@ void WaveVisualizer::DrawGrid(const ImVec2& pos, const ImVec2& size)
 
 void WaveVisualizer::DrawOscilloscope(const ImVec2& pos, const ImVec2& size)
 {
-    if (!m_hasData || m_waveformData.empty()) { DrawPlaceholder(pos, size); return; }
+    if (!m_hasData || m_waveformData.empty()) 
+    { 
+        DrawPlaceholder(pos, size); 
+        return; 
+    }
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     const int sampleCount = (int)m_waveformData.size();
@@ -254,37 +357,41 @@ void WaveVisualizer::DrawOscilloscope(const ImVec2& pos, const ImVec2& size)
         points.emplace_back(x, y);
     }
 
-    // Draw fill ONLY between waveform and center line (not full height)
+    // Draw fill between waveform and center line
     if (m_style.EnableWaveformFill && points.size() > 1)
     {
         ImU32 fillColor = ImGui::GetColorU32(m_style.WaveformFillColor);
         std::vector<ImVec2> fillPoints;
         fillPoints.reserve(points.size() * 2);
 
-        // Top half: waveform points
-        for (const auto& p : points) fillPoints.push_back(p);
-        // Bottom half: mirror across center line
+        for (const auto& p : points) 
+            fillPoints.push_back(p);
+        
         for (int i = (int)points.size() - 1; i >= 0; --i)
             fillPoints.push_back(ImVec2(points[i].x, centerY));
 
         drawList->AddConvexPolyFilled(fillPoints.data(), (int)fillPoints.size(), fillColor);
     }
 
-    // Draw the waveform line on top
+    // Draw the waveform line
     drawList->AddPolyline(points.data(), (int)points.size(),
         ImGui::GetColorU32(m_style.WaveformColor), ImDrawFlags_None, m_style.WaveformLineWidth);
 }
 
 void WaveVisualizer::DrawSpectrum(const ImVec2& pos, const ImVec2& size)
 {
-    if (m_smoothSpectrum.empty() || !m_hasData) { DrawPlaceholder(pos, size); return; }
+    if (m_smoothSpectrum.empty() || !m_hasData) 
+    { 
+        DrawPlaceholder(pos, size); 
+        return; 
+    }
 
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const int bands = m_style.SpectrumBands;
     const float barW = m_style.BarWidth;
     const float barGap = m_style.BarGap;
 
-    // Apply horizontal scaling for spectrum
+    // Apply horizontal scaling
     const float scaledWidth = size.x * m_style.SpectrumScaleX;
     const float xOffset = (size.x - scaledWidth) * 0.5f;
     
@@ -302,11 +409,14 @@ void WaveVisualizer::DrawSpectrum(const ImVec2& pos, const ImVec2& size)
         if (barH > 0.01f && barH < 2.0f) barH = 2.0f;
 
         float y = bottomY - barH;
-        if (y < pos.y + m_style.BarTopPadding) y = pos.y + m_style.BarTopPadding;
+        if (y < pos.y + m_style.BarTopPadding) 
+            y = pos.y + m_style.BarTopPadding;
 
         float brightness = 0.35f + value * 0.65f;
         ImVec4 c = (i >= bands * 2 / 3) ? m_style.SpectrumColorHigh : m_style.SpectrumColor;
-        c.x *= brightness; c.y *= brightness; c.z *= brightness;
+        c.x *= brightness; 
+        c.y *= brightness; 
+        c.z *= brightness;
 
         float x = startX + i * (barW + barGap);
 

@@ -8,17 +8,28 @@
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/StandardArtLeftPlayerBar.h"
 #include "../../Services/PlaybackController.h"
+#include "../Theme/Theme.h"
+#include "../Layouts/ILayout.h"
+
 #include <SDL.h>
 
 namespace moosic
 {
 
-class StandardArtLeftLayout
+class StandardArtLeftLayout : public ILayout
 {
 public:
     StandardArtLeftLayout(MusicLibrary& library, PlaybackController& playbackController);
-    void Draw(SDL_Renderer* renderer);
-    WindowContentPanel& GetContentPanel() { return m_contentPanel; }
+
+    void Draw(SDL_Renderer* renderer) override;
+
+    void ApplyTheme(const Theme& theme) override
+    {
+        m_contentPanel.ApplyTheme(theme);
+        m_playerBar.ApplyTheme(theme.PlayerBar);
+    }
+
+    WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
 
 private:
     WindowContentPanel m_contentPanel;
