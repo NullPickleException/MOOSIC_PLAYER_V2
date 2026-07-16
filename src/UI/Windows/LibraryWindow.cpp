@@ -1,3 +1,7 @@
+//==============================================================================
+// LibraryWindow.cpp
+//==============================================================================
+
 #include "LibraryWindow.h"
 #include "../Theme/Theme.h"
 #include <iostream>
@@ -7,19 +11,29 @@
 namespace moosic
 {
 
+    //==========================================================================
+    // Constructor
+    //==========================================================================
+
     LibraryWindow::LibraryWindow(MusicLibrary &library, PlaybackController *playbackController)
         : m_library(library), m_playbackController(playbackController)
     {
+        //----------------------------------------------------------------------
+        // Table configuration (columns, sortable, resizable, etc.)
+        //----------------------------------------------------------------------
         TrackTableConfig config;
         config.Columns = {
             TrackColumn::Title,
             TrackColumn::Artist,
             TrackColumn::Album,
             TrackColumn::Extension,
-            TrackColumn::Duration
-        };
+            TrackColumn::Duration};
         m_trackTable.ApplyConfig(config);
 
+        //----------------------------------------------------------------------
+        // Layout-only style (widths, row height) — NO colors
+        // Colors come from the theme via ApplyTrackTableTheme()
+        //----------------------------------------------------------------------
         TrackTableStyle style;
         style.TitleWidth = 350.0f;
         style.ArtistWidth = 180.0f;
@@ -27,9 +41,23 @@ namespace moosic
         style.ExtensionWidth = 50.0f;
         style.DurationWidth = 80.0f;
         style.RowHeight = 18.0f;
-        style.RowPlaying = ImVec4(0.0f, 0.70f, 0.0f, 0.80f);
         m_trackTable.ApplyTheme(style);
-        
+
+        //----------------------------------------------------------------------
+        // Default toolbar options
+        //----------------------------------------------------------------------
+        m_toolbarOptions.ShowSearchBar = true;
+        m_toolbarOptions.ShowRefreshButton = true;
+        m_toolbarOptions.ShowClearButton = false;
+        m_toolbarOptions.ShowTrackCount = true;
+        m_toolbarOptions.ShowBrandHeader = true;
+        m_toolbarOptions.BrandText = "MOOSIC LIBRARY";
+        m_toolbarOptions.SearchBarWidth = 300.0f;
+        m_toolbarOptions.SearchHint = "Search title, artist or album...";
+
+        //----------------------------------------------------------------------
+        // Row click callback — play the selected track
+        //----------------------------------------------------------------------
         m_trackTable.OnRowClick([this](const MusicTrack *track, int rowIndex)
         {
             if (!track) return;
@@ -49,6 +77,9 @@ namespace moosic
             m_playingTrackId = track->GetId();
         });
 
+        //----------------------------------------------------------------------
+        // Row double-click callback — same as single click
+        //----------------------------------------------------------------------
         m_trackTable.OnRowDoubleClick([this](const MusicTrack *track, int rowIndex)
         {
             // Same behavior as single click
@@ -57,16 +88,29 @@ namespace moosic
         RefreshTrackList();
     }
 
+    //==========================================================================
+    // Main Draw
+    //==========================================================================
+
     void LibraryWindow::Draw()
     {
+        // ── Auto-refresh: detect when library has new tracks ──
+        if (m_library.GetTrackCount() != m_lastTrackCount)
+        {
+            RefreshTrackList();
+        }
+
         SyncPlayingTrack();
         DrawHeader();
         DrawToolbar();
-        DrawLibraryInfo();
         DrawTrackTable();
         HandleSorting();
         DrawFooter();
     }
+
+    //==========================================================================
+    // Sync Playing Track
+    //==========================================================================
 
     void LibraryWindow::SyncPlayingTrack()
     {
@@ -97,72 +141,96 @@ namespace moosic
         }
     }
 
+    //==========================================================================
+    // Header — branded title + optional track count
+    //==========================================================================
+
     void LibraryWindow::DrawHeader()
     {
-        ImGui::Text("Music Library");
+        if (!m_toolbarOptions.ShowBrandHeader && !m_toolbarOptions.ShowTrackCount)
+        {
+            ImGui::Separator();
+            return;
+        }
+
+        if (m_toolbarOptions.ShowBrandHeader)
+        {
+            ImGui::TextColored(m_theme.BrandText, "%s", m_toolbarOptions.BrandText.c_str());
+        }
+
+        if (m_toolbarOptions.ShowTrackCount)
+        {
+            if (m_toolbarOptions.ShowBrandHeader)
+                ImGui::SameLine();
+            ImGui::Text("(%zu Tracks)", m_tracks.size());
+        }
+
         ImGui::Separator();
     }
+
+    //==========================================================================
+    // Toolbar — configurable search, refresh, clear
+    //==========================================================================
 
     void LibraryWindow::DrawToolbar()
     {
+        bool anyToolbarElement = m_toolbarOptions.ShowSearchBar ||
+                                 m_toolbarOptions.ShowRefreshButton ||
+                                 m_toolbarOptions.ShowClearButton;
+
+        if (!anyToolbarElement)
+            return;
+
         static char searchBuffer[256] = "";
 
-        ImGui::SetNextItemWidth(300.0f);
-        ImGui::InputTextWithHint("##Search", "Search title, artist or album...", 
-                                 searchBuffer, sizeof(searchBuffer));
-        ImGui::SameLine();
-
-        if (ImGui::Button("Clear"))
+        // ── Search bar ──
+        if (m_toolbarOptions.ShowSearchBar)
         {
-            searchBuffer[0] = '\0';
+            ImGui::SetNextItemWidth(m_toolbarOptions.SearchBarWidth);
+            ImGui::InputTextWithHint("##Search",
+                                     m_toolbarOptions.SearchHint.c_str(),
+                                     searchBuffer, sizeof(searchBuffer));
         }
 
-        ImGui::SameLine();
-
-        if (ImGui::Button("Refresh"))
+        // ── Clear button ──
+        if (m_toolbarOptions.ShowClearButton)
         {
-            RefreshTrackList();
+            if (m_toolbarOptions.ShowSearchBar)
+                ImGui::SameLine();
+
+            if (ImGui::Button("Clear"))
+            {
+                searchBuffer[0] = '\0';
+            }
         }
-    }
 
-    void LibraryWindow::DrawLibraryInfo()
-    {
-        if (m_library.GetTrackCount() != m_lastTrackCount)
+        // ── Refresh button ──
+        if (m_toolbarOptions.ShowRefreshButton)
         {
-            RefreshTrackList();
+            if (m_toolbarOptions.ShowSearchBar || m_toolbarOptions.ShowClearButton)
+                ImGui::SameLine();
+
+            if (ImGui::Button("Refresh"))
+            {
+                RefreshTrackList();
+            }
         }
 
         ImGui::Spacing();
-        ImGui::Text("Tracks: %zu", m_tracks.size());
-        ImGui::SameLine();
-        ImGui::TextDisabled("|");
-        ImGui::SameLine();
-
-        if (m_playingTrackId != 0)
-        {
-            const MusicTrack* track = FindTrackById(m_playingTrackId);
-            if (track)
-            {
-                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), 
-                                   "Playing: %s", track->GetTitle().c_str());
-            }
-            else
-            {
-                ImGui::TextDisabled("Not playing");
-            }
-        }
-        else
-        {
-            ImGui::TextDisabled("Not playing");
-        }
-
-        ImGui::Separator();
     }
+
+    //==========================================================================
+    // Track Table
+    //==========================================================================
 
     void LibraryWindow::DrawTrackTable()
     {
         m_trackTable.Draw(m_tracks);
     }
+
+    //==========================================================================
+    // Sort Handling
+    //==========================================================================
 
     void LibraryWindow::HandleSorting()
     {
@@ -214,11 +282,19 @@ namespace moosic
         }
     }
 
+    //==========================================================================
+    // Footer
+    //==========================================================================
+
     void LibraryWindow::DrawFooter()
     {
         ImGui::Separator();
         ImGui::TextDisabled("Ready");
     }
+
+    //==========================================================================
+    // Refresh Track List
+    //==========================================================================
 
     void LibraryWindow::RefreshTrackList()
     {
@@ -251,6 +327,10 @@ namespace moosic
         }
     }
 
+    //==========================================================================
+    // Update Playing Track (external call)
+    //==========================================================================
+
     void LibraryWindow::UpdatePlayingTrack(const MusicTrack* track)
     {
         if (track)
@@ -269,6 +349,10 @@ namespace moosic
             m_trackTable.SetPlayingRow(-1, nullptr);
         }
     }
+
+    //==========================================================================
+    // Helpers
+    //==========================================================================
 
     int LibraryWindow::FindTrackIndex(std::size_t trackId) const
     {

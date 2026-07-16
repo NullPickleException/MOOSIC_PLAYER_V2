@@ -1,7 +1,7 @@
 //==============================================================================
 // LightTheme.h
 //==============================================================================
-// VS Code Light style with classic ImGui button styling
+// Warm, eye-friendly light theme — soft warm tones, reduced contrast
 //==============================================================================
 
 #pragma once
@@ -11,188 +11,246 @@
 namespace moosic
 {
 
-//==============================================================================
-// Light Theme - VS Code Light with Classic ImGui Buttons
-//==============================================================================
+    inline Theme CreateLightTheme()
+    {
+        Theme t;
 
-inline Theme CreateLightTheme()
-{
-    Theme t;
+        //==========================================================================
+        // Base palette (Warm, Eye-Friendly)
+        //==========================================================================
 
-    //--------------------------------------------------------------------------
-    // ContentPanelTheme - VS Code Light
-    //--------------------------------------------------------------------------
+        // Warm accent — soft slate-blue (not harsh blue)
+        const ImVec4 Blue        = ImVec4(0.353f, 0.557f, 0.765f, 1.00f);  // 90,142,195 — muted steel blue
+        const ImVec4 BlueDark    = ImVec4(0.282f, 0.463f, 0.651f, 1.00f);  // 72,118,166
+        const ImVec4 BlueLight   = ImVec4(0.486f, 0.671f, 0.843f, 1.00f);  // 124,171,215
+        const ImVec4 BlueGlow    = ImVec4(0.353f, 0.557f, 0.765f, 0.10f);
+        const ImVec4 BlueSubtle  = ImVec4(0.353f, 0.557f, 0.765f, 0.06f);
 
-    t.ContentPanel.TabActive = ImVec4(0.00f, 0.48f, 0.80f, 1.00f);
-    t.ContentPanel.TabInactive = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.ContentPanel.TabHovered = ImVec4(0.92f, 0.92f, 0.92f, 1.00f);
-    t.ContentPanel.TabText = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    t.ContentPanel.TabTextInactive = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
-    t.ContentPanel.BorderColor = ImVec4(0.00f, 0.48f, 0.80f, 1.00f);
-    t.ContentPanel.BorderThickness = 2.0f;
-    t.ContentPanel.TabSpacing = 2.0f;
+        // Warm greys — with slight brown undertones, not cold grey
+        const ImVec4 Grey        = ImVec4(0.627f, 0.604f, 0.569f, 1.00f);  // 160,154,145 — warm stone
+        const ImVec4 GreyDark    = ImVec4(0.537f, 0.514f, 0.478f, 1.00f);  // 137,131,122
+        const ImVec4 GreyDarker  = ImVec4(0.820f, 0.808f, 0.788f, 1.00f);  // 209,206,201 — warm border
+        const ImVec4 GreyLight   = ImVec4(0.910f, 0.898f, 0.878f, 1.00f);  // 232,229,224 — warm light
 
-    //--------------------------------------------------------------------------
-    // WindowTheme - VS Code Light
-    //--------------------------------------------------------------------------
+        // Warm backgrounds — creamy, not sterile white
+        const ImVec4 LightBg      = ImVec4(0.957f, 0.949f, 0.937f, 1.00f);  // 244,242,239 — warm cream
+        const ImVec4 LightBgAlt   = ImVec4(0.937f, 0.925f, 0.910f, 1.00f);  // 239,236,232 — slightly darker cream
+        const ImVec4 LightBgHi    = ImVec4(0.890f, 0.886f, 0.878f, 1.00f);  // 227,226,224 — hover highlight
+        const ImVec4 LightBgPanel = ImVec4(0.969f, 0.961f, 0.949f, 1.00f);  // 247,245,242 — panel white
 
-    // Window Backgrounds
-    t.Window.WindowBg = ImVec4(1.000f, 1.000f, 1.000f, 1.00f);
-    t.Window.ChildBg = ImVec4(0.965f, 0.965f, 0.965f, 1.00f);
-    t.Window.WindowBorder = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
-    t.Window.TitleBar = ImVec4(0.945f, 0.945f, 0.945f, 1.00f);
-    t.Window.TitleBarActive = ImVec4(0.945f, 0.945f, 0.945f, 1.00f);
+        // Text — soft dark brown-grey, not pure black
+        const ImVec4 TextDark    = ImVec4(0.235f, 0.216f, 0.196f, 1.00f);  // 60,55,50 — warm dark
+        const ImVec4 TextMuted   = ImVec4(0.447f, 0.424f, 0.396f, 1.00f);  // 114,108,101 — warm medium
+        const ImVec4 TextDim     = ImVec4(0.608f, 0.584f, 0.557f, 1.00f);  // 155,149,142 — warm light
+        const ImVec4 TextWhite   = ImVec4(1.000f, 1.000f, 1.000f, 1.00f);
 
-    // Text Colors
-    t.Window.HeaderText = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    t.Window.TextPrimary = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-    t.Window.TextSecondary = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);
-    t.Window.TextDisabled = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
+        //==========================================================================
+        // Content Panel
+        //==========================================================================
 
-    // Classic ImGui Button Colors (rounded but classic looking)
-    t.Window.ButtonNormal = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    t.Window.ButtonHovered = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-    t.Window.ButtonActive = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
-    t.Window.ButtonRounding = 4.0f;
+        t.ContentPanel.TabActive        = Blue;
+        t.ContentPanel.TabInactive      = GreyLight;
+        t.ContentPanel.TabHovered       = LightBgHi;
 
-    // Misc Colors
-    t.Window.ProgressBar = ImVec4(0.00f, 0.48f, 0.80f, 1.00f);
-    t.Window.PlayingHighlight = ImVec4(0.00f, 0.48f, 0.80f, 0.25f);
-    t.Window.SeparatorColor = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.Window.HeaderSpacing = 4.0f;
+        t.ContentPanel.TabText          = TextWhite;
+        t.ContentPanel.TabTextInactive  = TextMuted;
 
-    //--------------------------------------------------------------------------
-    // TrackTableStyle - VS Code Light
-    //--------------------------------------------------------------------------
+        t.ContentPanel.BorderColor      = Blue;
 
-    t.TrackTable.HeaderBackground = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.TrackTable.RowDefault = ImVec4(0.98f, 0.98f, 0.98f, 1.00f);
-    t.TrackTable.RowDefaultAlt = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    t.TrackTable.RowHovered = ImVec4(0.88f, 0.88f, 0.88f, 1.00f);
-    t.TrackTable.RowClicked = ImVec4(0.00f, 0.48f, 0.80f, 0.20f);
-    t.TrackTable.RowSelected = ImVec4(0.00f, 0.48f, 0.80f, 0.15f);
-    t.TrackTable.RowPlaying = ImVec4(0.00f, 0.48f, 0.80f, 0.12f);
-    t.TrackTable.BorderColor = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.TrackTable.TextColor = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    t.TrackTable.TextDisabled = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
-    t.TrackTable.TextSelected = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    
-    // Column widths - keep defaults
-    t.TrackTable.TitleWidth = 300.0f;
-    t.TrackTable.ArtistWidth = 200.0f;
-    t.TrackTable.AlbumWidth = 200.0f;
-    t.TrackTable.ExtensionWidth = 60.0f;
-    t.TrackTable.DurationWidth = 80.0f;
-    t.TrackTable.DefaultColumnWidth = 150.0f;
-    t.TrackTable.RowHeight = 12.0f;
+        //==========================================================================
+        // Window
+        //==========================================================================
 
-    //--------------------------------------------------------------------------
-    // WaveVisualizerStyle - VS Code Light
-    //--------------------------------------------------------------------------
+        t.Window.WindowBg          = LightBgPanel;
+        t.Window.ChildBg           = LightBg;
+        t.Window.WindowBorder      = GreyDarker;
 
-    t.Visualizer.BackgroundColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    t.Visualizer.WaveformColor = ImVec4(0.00f, 0.48f, 0.80f, 1.00f);
-    t.Visualizer.WaveformFillColor = ImVec4(0.00f, 0.48f, 0.80f, 0.10f);
-    t.Visualizer.SpectrumColor = ImVec4(0.00f, 0.48f, 0.80f, 1.00f);
-    t.Visualizer.SpectrumColorHigh = ImVec4(0.20f, 0.60f, 1.00f, 1.00f);
-    t.Visualizer.GridColor = ImVec4(0.80f, 0.80f, 0.80f, 0.40f);
-    t.Visualizer.BorderColor = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.Visualizer.PlaceholderColor = ImVec4(0.50f, 0.50f, 0.50f, 0.60f);
-    
-    // Keep default sizing
-    t.Visualizer.BoxWidth = 137.0f;
-    t.Visualizer.BoxHeight = 45.0f;
-    t.Visualizer.BorderRounding = 3.0f;
-    t.Visualizer.BorderThickness = 3.0f;
-    t.Visualizer.OffsetX = 0.0f;
-    t.Visualizer.OffsetY = 0.0f;
-    t.Visualizer.OscilloscopeScaleX = 1.0f;
-    t.Visualizer.OscilloscopeScaleY = 1.0f;
-    t.Visualizer.SpectrumScaleX = 1.0f;
-    t.Visualizer.SpectrumScaleY = 1.0f;
-    t.Visualizer.SpectrumBands = 16;
-    t.Visualizer.BarWidth = 3.2f;
-    t.Visualizer.BarGap = 5.0f;
-    t.Visualizer.BarBottomPadding = 3.0f;
-    t.Visualizer.BarTopPadding = 2.0f;
-    t.Visualizer.BarTopRounding = 2.0f;
-    t.Visualizer.RoundBarTops = true;
-    t.Visualizer.WaveformSamples = 128;
-    t.Visualizer.WaveformLineWidth = 1.5f;
-    t.Visualizer.EnableWaveformFill = true;
-    t.Visualizer.SpectrumSensitivity = 2.0f;
-    t.Visualizer.SpectrumDecay = 0.7f;
-    t.Visualizer.Smoothing = 0.6f;
-    t.Visualizer.ScaleMultiplier = 3.3f;
-    t.Visualizer.VolumeAffectsScale = false;
-    t.Visualizer.ClampToBounds = true;
-    t.Visualizer.Mode = VisualizerMode::Oscilloscope;
-    t.Visualizer.ShowGrid = false;
-    t.Visualizer.GridLinesHorizontal = 2;
-    t.Visualizer.GridLinesVertical = 4;
-    t.Visualizer.ShowPeaks = false;
+        t.Window.TitleBar          = LightBgAlt;
+        t.Window.TitleBarActive    = LightBgAlt;
 
-    //--------------------------------------------------------------------------
-    // AlbumArtBoxTheme - VS Code Light
-    //--------------------------------------------------------------------------
+        t.Window.HeaderText        = TextDark;
 
-    t.AlbumArtBox.BorderColor = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.AlbumArtBox.BorderThickness = 2.0f;
-    t.AlbumArtBox.BorderRounding = 6.0f;
-    t.AlbumArtBox.BackgroundColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    t.AlbumArtBox.ShowShadow = true;
-    t.AlbumArtBox.ShadowColor = ImVec4(0.30f, 0.30f, 0.30f, 0.15f);
-    t.AlbumArtBox.ShadowOffsetX = 2.0f;
-    t.AlbumArtBox.ShadowOffsetY = 2.0f;
-    t.AlbumArtBox.ShadowBlur = 4.0f;
-    t.AlbumArtBox.PlaceholderTextColor = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-    t.AlbumArtBox.PlaceholderText = "No Art";
+        t.Window.TextPrimary       = TextDark;
+        t.Window.TextSecondary     = TextMuted;
+        t.Window.TextDisabled      = TextDim;
 
-    //--------------------------------------------------------------------------
-    // LightboxTheme - VS Code Light
-    //--------------------------------------------------------------------------
+        t.Window.BrandText         = Blue;
 
-    t.AlbumArtLightbox.BackgroundColor = ImVec4(1.00f, 1.00f, 1.00f, 0.92f);
-    t.AlbumArtLightbox.BorderColor = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-    t.AlbumArtLightbox.CloseButtonColor = ImVec4(0.20f, 0.20f, 0.20f, 0.80f);
-    t.AlbumArtLightbox.CloseButtonHovered = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    t.AlbumArtLightbox.TitleColor = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    t.AlbumArtLightbox.ArtistColor = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
-    t.AlbumArtLightbox.MaxWidth = 600.0f;
-    t.AlbumArtLightbox.MaxHeight = 600.0f;
-    t.AlbumArtLightbox.BorderRounding = 12.0f;
-    t.AlbumArtLightbox.CloseButtonSize = 30.0f;
-    t.AlbumArtLightbox.Padding = 20.0f;
+        t.Window.ButtonNormal      = GreyLight;
+        t.Window.ButtonHovered     = LightBgHi;
+        t.Window.ButtonActive      = GreyDarker;
 
-    //--------------------------------------------------------------------------
-    // PlayerBarTheme - Classic ImGui Light
-    //--------------------------------------------------------------------------
+        t.Window.ProgressBar       = Blue;
+        t.Window.PlayingHighlight  = BlueGlow;
+        t.Window.SeparatorColor    = GreyDarker;
 
-    t.PlayerBar.TextPrimary = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
-    t.PlayerBar.TextSecondary = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-    t.PlayerBar.ButtonNormal = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    t.PlayerBar.ButtonHovered = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-    t.PlayerBar.ButtonActive = ImVec4(0.74f, 0.74f, 0.74f, 1.00f);
-    t.PlayerBar.ButtonPrimary = ImVec4(0.00f, 0.60f, 0.80f, 1.00f);
-    t.PlayerBar.ButtonPrimaryHovered = ImVec4(0.10f, 0.70f, 0.90f, 1.00f);
-    t.PlayerBar.ButtonPrimaryActive = ImVec4(0.00f, 0.50f, 0.70f, 1.00f);
-    t.PlayerBar.SliderTrack = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
-    t.PlayerBar.SliderGrab = ImVec4(0.00f, 0.60f, 0.80f, 1.00f);
-    t.PlayerBar.SliderGrabActive = ImVec4(0.10f, 0.70f, 0.90f, 1.00f);
-    t.PlayerBar.ButtonRounding = 4.0f;
-    t.PlayerBar.SliderRounding = 4.0f;
-    t.PlayerBar.AlbumArtRounding = 4.0f;
-    t.PlayerBar.AlbumArtSize = 60.0f;
-    t.PlayerBar.NormalButtonExtraWidth = 15.0f;
-    t.PlayerBar.PrimaryButtonExtraWidth = 22.0f;
-    t.PlayerBar.ButtonHeightExtra = 3.0f;
+        //==========================================================================
+        // Track Table
+        //==========================================================================
 
-    // Child widget themes (forwarded from above)
-    t.PlayerBar.Lightbox = t.AlbumArtLightbox;
-    t.PlayerBar.AlbumArtBox = t.AlbumArtBox;
-    t.PlayerBar.Visualizer = t.Visualizer;
+        // ── Header ──
+        t.TrackTable.HeaderBackground        = LightBgAlt;
+        t.TrackTable.HeaderTextColor         = TextMuted;
+        t.TrackTable.HeaderBorderColor       = GreyDarker;
+        t.TrackTable.HeaderHovered           = LightBgHi;
+        t.TrackTable.HeaderActive            = Blue;
 
-    return t;
-}
+        // ── Header text per column ──
+        t.TrackTable.HeaderTextTitle         = TextMuted;
+        t.TrackTable.HeaderTextArtist        = TextMuted;
+        t.TrackTable.HeaderTextAlbum         = TextMuted;
+        t.TrackTable.HeaderTextExtension     = TextMuted;
+        t.TrackTable.HeaderTextDuration      = TextMuted;
+
+        // ── Row colors ──
+        t.TrackTable.RowDefault              = LightBgPanel;
+        t.TrackTable.RowDefaultAlt           = LightBg;
+        t.TrackTable.RowHovered              = LightBgHi;
+        t.TrackTable.RowClicked              = ImVec4(Blue.x, Blue.y, Blue.z, 0.18f);
+        t.TrackTable.RowSelected             = Blue;
+        t.TrackTable.RowPlaying              = BlueSubtle;
+
+        // ── Row layout ──
+        t.TrackTable.RowHeight               = 18.0f;
+        t.TrackTable.RowPaddingX             = 4.0f;
+        t.TrackTable.RowPaddingY             = 2.0f;
+
+        // ── Text colors ──
+        t.TrackTable.TextColor               = TextDark;
+        t.TrackTable.TextDim                 = TextDim;
+        t.TrackTable.TextSelected            = TextWhite;
+        t.TrackTable.TextPlaying             = TextDark;
+
+        // ── Row text per column ──
+        t.TrackTable.RowTextTitle            = TextDark;
+        t.TrackTable.RowTextArtist           = TextMuted;
+        t.TrackTable.RowTextAlbum            = TextMuted;
+        t.TrackTable.RowTextExtension        = TextDim;
+        t.TrackTable.RowTextDuration         = TextMuted;
+
+        // ── Border & Separator ──
+        t.TrackTable.BorderColor             = GreyDarker;
+        t.TrackTable.BorderThickness         = 1.0f;
+        t.TrackTable.ShowRowSeparators       = true;
+        t.TrackTable.RowSeparatorColor       = ImVec4(GreyDarker.x, GreyDarker.y, GreyDarker.z, 0.50f);
+
+        // ── Scrollbar ──
+        t.TrackTable.ScrollbarBg             = LightBg;
+        t.TrackTable.ScrollbarGrab           = GreyDarker;
+        t.TrackTable.ScrollbarGrabHovered    = Grey;
+        t.TrackTable.ScrollbarGrabActive     = Blue;
+        t.TrackTable.ScrollbarWidth          = 8.0f;
+        t.TrackTable.ScrollbarRounding       = 4.0f;
+
+        // ── Smoothing / Animation ──
+        t.TrackTable.HoverFadeSpeed          = 0.18f;
+        t.TrackTable.SelectionFadeSpeed      = 0.22f;
+        t.TrackTable.ScrollSmoothing         = 0.14f;
+
+        // ── Misc ──
+        t.TrackTable.TableRounding           = 0.0f;
+        t.TrackTable.MinColumnWidth          = 30.0f;
+
+        // ── Column widths ──
+        t.TrackTable.TitleWidth              = 350.0f;
+        t.TrackTable.ArtistWidth             = 180.0f;
+        t.TrackTable.AlbumWidth              = 180.0f;
+        t.TrackTable.ExtensionWidth          = 50.0f;
+        t.TrackTable.DurationWidth           = 80.0f;
+
+        //==========================================================================
+        // Visualizer
+        //==========================================================================
+
+        t.Visualizer.BackgroundColor    = LightBg;
+        t.Visualizer.WaveformColor      = Blue;
+        t.Visualizer.WaveformFillColor  = ImVec4(Blue.x, Blue.y, Blue.z, 0.06f);
+        t.Visualizer.GridColor          = ImVec4(GreyDarker.x, GreyDarker.y, GreyDarker.z, 0.40f);
+        t.Visualizer.BorderColor        = GreyDarker;
+        t.Visualizer.PlaceholderColor   = TextDim;
+
+        // ── Color ramp — warm blues ──
+        t.Visualizer.UseColorRamp           = true;
+        t.Visualizer.SpectrumColorLow       = ImVec4(0.451f, 0.596f, 0.725f, 1.00f);  // 115,152,185
+        t.Visualizer.SpectrumColorMid       = Blue;
+        t.Visualizer.SpectrumColorHigh      = ImVec4(0.278f, 0.518f, 0.765f, 1.00f);  // 71,132,195
+        t.Visualizer.SpectrumColorPeak      = ImVec4(0.353f, 0.337f, 0.306f, 1.00f);  // 90,86,78 — warm dark
+        t.Visualizer.ColorRampLowThreshold  = 0.0f;
+        t.Visualizer.ColorRampMidThreshold  = 0.45f;
+        t.Visualizer.ColorRampHighThreshold = 0.80f;
+
+        // ── Frequency tint ──
+        t.Visualizer.UseFrequencyTint       = false;
+        t.Visualizer.LowFreqTint            = ImVec4(0.91f, 0.58f, 0.35f, 1.0f);
+        t.Visualizer.HighFreqTint           = ImVec4(0.35f, 0.58f, 0.84f, 1.0f);
+        t.Visualizer.FrequencyTintBlend     = 0.25f;
+
+        // ── Brightness ──
+        t.Visualizer.BarBrightnessMin       = 0.55f;
+        t.Visualizer.BarBrightnessMax       = 1.0f;
+
+        //==========================================================================
+        // Album Art
+        //==========================================================================
+
+        t.AlbumArtBox.BorderColor              = GreyDarker;
+        t.AlbumArtBox.BorderColorHovered       = Blue;
+        t.AlbumArtBox.BorderColorClicked       = BlueLight;
+        t.AlbumArtBox.BorderThickness          = 1.5f;
+        t.AlbumArtBox.BorderThicknessHovered   = 2.5f;
+        t.AlbumArtBox.BorderRounding           = 4.0f;
+
+        t.AlbumArtBox.BackgroundColor          = LightBgAlt;
+        t.AlbumArtBox.BackgroundColorHovered   = LightBgHi;
+
+        t.AlbumArtBox.ShowShadow               = true;
+        t.AlbumArtBox.ShadowColor              = ImVec4(0.24f, 0.22f, 0.20f, 0.08f);  // Warm shadow
+
+        t.AlbumArtBox.PlaceholderTextColor     = TextDim;
+
+        t.AlbumArtBox.ShowHoverOverlay         = true;
+        t.AlbumArtBox.HoverOverlayColor        = ImVec4(Blue.x, Blue.y, Blue.z, 0.05f);
+        t.AlbumArtBox.ClickOverlayColor        = ImVec4(Blue.x, Blue.y, Blue.z, 0.12f);
+
+        t.AlbumArtBox.ShowPlayButtonOnHover       = true;
+        t.AlbumArtBox.PlayButtonColor             = TextWhite;
+        t.AlbumArtBox.PlayButtonBackgroundColor   = ImVec4(0.18f, 0.16f, 0.14f, 0.45f);  // Warm dark
+
+        //==========================================================================
+        // Lightbox
+        //==========================================================================
+
+        t.AlbumArtLightbox.BackgroundColor     = ImVec4(0.969f, 0.961f, 0.949f, 0.94f);  // Warm overlay
+        t.AlbumArtLightbox.BorderColor         = GreyDarker;
+        t.AlbumArtLightbox.CloseButtonColor    = TextMuted;
+        t.AlbumArtLightbox.CloseButtonHovered  = Blue;
+        t.AlbumArtLightbox.TitleColor          = TextDark;
+        t.AlbumArtLightbox.ArtistColor         = TextMuted;
+
+        //==========================================================================
+        // Player Bar
+        //==========================================================================
+
+        t.PlayerBar.TextPrimary   = t.Window.TextPrimary;
+        t.PlayerBar.TextSecondary = t.Window.TextSecondary;
+
+        t.PlayerBar.ButtonNormal  = GreyLight;
+        t.PlayerBar.ButtonHovered = Blue;
+        t.PlayerBar.ButtonActive  = BlueDark;
+
+        t.PlayerBar.ButtonPrimary        = Blue;
+        t.PlayerBar.ButtonPrimaryHovered = BlueLight;
+        t.PlayerBar.ButtonPrimaryActive  = BlueDark;
+
+        t.PlayerBar.SliderTrack      = GreyDarker;
+        t.PlayerBar.SliderGrab       = Blue;
+        t.PlayerBar.SliderGrabActive = BlueLight;
+
+        t.PlayerBar.Lightbox    = t.AlbumArtLightbox;
+        t.PlayerBar.AlbumArtBox = t.AlbumArtBox;
+        t.PlayerBar.Visualizer  = t.Visualizer;
+
+        return t;
+    }
 
 } // namespace moosic

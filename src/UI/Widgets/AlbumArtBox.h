@@ -18,24 +18,57 @@ namespace moosic
 
 struct AlbumArtBoxTheme
 {
+    //--------------------------------------------------------------------------
     // Border
-    ImVec4 BorderColor = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-    float BorderThickness = 2.0f;
-    float BorderRounding = 6.0f;
+    //--------------------------------------------------------------------------
 
+    ImVec4 BorderColor         = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
+    ImVec4 BorderColorHovered  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);   // Border when hovered
+    ImVec4 BorderColorClicked  = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);   // Border when clicked
+    float BorderThickness      = 1.0f;
+    float BorderThicknessHovered = 2.0f;                              // Thicker border on hover
+    float BorderRounding       = 0.0f;
+
+    //--------------------------------------------------------------------------
     // Background
-    ImVec4 BackgroundColor = ImVec4(0.08f, 0.08f, 0.10f, 1.0f);
+    //--------------------------------------------------------------------------
 
+    ImVec4 BackgroundColor       = ImVec4(0.08f, 0.08f, 0.10f, 1.0f);
+    ImVec4 BackgroundColorHovered = ImVec4(0.12f, 0.12f, 0.15f, 1.0f); // Slightly lighter on hover
+
+    //--------------------------------------------------------------------------
+    // Overlay (tinted overlay on hover/click for feedback)
+    //--------------------------------------------------------------------------
+
+    bool ShowHoverOverlay         = true;
+    ImVec4 HoverOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.08f);  // Subtle white overlay on hover
+    ImVec4 ClickOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.15f);  // Stronger overlay on click
+
+    //--------------------------------------------------------------------------
     // Shadow
-    bool ShowShadow = true;
-    ImVec4 ShadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.3f);
-    float ShadowOffsetX = 2.0f;
-    float ShadowOffsetY = 2.0f;
-    float ShadowBlur = 4.0f;
+    //--------------------------------------------------------------------------
 
+    bool ShowShadow       = false;
+    ImVec4 ShadowColor    = ImVec4(0.0f, 0.0f, 0.0f, 0.3f);
+    float ShadowOffsetX   = 2.0f;
+    float ShadowOffsetY   = 2.0f;
+    float ShadowBlur      = 4.0f;
+
+    //--------------------------------------------------------------------------
     // Placeholder
+    //--------------------------------------------------------------------------
+
     ImVec4 PlaceholderTextColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
     const char* PlaceholderText = "No Art";
+
+    //--------------------------------------------------------------------------
+    // Play Button Overlay (centered play icon on hover)
+    //--------------------------------------------------------------------------
+
+    bool ShowPlayButtonOnHover      = false;                              // Show play icon when hovered
+    ImVec4 PlayButtonColor          = ImVec4(1.0f, 1.0f, 1.0f, 0.9f);   // Play icon color
+    ImVec4 PlayButtonBackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);  // Circle behind play icon
+    float PlayButtonSize            = 0.35f;                             // Size relative to box (0.35 = 35%)
 };
 
 //==============================================================================
@@ -68,6 +101,8 @@ private:
     void DrawBorder(const ImVec2& pos, const ImVec2& size, float rounding);
     void DrawImage(const ImVec2& pos, const ImVec2& size, float rounding);
     void DrawPlaceholder(const ImVec2& pos, const ImVec2& size);
+    void DrawHoverOverlay(const ImVec2& pos, const ImVec2& size, float rounding);
+    void DrawPlayButton(const ImVec2& pos, const ImVec2& size);
 
     AlbumArtBoxTheme m_theme;
     void* m_texture = nullptr;
@@ -75,6 +110,7 @@ private:
     int m_textureHeight = 0;
     bool m_wasClicked = false;
     bool m_isHovered = false;
+    bool m_isMouseDown = false;
 };
 
 } // namespace moosic

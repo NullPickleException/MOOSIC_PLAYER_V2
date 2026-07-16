@@ -18,8 +18,6 @@ AlbumArtBox::~AlbumArtBox() = default;
 // Configuration
 //==============================================================================
 
-// REMOVED: AlbumArtBox::ApplyTheme - Now defined inline in header
-
 void AlbumArtBox::SetTexture(void* texture, int width, int height)
 {
     m_texture = texture;
@@ -42,6 +40,7 @@ void AlbumArtBox::Draw(float size, float rounding, bool showBorder, bool showBac
 {
     m_wasClicked = false;
     m_isHovered = false;
+    m_isMouseDown = false;
 
     ImVec2 boxSize(size, size);
     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -56,7 +55,7 @@ void AlbumArtBox::Draw(float size, float rounding, bool showBorder, bool showBac
     if (m_theme.ShowShadow)
         DrawShadow(pos, boxSize, r);
 
-    // Draw background
+    // Draw background (use hovered color if hovered)
     if (showBackground)
         DrawBackground(pos, boxSize, r);
 
@@ -66,16 +65,25 @@ void AlbumArtBox::Draw(float size, float rounding, bool showBorder, bool showBac
     else
         DrawPlaceholder(pos, boxSize);
 
-    // Draw border
-    if (showBorder)
-        DrawBorder(pos, boxSize, r);
-
-    // Click detection
+    // Click detection (placed before border so border draws on top)
     ImGui::SetCursorScreenPos(pos);
     ImGui::InvisibleButton("##AlbumArtBoxHitbox", boxSize, ImGuiButtonFlags_None);
 
     m_isHovered = ImGui::IsItemHovered();
+    m_isMouseDown = ImGui::IsItemActive();
     m_wasClicked = ImGui::IsItemClicked();
+
+    // Hover overlay (tinted overlay for feedback)
+    if (m_isHovered && m_theme.ShowHoverOverlay)
+        DrawHoverOverlay(pos, boxSize, r);
+
+    // Play button on hover
+    if (m_isHovered && m_theme.ShowPlayButtonOnHover && m_texture)
+        DrawPlayButton(pos, boxSize);
+
+    // Draw border (changes color/thickness on hover/click)
+    if (showBorder)
+        DrawBorder(pos, boxSize, r);
 }
 
 //==============================================================================
@@ -121,10 +129,13 @@ void AlbumArtBox::DrawBackground(const ImVec2& pos, const ImVec2& size, float ro
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
+    // Use hovered background color when hovered
+    ImVec4 bgColor = m_isHovered ? m_theme.BackgroundColorHovered : m_theme.BackgroundColor;
+
     drawList->AddRectFilled(
         pos,
         ImVec2(pos.x + size.x, pos.y + size.y),
-        ImGui::GetColorU32(m_theme.BackgroundColor),
+        ImGui::GetColorU32(bgColor),
         rounding,
         ImDrawFlags_RoundCornersAll
     );
@@ -134,13 +145,71 @@ void AlbumArtBox::DrawBorder(const ImVec2& pos, const ImVec2& size, float roundi
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
+    // Select border color and thickness based on state
+    ImVec4 borderColor = m_theme.BorderColor;
+    float borderThickness = m_theme.BorderThickness;
+
+    if (m_isMouseDown)
+    {
+        borderColor = m_theme.BorderColorClicked;
+        borderThickness = m_theme.BorderThicknessHovered;
+    }
+    else if (m_isHovered)
+    {
+        borderColor = m_theme.BorderColorHovered;
+        borderThickness = m_theme.BorderThicknessHovered;
+    }
+
     drawList->AddRect(
         pos,
         ImVec2(pos.x + size.x, pos.y + size.y),
-        ImGui::GetColorU32(m_theme.BorderColor),
+        ImGui::GetColorU32(borderColor),
         rounding,
         ImDrawFlags_RoundCornersAll,
-        m_theme.BorderThickness
+        borderThickness
+    );
+}
+
+void AlbumArtBox::DrawHoverOverlay(const ImVec2& pos, const ImVec2& size, float rounding)
+{
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    ImVec4 overlayColor = m_isMouseDown ? m_theme.ClickOverlayColor : m_theme.HoverOverlayColor;
+
+    drawList->AddRectFilled(
+        pos,
+        ImVec2(pos.x + size.x, pos.y + size.y),
+        ImGui::GetColorU32(overlayColor),
+        rounding,
+        ImDrawFlags_RoundCornersAll
+    );
+}
+
+void AlbumArtBox::DrawPlayButton(const ImVec2& pos, const ImVec2& size)
+{
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    float playSize = size.x * m_theme.PlayButtonSize;
+    float centerX = pos.x + size.x * 0.5f;
+    float centerY = pos.y + size.y * 0.5f;
+    float radius = playSize * 0.5f;
+
+    // Background circle
+    drawList->AddCircleFilled(
+        ImVec2(centerX, centerY),
+        radius,
+        ImGui::GetColorU32(m_theme.PlayButtonBackgroundColor)
+    );
+
+    // Play triangle (slightly offset right for visual center)
+    float triOffset = radius * 0.1f;
+    ImVec2 triP1(centerX - radius * 0.35f + triOffset, centerY - radius * 0.55f);
+    ImVec2 triP2(centerX - radius * 0.35f + triOffset, centerY + radius * 0.55f);
+    ImVec2 triP3(centerX + radius * 0.55f + triOffset, centerY);
+
+    drawList->AddTriangleFilled(
+        triP1, triP2, triP3,
+        ImGui::GetColorU32(m_theme.PlayButtonColor)
     );
 }
 
@@ -207,4 +276,4 @@ void AlbumArtBox::DrawPlaceholder(const ImVec2& pos, const ImVec2& size)
     );
 }
 
-} // namespace moosic  // <-- Make sure this closing brace exists!
+} // namespace moosic

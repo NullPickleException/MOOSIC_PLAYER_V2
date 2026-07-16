@@ -13,69 +13,72 @@
 #include "../Widgets/WaveVisualizer.h"
 #include "../Widgets/AlbumArtBox.h"
 #include "../Widgets/AlbumArtLightBox.h"
+#include "../Widgets/TitleBar/TitleBar.h"
 
 namespace moosic
 {
 
-//==============================================================================
-// Theme
-//==============================================================================
+    //==============================================================================
+    // Theme
+    //==============================================================================
 
-struct Theme
-{
-    //--------------------------------------------------------------------------
-    // Windows
-    //--------------------------------------------------------------------------
+    struct Theme
+    {
 
-    WindowTheme Window;
-    WindowContentPanelTheme ContentPanel;
+        //--------------------------------------------------------------------------
+        // Windows
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Standalone Widgets
-    //--------------------------------------------------------------------------
+        WindowTheme Window;
+        WindowContentPanelTheme ContentPanel;
 
-    TrackTableStyle      TrackTable;
-    WaveVisualizerStyle  Visualizer;
-    AlbumArtBoxTheme    AlbumArtBox;
-    LightboxTheme        AlbumArtLightbox;
+        //--------------------------------------------------------------------------
+        // Standalone Widgets
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Composite Widgets
-    //--------------------------------------------------------------------------
+        TitleBarTheme TitleBar;
+        TrackTableStyle TrackTable;
+        WaveVisualizerStyle Visualizer;
+        AlbumArtBoxTheme AlbumArtBox;
+        LightboxTheme AlbumArtLightbox;
 
-    PlayerBarTheme PlayerBar;
+        //--------------------------------------------------------------------------
+        // Composite Widgets
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Future Widgets
-    //--------------------------------------------------------------------------
+        PlayerBarTheme PlayerBar;
 
-    // SearchBarTheme SearchBar;
-    // PlaylistTheme Playlist;
-    // QueueTheme Queue;
-    // SpectrumTheme Spectrum;
-    // LyricsTheme Lyrics;
-    // NotificationTheme Notifications;
+        //--------------------------------------------------------------------------
+        // Future Widgets
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Layouts
-    //--------------------------------------------------------------------------
+        // SearchBarTheme SearchBar;
+        // PlaylistTheme Playlist;
+        // QueueTheme Queue;
+        // SpectrumTheme Spectrum;
+        // LyricsTheme Lyrics;
+        // NotificationTheme Notifications;
 
-    // MainLayoutTheme MainLayout;
-    // SidebarLayoutTheme SidebarLayout;
-    // TheaterLayoutTheme TheaterLayout;
-};
+        //--------------------------------------------------------------------------
+        // Layouts
+        //--------------------------------------------------------------------------
 
-//==============================================================================
-// Factory Functions
-//==============================================================================
+        // MainLayoutTheme MainLayout;
+        // SidebarLayoutTheme SidebarLayout;
+        // TheaterLayoutTheme TheaterLayout;
+    };
 
-Theme CreateDarkTheme();
-Theme CreateLightTheme();
-Theme CreateDraculaTheme();
-Theme CreateNordTheme();
-Theme CreateGruvboxTheme();
-Theme CreateCatppuccinTheme();
-Theme CreateSolarizedDarkTheme();
-Theme CreateSolarizedLightTheme();
+    //==============================================================================
+    // Factory Functions
+    //==============================================================================
+
+    Theme CreateDarkTheme();
+    Theme CreateLightTheme();
+    Theme CreateDraculaTheme();
+    Theme CreateNordTheme();
+    Theme CreateGruvboxTheme();
+    Theme CreateCatppuccinTheme();
+    Theme CreateSolarizedDarkTheme();
+    Theme CreateSolarizedLightTheme();
 
 } // namespace moosic

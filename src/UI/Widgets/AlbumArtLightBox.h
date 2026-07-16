@@ -4,9 +4,10 @@
 
 namespace moosic
 {
-
+    
 struct LightboxTheme
 {
+    // Colors (keep same)
     ImVec4 BackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
     ImVec4 BorderColor = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
     ImVec4 CloseButtonColor = ImVec4(1.0f, 1.0f, 1.0f, 0.8f);
@@ -14,9 +15,10 @@ struct LightboxTheme
     ImVec4 TitleColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     ImVec4 ArtistColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
     
+    // Sizing - Changed to look more basic
     float MaxWidth = 600.0f;
     float MaxHeight = 600.0f;
-    float BorderRounding = 12.0f;
+    float BorderRounding = 0.0f;  // Changed from 12.0f to 0.0f
     float CloseButtonSize = 30.0f;
     float Padding = 20.0f;
 };
