@@ -17,6 +17,8 @@
 #include "Layouts/TheaterLayout.h"
 #include "Layouts/StandardArtLeftLayout.h"
 
+#include "Widgets/TitleBar/TitleBar.h"
+
 #include "Theme/ThemeManager.h"
 
 #include <SDL.h>
@@ -46,7 +48,7 @@ public:
     // Initialization - Call AFTER ImGui context is created
     //--------------------------------------------------------------------------
 
-    void Initialize();
+    void Initialize(SDL_Window* window);
 
     //--------------------------------------------------------------------------
     // Theme
@@ -93,6 +95,9 @@ private:
 private:
     // Theme
     ThemeManager m_themeManager;
+
+    // Title Bar
+    TitleBar m_titleBar;
 
     // Layout
     LayoutMode m_layoutMode = LayoutMode::Standard;

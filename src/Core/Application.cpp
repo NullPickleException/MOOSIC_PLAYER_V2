@@ -89,16 +89,16 @@ bool Application::init()
     }
 
     //--------------------------------------------------------------------------
-    // Create Window
+    // Create Window - BORDERLESS for custom title bar
     //--------------------------------------------------------------------------
 
     m_window = SDL_CreateWindow(
         "MOOSIC PLAYER",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
-        1200,
         800,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        600,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS);
 
     if (!m_window)
     {
@@ -146,9 +146,10 @@ bool Application::init()
 
     //--------------------------------------------------------------------------
     // Initialize UI (AFTER ImGui context is created)
+    // Pass the window to UI for title bar initialization
     //--------------------------------------------------------------------------
 
-    m_ui.Initialize();
+    m_ui.Initialize(m_window);  // <-- FIXED: pass m_window
 
     std::cout << "Window initialized: " << width << "x" << height << "\n";
     std::cout << "Window is resizable - drag edges to resize!\n";
