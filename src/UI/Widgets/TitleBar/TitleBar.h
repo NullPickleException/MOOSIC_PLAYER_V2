@@ -11,88 +11,91 @@
 namespace moosic
 {
 
-struct TitleBarTheme
-{
-    ImVec4 BackgroundColor         = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
-    ImVec4 BackgroundColorActive   = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-    ImVec4 BackgroundColorInactive = ImVec4(0.15f, 0.15f, 0.15f, 0.85f);
-    float  BackgroundOpacity       = 1.0f;
+    struct TitleBarTheme
+    {
+        ImVec4 BackgroundColor = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
+        ImVec4 BackgroundColorActive = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+        ImVec4 BackgroundColorInactive = ImVec4(0.15f, 0.15f, 0.15f, 0.85f);
+        float BackgroundOpacity = 1.0f;
 
-    bool   ShowBottomBorder        = true;
-    ImVec4 BottomBorderColor       = ImVec4(1.0f, 1.0f, 1.0f, 0.12f);
-    float  BottomBorderThickness   = 1.0f;
+        bool ShowBottomBorder = true;
+        ImVec4 BottomBorderColor = ImVec4(1.0f, 1.0f, 1.0f, 0.12f);
+        float BottomBorderThickness = 1.0f;
 
-    bool   ShowAccentLine          = false;
-    ImVec4 AccentLineColor         = ImVec4(0.459f, 0.671f, 0.851f, 1.00f);
-    float  AccentLineThickness     = 2.0f;
+        bool ShowAccentLine = false;
+        ImVec4 AccentLineColor = ImVec4(0.459f, 0.671f, 0.851f, 1.00f);
+        float AccentLineThickness = 2.0f;
 
-    ImVec4 TitleTextColor          = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 TitleTextColorInactive  = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
-    float  TitleOffsetX            = 12.0f;
-    std::string TitleText          = "MOOSIC PLAYER";
+        ImVec4 TitleTextColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 TitleTextColorInactive = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+        float TitleOffsetX = 12.0f;
+        std::string TitleText = "MOOSIC PLAYER";
 
-    bool   ShowLogo                = false;
-    float  LogoSize                = 24.0f;
-    float  LogoPaddingLeft         = 10.0f;
-    float  LogoPaddingRight        = 8.0f;
+        bool ShowLogo = false;
+        float LogoSize = 24.0f;
+        float LogoPaddingLeft = 10.0f;
+        float LogoPaddingRight = 8.0f;
 
-    float  ButtonWidth             = 46.0f;
-    float  ButtonIconSize          = 1.5f;
+        float ButtonWidth = 46.0f;
+        float ButtonIconSize = 1.5f;
 
-    ImVec4 MinimizeButtonColor     = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 MinimizeButtonHoverBg   = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        ImVec4 MinimizeButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 MinimizeButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-    ImVec4 MaximizeButtonColor     = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 MaximizeButtonHoverBg   = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        ImVec4 MaximizeButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 MaximizeButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-    ImVec4 CloseButtonColor        = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 CloseButtonHoverBg      = ImVec4(0.86f, 0.20f, 0.20f, 0.78f);
+        ImVec4 CloseButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 CloseButtonHoverBg = ImVec4(0.86f, 0.20f, 0.20f, 0.78f);
 
-    bool   ShowCustomButtons       = false;
-    ImVec4 CustomButtonColor       = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-    ImVec4 CustomButtonHoverBg     = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        bool ShowCustomButtons = false;
+        ImVec4 CustomButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 CustomButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-    float  Height                  = 35.0f;
-    float  ResizeBorderWidth       = 8.0f;
-};
+        float Height = 35.0f;
+        float ResizeBorderWidth = 8.0f;
 
-class TitleBar
-{
-public:
-    TitleBar();
-    ~TitleBar();
+        int MinWindowWidth = 590;
+        int MinWindowHeight = 440;
+    };
 
-    void Initialize(SDL_Window* window);
-    void ApplyTheme(const TitleBarTheme& theme) { m_theme = theme; }
-    const TitleBarTheme& GetTheme() const { return m_theme; }
+    class TitleBar
+    {
+    public:
+        TitleBar();
+        ~TitleBar();
 
-    bool LoadLogo(const std::string& path);
-    void ClearLogo();
-    void SetTitle(const std::string& title) { m_theme.TitleText = title; }
+        void Initialize(SDL_Window *window);
+        void ApplyTheme(const TitleBarTheme &theme) { m_theme = theme; }
+        const TitleBarTheme &GetTheme() const { return m_theme; }
 
-    using CustomButtonCallback = std::function<void(int buttonIndex)>;
-    void SetCustomButtons(const std::vector<std::string>& labels, CustomButtonCallback callback);
+        bool LoadLogo(const std::string &path);
+        void ClearLogo();
+        void SetTitle(const std::string &title) { m_theme.TitleText = title; }
 
-    void Render();
-    bool IsMaximized() const { return m_isMaximized; }
+        using CustomButtonCallback = std::function<void(int buttonIndex)>;
+        void SetCustomButtons(const std::vector<std::string> &labels, CustomButtonCallback callback);
 
-private:
-    static SDL_HitTestResult HitTestCallback(SDL_Window*, const SDL_Point*, void* data);
-    SDL_HitTestResult HitTest(const SDL_Point* area);
+        void Render();
+        bool IsMaximized() const { return m_isMaximized; }
 
-    SDL_Window* m_window = nullptr;
-    SDL_Renderer* m_renderer = nullptr;
-    TitleBarTheme m_theme;
+    private:
+        static SDL_HitTestResult HitTestCallback(SDL_Window *, const SDL_Point *, void *data);
+        SDL_HitTestResult HitTest(const SDL_Point *area);
 
-    SDL_Texture* m_logoTexture = nullptr;
-    int m_logoWidth = 0;
-    int m_logoHeight = 0;
+        SDL_Window *m_window = nullptr;
+        SDL_Renderer *m_renderer = nullptr;
+        TitleBarTheme m_theme;
 
-    bool m_isMaximized = false;
-    bool m_isFocused = true;
+        SDL_Texture *m_logoTexture = nullptr;
+        int m_logoWidth = 0;
+        int m_logoHeight = 0;
 
-    std::vector<std::string> m_customButtonLabels;
-    CustomButtonCallback m_customButtonCallback;
-};
+        bool m_isMaximized = false;
+        bool m_isFocused = true;
+
+        std::vector<std::string> m_customButtonLabels;
+        CustomButtonCallback m_customButtonCallback;
+    };
 
 } // namespace moosic

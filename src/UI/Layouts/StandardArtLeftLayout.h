@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/StandardArtLeftPlayerBar.h"
 #include "../../Services/PlaybackController.h"
@@ -19,7 +20,10 @@ namespace moosic
 class StandardArtLeftLayout : public ILayout
 {
 public:
-    StandardArtLeftLayout(MusicLibrary& library, PlaybackController& playbackController);
+    StandardArtLeftLayout(LibraryDataModel& libraryData,
+                          DirectoryDataModel& directoryData,
+                          MusicLibrary& library, 
+                          PlaybackController& playbackController);
 
     void Draw(SDL_Renderer* renderer) override;
 
@@ -32,6 +36,8 @@ public:
     WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
 
 private:
+    LibraryDataModel& m_libraryData;
+    DirectoryDataModel& m_directoryData;
     WindowContentPanel m_contentPanel;
     StandardArtLeftPlayerBar m_playerBar;
     PlaybackController& m_playbackController;

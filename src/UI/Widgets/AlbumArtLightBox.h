@@ -16,11 +16,11 @@ struct LightboxTheme
     ImVec4 ArtistColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
     
     // Sizing - Changed to look more basic
-    float MaxWidth = 600.0f;
-    float MaxHeight = 600.0f;
-    float BorderRounding = 0.0f;  // Changed from 12.0f to 0.0f
+    float MaxWidth = 500.0f;
+    float MaxHeight = 500.0f;
+    float BorderRounding = 4.0f;  // Changed from 12.0f to 0.0f
     float CloseButtonSize = 30.0f;
-    float Padding = 20.0f;
+    float Padding = 40.0f;
 };
 
 class AlbumArtLightbox

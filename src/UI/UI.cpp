@@ -22,6 +22,7 @@ namespace moosic
 
         ImGuiStyle &style = ImGui::GetStyle();
         const auto &w = theme.Window;
+        const auto &cp = theme.ContentPanel;
 
         //--------------------------------------------------------------------------
         // Window Colors
@@ -53,6 +54,16 @@ namespace moosic
         style.Colors[ImGuiCol_CheckMark] = w.ProgressBar;
         style.Colors[ImGuiCol_SliderGrab] = w.ProgressBar;
         style.Colors[ImGuiCol_SliderGrabActive] = w.ButtonActive;
+
+        //--------------------------------------------------------------------------
+        // Tab Colors (for both Settings and ContentPanel tabs)
+        //--------------------------------------------------------------------------
+
+        style.Colors[ImGuiCol_Tab] = cp.TabInactive;
+        style.Colors[ImGuiCol_TabHovered] = cp.TabHovered;
+        style.Colors[ImGuiCol_TabActive] = cp.TabActive;
+        style.Colors[ImGuiCol_TabUnfocused] = cp.TabInactive;
+        style.Colors[ImGuiCol_TabUnfocusedActive] = cp.TabActive;
 
         //--------------------------------------------------------------------------
         // Style Properties
@@ -131,13 +142,20 @@ namespace moosic
     // Constructor
     //==============================================================================
 
-    UI::UI(MusicLibrary &library, PlaybackController &playbackController)
-        : m_library(library), m_playbackController(playbackController), m_standardLayout(library, playbackController), m_sidebarLayout(library, playbackController), m_compactLayout(library, playbackController), m_miniPlayerLayout(library, playbackController), m_theaterLayout(library, playbackController), m_standardArtLeftLayout(library, playbackController)
-    {
-        // NOTE: Do NOT call ApplyThemeToLayouts() here.
-        // ImGui context isn't created yet. Call Initialize() after ImGui is ready.
-    }
+    //==============================================================================
+    // UI.cpp - Constructor section only
+    //==============================================================================
 
+    UI::UI(MusicLibrary &library, PlaybackController &playbackController)
+        : m_library(library), m_playbackController(playbackController), m_libraryData(library) // Create library data model ONCE
+          ,
+          m_directoryData(library) // Create directory data model ONCE
+          ,
+          m_standardLayout(m_libraryData, m_directoryData, library, playbackController), m_sidebarLayout(m_libraryData, m_directoryData, library, playbackController), m_compactLayout(m_libraryData, m_directoryData, library, playbackController), m_miniPlayerLayout(m_libraryData, m_directoryData, library, playbackController), m_theaterLayout(m_libraryData, m_directoryData, library, playbackController), m_standardArtLeftLayout(m_libraryData, m_directoryData, library, playbackController)
+    {
+        // All layouts share the SAME m_libraryData and m_directoryData references!
+        // State persists across layout switches automatically.
+    }
     //==============================================================================
     // Initialization
     //==============================================================================

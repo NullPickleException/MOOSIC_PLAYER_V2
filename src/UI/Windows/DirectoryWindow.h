@@ -1,55 +1,32 @@
+//==============================================================================
+// UI/Windows/DirectoryWindow.h
+//==============================================================================
+// Directory management window - just renders, no data ownership
+//==============================================================================
+
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
-#include "../../Services/DirectoryScanner.h"
-#include "../../Services/Metadata/MetadataReader.h"
+#include "../Data/DirectoryDataModel.h"
 #include "IWindow.h"
 
-#include <atomic>
-#include <thread>
 #include <vector>
 #include <filesystem>
 
 namespace moosic
 {
 
-    // Forward declare Theme
-    struct Theme;
+class DirectoryWindow : public IWindow
+{
+public:
+    explicit DirectoryWindow(DirectoryDataModel& dataModel);
+    ~DirectoryWindow() = default;
 
-    class DirectoryWindow : public IWindow
-    {
-    public:
-        DirectoryWindow(MusicLibrary &library);
-        ~DirectoryWindow();
+    void Draw() override;
+    void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
 
-        void Draw() override;
-        void ApplyTheme(const WindowTheme &theme) override
-        {
-            m_theme = theme;
-            // m_trackTable.ApplyTheme(theme.TrackTable);   // later
-        }
+private:
+    DirectoryDataModel& m_data;  // Shared data - we don't own it!
+    WindowTheme m_theme;
+};
 
-    private:
-        void AddDirectory();
-        void StartImport(const std::filesystem::path &folder);
-        void CommitImport();
-
-    private:
-        MusicLibrary &m_library;
-        DirectoryScanner m_scanner;
-        MetadataReader m_reader;
-
-        std::thread m_importThread;
-        std::atomic<bool> m_isImporting{false};
-        std::atomic<bool> m_isFinished{false};
-        std::atomic<int> m_totalFiles{0};
-        std::atomic<int> m_processedFiles{0};
-        std::atomic<int> m_successfulFiles{0};
-
-        std::filesystem::path m_pendingDirectory;
-        std::vector<MusicTrack> m_importedTracks;
-
-        WindowTheme m_theme;
-    };
-
-} // namespace moosic
+} // namespace moosic   

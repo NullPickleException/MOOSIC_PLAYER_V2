@@ -15,6 +15,7 @@
 #include "../WaveVisualizer.h"
 #include <imgui.h>
 #include <SDL.h>
+#include <string>
 
 namespace moosic
 {
@@ -51,15 +52,21 @@ namespace moosic
         //==========================================================================
         // Classic Dear ImGui sizing
         //==========================================================================
-        float ButtonRounding = 3.0f;
+        float ButtonRounding = 5.0f;
         float SliderRounding = 3.0f;
         float AlbumArtRounding = 0.0f;
 
         float AlbumArtSize = 56.0f;
 
-        float NormalButtonExtraWidth = 4.0f;
-        float PrimaryButtonExtraWidth = 4.0f;
+        float NormalButtonExtraWidth = 6.0f;
+        float PrimaryButtonExtraWidth = 5.0f;
         float ButtonHeightExtra = 0.0f;
+
+        //==========================================================================
+        // Scrolling text
+        //==========================================================================
+        float ScrollSpeed = 30.0f;       // Pixels per second
+        float ScrollDelay = 1.5f;        // Seconds before scrolling starts
 
         //==========================================================================
         // Child Widget Themes
@@ -128,6 +135,7 @@ namespace moosic
 
         void DrawSongTitle();
         void DrawArtistName();
+        void DrawScrollingText(const char* text, const ImVec4& color, float maxWidth, float& scrollOffset, float& lastTrackChangeTime, bool trackChanged);
         void DrawElapsedTime();
         void DrawTotalTime();
         void DrawPlaybackSlider();
@@ -185,6 +193,11 @@ namespace moosic
         std::size_t m_lastAlbumArtTrackId = 0;
         int m_albumArtWidth = 0;
         int m_albumArtHeight = 0;
+
+        // Scrolling text state
+        float m_titleScrollOffset = 0.0f;
+        float m_artistScrollOffset = 0.0f;
+        float m_lastTrackChangeTime = 0.0f;
 
         // Child Widgets
         AlbumArtLightbox m_lightbox;

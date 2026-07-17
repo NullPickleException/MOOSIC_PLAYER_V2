@@ -1,11 +1,10 @@
 //==============================================================================
-// LibraryWindow.cpp
+// UI/Windows/LibraryWindow.cpp
 //==============================================================================
 
 #include "LibraryWindow.h"
 #include "../Theme/Theme.h"
 #include <iostream>
-#include <algorithm>
 #include <imgui.h>
 
 namespace moosic
@@ -15,25 +14,23 @@ namespace moosic
     // Constructor
     //==========================================================================
 
-    LibraryWindow::LibraryWindow(MusicLibrary &library, PlaybackController *playbackController)
-        : m_library(library), m_playbackController(playbackController)
+    LibraryWindow::LibraryWindow(LibraryDataModel& dataModel, 
+                                  PlaybackController* playbackController)
+        : m_data(dataModel)
+        , m_playbackController(playbackController)
     {
-        //----------------------------------------------------------------------
-        // Table configuration (columns, sortable, resizable, etc.)
-        //----------------------------------------------------------------------
+        // Table configuration
         TrackTableConfig config;
         config.Columns = {
             TrackColumn::Title,
             TrackColumn::Artist,
             TrackColumn::Album,
             TrackColumn::Extension,
-            TrackColumn::Duration};
+            TrackColumn::Duration
+        };
         m_trackTable.ApplyConfig(config);
 
-        //----------------------------------------------------------------------
-        // Layout-only style (widths, row height) — NO colors
-        // Colors come from the theme via ApplyTrackTableTheme()
-        //----------------------------------------------------------------------
+        // Layout-only style
         TrackTableStyle style;
         style.TitleWidth = 350.0f;
         style.ArtistWidth = 180.0f;
@@ -43,9 +40,7 @@ namespace moosic
         style.RowHeight = 18.0f;
         m_trackTable.ApplyTheme(style);
 
-        //----------------------------------------------------------------------
-        // Default toolbar options
-        //----------------------------------------------------------------------
+        // Default toolbar
         m_toolbarOptions.ShowSearchBar = true;
         m_toolbarOptions.ShowRefreshButton = true;
         m_toolbarOptions.ShowClearButton = false;
@@ -55,94 +50,43 @@ namespace moosic
         m_toolbarOptions.SearchBarWidth = 300.0f;
         m_toolbarOptions.SearchHint = "Search title, artist or album...";
 
-        //----------------------------------------------------------------------
-        // Row click callback — play the selected track
-        //----------------------------------------------------------------------
-        m_trackTable.OnRowClick([this](const MusicTrack *track, int rowIndex)
-        {
-            if (!track) return;
-            
-            std::cout << "[LibraryWindow] Playing: " << track->GetTitle() 
-                      << " (" << track->GetDuration() << "s)\n";
-            
-            if (m_playbackController)
-            {
-                m_playbackController->SetCurrentTrackList(m_tracks);
-                m_playbackController->SelectTrack(*track);
-                m_playbackController->Play();
-            }
-            
-            m_trackTable.SetSelectedRow(rowIndex, track);
-            m_trackTable.SetPlayingRow(rowIndex, track);
-            m_playingTrackId = track->GetId();
+        // Row click callback - delegate to data model + playback
+        m_trackTable.OnRowClick([this](const MusicTrack* track, int rowIndex) {
+            OnTrackClicked(track, rowIndex);
         });
 
-        //----------------------------------------------------------------------
-        // Row double-click callback — same as single click
-        //----------------------------------------------------------------------
-        m_trackTable.OnRowDoubleClick([this](const MusicTrack *track, int rowIndex)
-        {
-            // Same behavior as single click
+        m_trackTable.OnRowDoubleClick([this](const MusicTrack* track, int rowIndex) {
+            OnTrackClicked(track, rowIndex);
         });
-
-        RefreshTrackList();
+        
+        // Listen for data changes
+        m_data.SetOnDataChanged([this]() {
+            // Data changed - next Draw() will pick it up
+        });
     }
 
     //==========================================================================
-    // Main Draw
+    // Main Draw - Just coordinates rendering
     //==========================================================================
 
     void LibraryWindow::Draw()
     {
-        // ── Auto-refresh: detect when library has new tracks ──
-        if (m_library.GetTrackCount() != m_lastTrackCount)
-        {
-            RefreshTrackList();
-        }
+        // Auto-refresh if library has changed
+        if (m_data.NeedsRefresh())
+            m_data.Refresh();
 
-        SyncPlayingTrack();
+        // Sync playing state from controller
+        if (m_playbackController)
+            m_data.SyncPlayingTrack(m_playbackController->GetCurrentTrack());
+
         DrawHeader();
         DrawToolbar();
         DrawTrackTable();
-        HandleSorting();
-        DrawFooter();
+       // DrawFooter();
     }
 
     //==========================================================================
-    // Sync Playing Track
-    //==========================================================================
-
-    void LibraryWindow::SyncPlayingTrack()
-    {
-        if (!m_playbackController) return;
-        
-        const MusicTrack* currentTrack = m_playbackController->GetCurrentTrack();
-        
-        if (currentTrack)
-        {
-            std::size_t currentId = currentTrack->GetId();
-            
-            if (currentId != m_playingTrackId)
-            {
-                m_playingTrackId = currentId;
-                int index = FindTrackIndex(currentId);
-                
-                if (index >= 0)
-                {
-                    m_trackTable.SetPlayingRow(index, m_tracks[index]);
-                    m_trackTable.SetSelectedRow(index, m_tracks[index]);
-                }
-            }
-        }
-        else if (m_playingTrackId != 0)
-        {
-            m_playingTrackId = 0;
-            m_trackTable.SetPlayingRow(-1, nullptr);
-        }
-    }
-
-    //==========================================================================
-    // Header — branded title + optional track count
+    // Header
     //==========================================================================
 
     void LibraryWindow::DrawHeader()
@@ -154,131 +98,120 @@ namespace moosic
         }
 
         if (m_toolbarOptions.ShowBrandHeader)
-        {
             ImGui::TextColored(m_theme.BrandText, "%s", m_toolbarOptions.BrandText.c_str());
-        }
 
         if (m_toolbarOptions.ShowTrackCount)
         {
             if (m_toolbarOptions.ShowBrandHeader)
                 ImGui::SameLine();
-            ImGui::Text("(%zu Tracks)", m_tracks.size());
+            ImGui::Text("(%zu Tracks)", m_data.GetTrackCount());
         }
 
         ImGui::Separator();
     }
 
     //==========================================================================
-    // Toolbar — configurable search, refresh, clear
+    // Toolbar
     //==========================================================================
 
     void LibraryWindow::DrawToolbar()
     {
-        bool anyToolbarElement = m_toolbarOptions.ShowSearchBar ||
-                                 m_toolbarOptions.ShowRefreshButton ||
-                                 m_toolbarOptions.ShowClearButton;
+        bool anyToolbar = m_toolbarOptions.ShowSearchBar ||
+                          m_toolbarOptions.ShowRefreshButton ||
+                          m_toolbarOptions.ShowClearButton;
 
-        if (!anyToolbarElement)
-            return;
+        if (!anyToolbar) return;
 
-        static char searchBuffer[256] = "";
-
-        // ── Search bar ──
+        // Search bar
         if (m_toolbarOptions.ShowSearchBar)
         {
             ImGui::SetNextItemWidth(m_toolbarOptions.SearchBarWidth);
-            ImGui::InputTextWithHint("##Search",
-                                     m_toolbarOptions.SearchHint.c_str(),
-                                     searchBuffer, sizeof(searchBuffer));
-        }
-
-        // ── Clear button ──
-        if (m_toolbarOptions.ShowClearButton)
-        {
-            if (m_toolbarOptions.ShowSearchBar)
-                ImGui::SameLine();
-
-            if (ImGui::Button("Clear"))
+            if (ImGui::InputTextWithHint("##Search",
+                                         m_toolbarOptions.SearchHint.c_str(),
+                                         m_searchBuffer, sizeof(m_searchBuffer)))
             {
-                searchBuffer[0] = '\0';
+                // Delegate filtering to data model
+                m_data.SetSearchFilter(m_searchBuffer);
             }
         }
 
-        // ── Refresh button ──
+        // Clear button
+        if (m_toolbarOptions.ShowClearButton)
+        {
+            if (m_toolbarOptions.ShowSearchBar) ImGui::SameLine();
+            if (ImGui::Button("Clear"))
+            {
+                m_searchBuffer[0] = '\0';
+                m_data.SetSearchFilter("");
+            }
+        }
+
+        // Refresh button
         if (m_toolbarOptions.ShowRefreshButton)
         {
             if (m_toolbarOptions.ShowSearchBar || m_toolbarOptions.ShowClearButton)
                 ImGui::SameLine();
-
             if (ImGui::Button("Refresh"))
-            {
-                RefreshTrackList();
-            }
+                m_data.Refresh();
         }
 
         ImGui::Spacing();
     }
 
     //==========================================================================
-    // Track Table
+    // Track Table - Just passes data from model to view
     //==========================================================================
 
     void LibraryWindow::DrawTrackTable()
     {
-        m_trackTable.Draw(m_tracks);
+        // Set selection/playing state from data model
+        m_trackTable.SetSelectedRow(m_data.GetSelectedIndex(), 
+                                     m_data.GetSelectedTrack());
+        m_trackTable.SetPlayingRow(m_data.GetPlayingIndex(), 
+                                    m_data.GetPlayingTrack());
+
+        // Draw the table with data from the model
+        m_trackTable.Draw(m_data.GetTracks());
+
+        // Handle sort requests from table header clicks
+        HandleTableSorting();
     }
 
     //==========================================================================
-    // Sort Handling
+    // Track Click Handler
     //==========================================================================
 
-    void LibraryWindow::HandleSorting()
+    void LibraryWindow::OnTrackClicked(const MusicTrack* track, int rowIndex)
     {
-        auto sortRequest = m_trackTable.GetSortRequest();
-        if (!sortRequest) return;
+        if (!track) return;
 
-        std::sort(m_tracks.begin(), m_tracks.end(),
-            [&](const MusicTrack* a, const MusicTrack* b)
-            {
-                if (!a || !b) return false;
-                
-                switch (sortRequest->column)
-                {
-                    case TrackColumn::Title:
-                        return sortRequest->ascending ? 
-                               a->GetTitle() < b->GetTitle() : 
-                               a->GetTitle() > b->GetTitle();
+        std::cout << "[LibraryWindow] Playing: " << track->GetTitle()
+                  << " (" << track->GetDuration() << "s)\n";
 
-                    case TrackColumn::Artist:
-                        return sortRequest->ascending ? 
-                               a->GetArtist() < b->GetArtist() : 
-                               a->GetArtist() > b->GetArtist();
+        // Update data model selection
+        m_data.SetSelectedIndex(rowIndex);
+        m_data.SetPlayingIndex(rowIndex);
 
-                    case TrackColumn::Album:
-                        return sortRequest->ascending ? 
-                               a->GetAlbum() < b->GetAlbum() : 
-                               a->GetAlbum() > b->GetAlbum();
-
-                    case TrackColumn::Extension:
-                    {
-                        std::string extA = a->GetExtension();
-                        std::string extB = b->GetExtension();
-                        std::transform(extA.begin(), extA.end(), extA.begin(), ::toupper);
-                        std::transform(extB.begin(), extB.end(), extB.begin(), ::toupper);
-                        return sortRequest->ascending ? extA < extB : extA > extB;
-                    }
-
-                    case TrackColumn::Duration:
-                        return sortRequest->ascending ? 
-                               a->GetDuration() < b->GetDuration() : 
-                               a->GetDuration() > b->GetDuration();
-                }
-                return false;
-            });
-
+        // Trigger playback through controller
         if (m_playbackController)
         {
-            m_playbackController->SetCurrentTrackList(m_tracks);
+            m_playbackController->SetCurrentTrackList(m_data.GetTracks());
+            m_playbackController->SelectTrack(*track);
+            m_playbackController->Play();
+        }
+    }
+
+    //==========================================================================
+    // Sort Handling - Delegates to data model
+    //==========================================================================
+
+    void LibraryWindow::HandleTableSorting()
+    {
+        auto sortRequest = m_trackTable.GetSortRequest();
+        if (sortRequest)
+        {
+            // Let the data model handle sorting
+            m_data.ApplySort(sortRequest.value());
         }
     }
 
@@ -290,92 +223,6 @@ namespace moosic
     {
         ImGui::Separator();
         ImGui::TextDisabled("Ready");
-    }
-
-    //==========================================================================
-    // Refresh Track List
-    //==========================================================================
-
-    void LibraryWindow::RefreshTrackList()
-    {
-        const auto& libraryTracks = m_library.GetTracks();
-        
-        m_tracks.clear();
-        m_tracks.reserve(libraryTracks.size());
-
-        for (const auto& track : libraryTracks)
-        {
-            m_tracks.push_back(&track);
-        }
-
-        m_lastTrackCount = libraryTracks.size();
-
-        if (m_playingTrackId != 0)
-        {
-            int index = FindTrackIndex(m_playingTrackId);
-            if (index >= 0)
-            {
-                m_trackTable.SetPlayingRow(index, m_tracks[index]);
-                m_trackTable.SetSelectedRow(index, m_tracks[index]);
-            }
-            else
-            {
-                m_playingTrackId = 0;
-                m_trackTable.SetPlayingRow(-1, nullptr);
-                m_trackTable.SetSelectedRow(-1, nullptr);
-            }
-        }
-    }
-
-    //==========================================================================
-    // Update Playing Track (external call)
-    //==========================================================================
-
-    void LibraryWindow::UpdatePlayingTrack(const MusicTrack* track)
-    {
-        if (track)
-        {
-            m_playingTrackId = track->GetId();
-            int index = FindTrackIndex(m_playingTrackId);
-            if (index >= 0)
-            {
-                m_trackTable.SetSelectedRow(index, m_tracks[index]);
-                m_trackTable.SetPlayingRow(index, m_tracks[index]);
-            }
-        }
-        else
-        {
-            m_playingTrackId = 0;
-            m_trackTable.SetPlayingRow(-1, nullptr);
-        }
-    }
-
-    //==========================================================================
-    // Helpers
-    //==========================================================================
-
-    int LibraryWindow::FindTrackIndex(std::size_t trackId) const
-    {
-        for (size_t i = 0; i < m_tracks.size(); ++i)
-        {
-            if (m_tracks[i] && m_tracks[i]->GetId() == trackId)
-            {
-                return static_cast<int>(i);
-            }
-        }
-        return -1;
-    }
-
-    const MusicTrack* LibraryWindow::FindTrackById(std::size_t trackId) const
-    {
-        for (const auto* track : m_tracks)
-        {
-            if (track && track->GetId() == trackId)
-            {
-                return track;
-            }
-        }
-        return nullptr;
     }
 
 } // namespace moosic

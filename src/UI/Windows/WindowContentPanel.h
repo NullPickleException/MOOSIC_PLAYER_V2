@@ -2,10 +2,13 @@
 // WindowContentPanel.h
 //==============================================================================
 // Content panel with tabs for Library, Directories, and Settings
+// Now uses LibraryDataModel and DirectoryDataModel for shared state
 //==============================================================================
 
 #pragma once
 
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../../Models/MusicLibrary.h"
 #include "../../Services/PlaybackController.h"
 #include "IWindow.h"
@@ -17,20 +20,18 @@
 namespace moosic
 {
 
-//==============================================================================
-// WindowContentPanel
-//==============================================================================
-
 class WindowContentPanel
 {
 public:
-    WindowContentPanel(MusicLibrary &library,
-                       PlaybackController *playbackController);
+    WindowContentPanel(LibraryDataModel& libraryData,
+                       DirectoryDataModel& directoryData,
+                       MusicLibrary& library,
+                       PlaybackController* playbackController);
 
     void Draw();
-    void UpdatePlayingTrack(const MusicTrack *track);
+    void UpdatePlayingTrack(const MusicTrack* track);
 
-    void ApplyTheme(const Theme &theme)
+    void ApplyTheme(const Theme& theme)
     {
         m_theme = theme.ContentPanel;
 
@@ -40,29 +41,20 @@ public:
         m_settingsWindow.ApplyTheme(theme.Window);
     }
 
-    //--------------------------------------------------------------------------
-    // Accessors
-    //--------------------------------------------------------------------------
-
-    SettingsWindow &GetSettingsWindow() { return m_settingsWindow; }
+    SettingsWindow& GetSettingsWindow() { return m_settingsWindow; }
+    LibraryDataModel& GetLibraryData() { return m_libraryData; }
 
 private:
-    //--------------------------------------------------------------------------
-    // Tab Management
-    //--------------------------------------------------------------------------
-
-    enum class Tab
-    {
-        Library,
-        Directory,
-        Settings
-    };
-
+    enum class Tab { Library, Directory, Settings };
     void DrawTabBar();
     void DrawTabButtons();
 
 private:
     Tab m_activeTab = Tab::Library;
+
+    LibraryDataModel& m_libraryData;
+    DirectoryDataModel& m_directoryData;
+    MusicLibrary& m_library;
 
     DirectoryWindow m_directoryWindow;
     LibraryWindow m_libraryWindow;

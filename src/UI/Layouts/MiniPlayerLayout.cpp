@@ -8,31 +8,29 @@
 namespace moosic
 {
 
-MiniPlayerLayout::MiniPlayerLayout(MusicLibrary& library, PlaybackController& playbackController)
-    : m_directoryWindow(library)
-    , m_libraryWindow(library, &playbackController)
+MiniPlayerLayout::MiniPlayerLayout(LibraryDataModel& libraryData,
+                                   DirectoryDataModel& directoryData,
+                                   MusicLibrary& library, 
+                                   PlaybackController& playbackController)
+    : m_libraryData(libraryData)
+    , m_directoryData(directoryData)
+    , m_directoryWindow(directoryData)
+    , m_libraryWindow(libraryData, &playbackController)
     , m_playbackController(playbackController)
 {
     m_miniPlayerBar.SetPlaybackController(&playbackController);
     m_mainPlayerBar.SetPlaybackController(&playbackController);
-
-    const auto& tracks = library.GetTracks();
-    std::vector<const MusicTrack*> trackList;
-    trackList.reserve(tracks.size());
-    for (const auto& track : tracks)
-        trackList.push_back(&track);
-    m_playbackController.SetCurrentTrackList(trackList);
+    m_playbackController.SetCurrentTrackList(m_libraryData.GetTracks());
 }
 
 void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
 {
+    m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
+    
     m_mainPlayerBar.UpdatePlaybackState();
     m_miniPlayerBar.UpdatePlaybackState();
     m_mainPlayerBar.SetRenderer(renderer);
     m_miniPlayerBar.SetRenderer(renderer);
-
-    const MusicTrack* currentTrack = m_playbackController.GetCurrentTrack();
-    m_libraryWindow.UpdatePlayingTrack(currentTrack);
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -42,13 +40,11 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
                              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
     ImGui::Begin("MiniPlayerLayout", nullptr, flags);
 
-    // Tabs
     if (ImGui::Button("Library")) m_activeWindow = ActiveWindow::Library;
     ImGui::SameLine();
     if (ImGui::Button("Directories")) m_activeWindow = ActiveWindow::Directory;
     ImGui::Separator();
 
-    // Content
     constexpr float PLAYER_HEIGHT = 160.0f;
     ImGui::BeginChild("Content", ImVec2(0, -PLAYER_HEIGHT), true);
     switch (m_activeWindow)
@@ -58,13 +54,11 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
     }
     ImGui::EndChild();
 
-    // Main player at bottom
     ImGui::Separator();
     m_mainPlayerBar.Draw();
 
     ImGui::End();
 
-    // Floating mini player on top
     m_miniPlayerBar.Draw();
 }
 

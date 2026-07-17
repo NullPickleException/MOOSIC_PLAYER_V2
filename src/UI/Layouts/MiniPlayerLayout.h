@@ -1,12 +1,11 @@
 //==============================================================================
 // MiniPlayerLayout.h
 //==============================================================================
-// Floating mini player window with compact controls (Key 5)
-//==============================================================================
 
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../Windows/DirectoryWindow.h"
 #include "../Windows/LibraryWindow.h"
 #include "../Widgets/PlayerBar/MiniPlayerBar.h"
@@ -20,14 +19,13 @@
 namespace moosic
 {
 
-//==============================================================================
-// MiniPlayerLayout
-//==============================================================================
-
 class MiniPlayerLayout : public ILayout
 {
 public:
-    MiniPlayerLayout(MusicLibrary& library, PlaybackController& playbackController);
+    MiniPlayerLayout(LibraryDataModel& libraryData,
+                     DirectoryDataModel& directoryData,
+                     MusicLibrary& library, 
+                     PlaybackController& playbackController);
 
     void Draw(SDL_Renderer* renderer) override;
 
@@ -40,13 +38,14 @@ public:
         m_mainPlayerBar.ApplyTheme(theme.PlayerBar);
     }
 
-    // MiniPlayer doesn't have WindowContentPanel, so return nullptr
     WindowContentPanel* GetContentPanel() override { return nullptr; }
 
 private:
     enum class ActiveWindow { Library, Directory };
     ActiveWindow m_activeWindow = ActiveWindow::Library;
 
+    LibraryDataModel& m_libraryData;
+    DirectoryDataModel& m_directoryData;
     DirectoryWindow m_directoryWindow;
     LibraryWindow   m_libraryWindow;
     MiniPlayerBar   m_miniPlayerBar;

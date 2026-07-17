@@ -49,8 +49,7 @@ namespace moosic
         ImVec4 ButtonHovered = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
         ImVec4 ButtonActive = ImVec4(0.45f, 0.45f, 0.45f, 1.00f);
 
-        // Changed from 4.0f to 0.0f (square buttons = basic)
-        float ButtonRounding = 0.0f;
+        float ButtonRounding = 4.0f;
 
         //--------------------------------------------------------------------------
         // Misc Colors

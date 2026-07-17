@@ -24,9 +24,10 @@ namespace moosic
         if (!m_window)
             return;
 
-        SDL_SetWindowHitTest(m_window, HitTestCallback, this);
+        // Set minimum window size
+        SDL_SetWindowMinimumSize(m_window, 590, 440);
 
-        // Enable native maximize/resize behavior
+        SDL_SetWindowHitTest(m_window, HitTestCallback, this);
         SDL_SetWindowResizable(m_window, SDL_TRUE);
     }
 

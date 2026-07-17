@@ -1,12 +1,11 @@
 //==============================================================================
 // CompactLayout.h
 //==============================================================================
-// Compact layout with reduced player bar height
-//==============================================================================
 
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/CompactPlayerBar.h"
 #include "../../Services/PlaybackController.h"
@@ -21,7 +20,10 @@ namespace moosic
 class CompactLayout : public ILayout
 {
 public:
-    CompactLayout(MusicLibrary& library, PlaybackController& playbackController);
+    CompactLayout(LibraryDataModel& libraryData,
+                  DirectoryDataModel& directoryData,
+                  MusicLibrary& library, 
+                  PlaybackController& playbackController);
 
     void Draw(SDL_Renderer* renderer) override;
 
@@ -34,6 +36,8 @@ public:
     WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
 
 private:
+    LibraryDataModel& m_libraryData;
+    DirectoryDataModel& m_directoryData;
     WindowContentPanel m_contentPanel;
     CompactPlayerBar m_playerBar;
     PlaybackController& m_playbackController;

@@ -88,6 +88,9 @@ namespace moosic
         // Add this method
         HSTREAM GetAudioStream() const { return m_audioEngine.GetStream(); }
 
+        void Update();       // Call each frame to check if track ended
+        void OnTrackEnded(); // Handle end-of-track auto-advance
+
     private:
         //--------------------------------------------------------------------------
         // Internal Helpers
@@ -107,6 +110,9 @@ namespace moosic
         // Playback state
         size_t m_currentIndex = 0;
         PlaybackMode m_playbackMode = PlaybackMode::Normal;
+
+        // In PlaybackController.h, add to private members:
+        bool m_trackEndProcessed = false;
     };
 
 } // namespace moosic

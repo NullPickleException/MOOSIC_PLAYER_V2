@@ -10,6 +10,9 @@
 #include "../Services/PlaybackController.h"
 #include "../Core/Input/InputManager.h"
 
+#include "Data/LibraryDataModel.h"
+#include "Data/DirectoryDataModel.h"
+
 #include "Layouts/MainLayout.h"
 #include "Layouts/SidebarLeftLayout.h"
 #include "Layouts/CompactLayout.h"
@@ -93,6 +96,10 @@ private:
     WindowContentPanel* GetCurrentContentPanel();
 
 private:
+    // Shared data models - created once, shared by all layouts
+    LibraryDataModel m_libraryData;
+    DirectoryDataModel m_directoryData;
+
     // Theme
     ThemeManager m_themeManager;
 
@@ -102,7 +109,7 @@ private:
     // Layout
     LayoutMode m_layoutMode = LayoutMode::Standard;
 
-    // Layouts
+    // Layouts - all share the same data models
     MainLayout m_standardLayout;
     SidebarLeftLayout m_sidebarLayout;
     CompactLayout m_compactLayout;
@@ -118,4 +125,4 @@ private:
     bool m_initialized = false;
 };
 
-} // namespace moosic
+} // namespace moosic   

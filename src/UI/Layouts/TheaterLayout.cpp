@@ -8,21 +8,22 @@
 namespace moosic
 {
 
-TheaterLayout::TheaterLayout(MusicLibrary& library, PlaybackController& playbackController)
-    : m_playbackController(playbackController)
+TheaterLayout::TheaterLayout(LibraryDataModel& libraryData,
+                             DirectoryDataModel& directoryData,
+                             MusicLibrary& library, 
+                             PlaybackController& playbackController)
+    : m_libraryData(libraryData)
+    , m_directoryData(directoryData)
+    , m_playbackController(playbackController)
 {
     m_playerBar.SetPlaybackController(&playbackController);
-
-    const auto& tracks = library.GetTracks();
-    std::vector<const MusicTrack*> trackList;
-    trackList.reserve(tracks.size());
-    for (const auto& track : tracks)
-        trackList.push_back(&track);
-    m_playbackController.SetCurrentTrackList(trackList);
+    m_playbackController.SetCurrentTrackList(m_libraryData.GetTracks());
 }
 
 void TheaterLayout::Draw(SDL_Renderer* renderer)
 {
+    m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
+    
     m_playerBar.UpdatePlaybackState();
     m_playerBar.SetRenderer(renderer);
 

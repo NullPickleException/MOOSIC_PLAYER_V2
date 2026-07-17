@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../../Models/MusicLibrary.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/StandardPlayerBar.h"
@@ -16,25 +18,31 @@
 namespace moosic
 {
 
-class MainLayout : public ILayout
-{
-public:
-    MainLayout(MusicLibrary& library, PlaybackController& playbackController);
-
-    void Draw(SDL_Renderer* renderer) override;
-
-    void ApplyTheme(const Theme& theme) override
+    class MainLayout : public ILayout
     {
-        m_contentPanel.ApplyTheme(theme);
-        m_playerBar.ApplyTheme(theme.PlayerBar);
-    }
+    public:
+        MainLayout(LibraryDataModel& libraryData,
+                   DirectoryDataModel& directoryData,
+                   MusicLibrary& library,
+                   PlaybackController& playbackController);
 
-    WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
+        void Draw(SDL_Renderer* renderer) override;
 
-private:
-    WindowContentPanel m_contentPanel;
-    StandardPlayerBar m_playerBar;
-    PlaybackController& m_playbackController;
-};
+        void ApplyTheme(const Theme& theme) override
+        {
+            m_contentPanel.ApplyTheme(theme);
+            m_playerBar.ApplyTheme(theme.PlayerBar);
+        }
+
+        WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
+
+    private:
+        LibraryDataModel& m_libraryData;
+        DirectoryDataModel& m_directoryData;
+
+        WindowContentPanel m_contentPanel;
+        StandardPlayerBar m_playerBar;
+        PlaybackController& m_playbackController;
+    };
 
 } // namespace moosic

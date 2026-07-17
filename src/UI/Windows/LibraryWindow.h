@@ -1,10 +1,10 @@
 //==============================================================================
-// LibraryWindow.h
+// UI/Windows/LibraryWindow.h
 //==============================================================================
 
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
+#include "../Data/LibraryDataModel.h"
 #include "../Widgets/TrackTable.h"
 #include "IWindow.h"
 #include "../../Services/PlaybackController.h"
@@ -13,10 +13,6 @@
 
 namespace moosic
 {
-
-    //==========================================================================
-    // ToolbarOptions — controls visibility of toolbar elements
-    //==========================================================================
 
     struct LibraryToolbarOptions
     {
@@ -31,53 +27,38 @@ namespace moosic
         float SearchBarWidth    = 300.0f;
     };
 
-    //==========================================================================
-    // LibraryWindow
-    //==========================================================================
-
     class LibraryWindow : public IWindow
     {
     public:
-        explicit LibraryWindow(MusicLibrary &library, PlaybackController *playbackController = nullptr);
+        // Now takes LibraryDataModel + optional PlaybackController
+        explicit LibraryWindow(LibraryDataModel& dataModel, 
+                               PlaybackController* playbackController = nullptr);
         void Draw() override;
 
-        void ApplyTheme(const WindowTheme &theme)
-        {
-            m_theme = theme;
-        }
+        void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
+        void ApplyTrackTableTheme(const TrackTableStyle& theme) { m_trackTable.ApplyTheme(theme); }
 
-        void ApplyTrackTableTheme(const TrackTableStyle &theme)
-        {
-            m_trackTable.ApplyTheme(theme);
-        }
-
-        // Toolbar configuration
-        void SetToolbarOptions(const LibraryToolbarOptions &options) { m_toolbarOptions = options; }
-        LibraryToolbarOptions &GetToolbarOptions() { return m_toolbarOptions; }
-
-        void UpdatePlayingTrack(const MusicTrack *track);
-        const std::vector<const MusicTrack *> &GetCurrentTrackList() const { return m_tracks; }
+        void SetToolbarOptions(const LibraryToolbarOptions& options) { m_toolbarOptions = options; }
+        LibraryToolbarOptions& GetToolbarOptions() { return m_toolbarOptions; }
 
     private:
-        void SyncPlayingTrack();
         void DrawHeader();
         void DrawToolbar();
         void DrawTrackTable();
-        void HandleSorting();
         void DrawFooter();
-        void RefreshTrackList();
-        int FindTrackIndex(std::size_t trackId) const;
-        const MusicTrack *FindTrackById(std::size_t trackId) const;
+        
+        void OnTrackClicked(const MusicTrack* track, int rowIndex);
+        void HandleTableSorting();
 
     private:
-        MusicLibrary &m_library;
-        PlaybackController *m_playbackController;
+        LibraryDataModel& m_data;              // Shared data - we don't own it!
+        PlaybackController* m_playbackController;
         TrackTable m_trackTable;
-        std::vector<const MusicTrack *> m_tracks;
-        size_t m_lastTrackCount = 0;
-        std::size_t m_playingTrackId = 0;
         WindowTheme m_theme;
         LibraryToolbarOptions m_toolbarOptions;
+        
+        // UI-only state (search buffer for the input field)
+        char m_searchBuffer[256] = "";
     };
 
 } // namespace moosic

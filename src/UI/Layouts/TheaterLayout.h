@@ -1,12 +1,11 @@
 //==============================================================================
 // TheaterLayout.h
 //==============================================================================
-// Theater mode - large album art with minimal controls (Key 6)
-//==============================================================================
 
 #pragma once
 
-#include "../../Models/MusicLibrary.h"
+#include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../Widgets/PlayerBar/TheaterPlayerBar.h"
 #include "../../Services/PlaybackController.h"
 #include "../Theme/Theme.h"
@@ -17,14 +16,13 @@
 namespace moosic
 {
 
-//==============================================================================
-// TheaterLayout
-//==============================================================================
-
 class TheaterLayout : public ILayout
 {
 public:
-    TheaterLayout(MusicLibrary& library, PlaybackController& playbackController);
+    TheaterLayout(LibraryDataModel& libraryData,
+                  DirectoryDataModel& directoryData,
+                  MusicLibrary& library, 
+                  PlaybackController& playbackController);
 
     void Draw(SDL_Renderer* renderer) override;
 
@@ -33,10 +31,11 @@ public:
         m_playerBar.ApplyTheme(theme.PlayerBar);
     }
 
-    // TheaterLayout doesn't have WindowContentPanel, so return nullptr
     WindowContentPanel* GetContentPanel() override { return nullptr; }
 
 private:
+    LibraryDataModel& m_libraryData;
+    DirectoryDataModel& m_directoryData;
     TheaterPlayerBar m_playerBar;
     PlaybackController& m_playbackController;
 };

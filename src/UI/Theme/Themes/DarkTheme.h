@@ -41,18 +41,28 @@ namespace moosic
         const ImVec4 TextDim = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
         const ImVec4 TextWhite = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 
-        //==========================================================================
+          //==========================================================================
         // Content Panel
         //==========================================================================
 
         t.ContentPanel.TabActive = Blue;
         t.ContentPanel.TabInactive = GreyDarker;
         t.ContentPanel.TabHovered = GreyDark;
+        t.ContentPanel.TabRounding = 4.0f;
 
         t.ContentPanel.TabText = TextWhite;
         t.ContentPanel.TabTextInactive = TextMuted;
 
+        t.ContentPanel.ButtonNormal = GreyDark;
+        t.ContentPanel.ButtonHovered = Blue;
+        t.ContentPanel.ButtonActive = BlueDark;
+        t.ContentPanel.ButtonRounding = 2.0f;
+
         t.ContentPanel.BorderColor = GreyDarker;
+        t.ContentPanel.BorderThickness = 2.0f;
+
+        t.ContentPanel.TabSpacing = 4.0f;
+        t.ContentPanel.HeaderSpacing = 4.0f;
 
         //==========================================================================
         // Window

@@ -53,7 +53,10 @@ set(APP_SOURCES
     src/Services/Metadata/WavPackMetadataParser.cpp
     
     src/UI/UI.cpp
-    
+
+    src/UI/Data/LibraryDataModel.cpp
+    src/UI/Data/DirectoryDataModel.cpp
+
     src/UI/Layouts/MainLayout.cpp
     src/UI/Layouts/SidebarLeftLayout.cpp
     src/UI/Layouts/CompactLayout.cpp
@@ -61,12 +64,10 @@ set(APP_SOURCES
     src/UI/Layouts/TheaterLayout.cpp
     src/UI/Layouts/StandardArtLeftLayout.cpp
     
-    
     src/UI/Windows/WindowContentPanel.cpp
     src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/LibraryWindow.cpp
     src/UI/Windows/SettingsWindow.cpp
-
 
     src/UI/Widgets/PlayerBar/IPlayerBar.cpp
     src/UI/Widgets/PlayerBar/StandardPlayerBar.cpp
@@ -75,9 +76,7 @@ set(APP_SOURCES
     src/UI/Widgets/PlayerBar/SidePlayerBar.cpp
     src/UI/Widgets/PlayerBar/MiniPlayerBar.cpp
     src/UI/Widgets/PlayerBar/TheaterPlayerBar.cpp
-    
-    src/UI/Widgets/TitleBar/TitleBar.cpp
-    
+    src/UI/Widgets/TitleBar/TitleBar.cpp    
     src/UI/Widgets/TrackTable.cpp
     src/UI/Widgets/AlbumArtLightBox.cpp
     src/UI/Widgets/AlbumArtBox.cpp
