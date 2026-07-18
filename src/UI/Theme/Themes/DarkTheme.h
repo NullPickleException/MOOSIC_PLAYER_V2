@@ -41,7 +41,6 @@ namespace moosic
         const ImVec4 TextDim = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
         const ImVec4 TextWhite = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 
-       
         //==========================================================================
         // Title Bar
         //==========================================================================
@@ -255,6 +254,16 @@ namespace moosic
         t.AlbumArtLightbox.CloseButtonHovered = Blue;
         t.AlbumArtLightbox.TitleColor = TextBright;
         t.AlbumArtLightbox.ArtistColor = TextMuted;
+
+        // Sizing - smaller and more compact
+        t.AlbumArtLightbox.MaxWidth = 400.0f;
+        t.AlbumArtLightbox.MaxHeight = 400.0f;
+        t.AlbumArtLightbox.BorderRounding = 4.0f;  // Matches your theme rounding
+        t.AlbumArtLightbox.BorderThickness = 1.0f; // Matches your theme border thickness
+        t.AlbumArtLightbox.CloseButtonSize = 24.0f;
+        t.AlbumArtLightbox.Padding = 30.0f;
+        t.AlbumArtLightbox.TitleSpacing = 12.0f;
+        t.AlbumArtLightbox.ArtistSpacing = 8.0f;
 
         //==========================================================================
         // Player Bar

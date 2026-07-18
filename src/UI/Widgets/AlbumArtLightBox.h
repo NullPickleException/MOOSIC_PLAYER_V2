@@ -7,7 +7,7 @@ namespace moosic
     
 struct LightboxTheme
 {
-    // Colors (keep same)
+    // Colors
     ImVec4 BackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
     ImVec4 BorderColor = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
     ImVec4 CloseButtonColor = ImVec4(1.0f, 1.0f, 1.0f, 0.8f);
@@ -15,12 +15,15 @@ struct LightboxTheme
     ImVec4 TitleColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     ImVec4 ArtistColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
     
-    // Sizing - Changed to look more basic
-    float MaxWidth = 500.0f;
-    float MaxHeight = 500.0f;
-    float BorderRounding = 4.0f;  // Changed from 12.0f to 0.0f
-    float CloseButtonSize = 30.0f;
-    float Padding = 40.0f;
+    // Sizing - Made smaller and more compact
+    float MaxWidth = 400.0f;        // Reduced from 500
+    float MaxHeight = 400.0f;       // Reduced from 500
+    float BorderRounding = 4.0f;    // Matches your content panel rounding
+    float BorderThickness = 1.0f;   // Added - matches your theme border thickness
+    float CloseButtonSize = 24.0f;  // Reduced from 30
+    float Padding = 30.0f;          // Reduced from 40
+    float TitleSpacing = 12.0f;     // Added - spacing between image and title
+    float ArtistSpacing = 8.0f;     // Added - spacing between title and artist
 };
 
 class AlbumArtLightbox
@@ -31,7 +34,6 @@ public:
     void SetTexture(void* texture, int width, int height);
     void SetInfo(const char* title, const char* artist);
     
-    // Theme application - inline (no duplicate in cpp)
     void ApplyTheme(const LightboxTheme& theme) { m_theme = theme; }
     
     void Toggle();
