@@ -91,9 +91,10 @@ namespace moosic
         ImGui::SetNextWindowPos(vp->Pos);
         ImGui::SetNextWindowSize(ImVec2(vp->Size.x, barH));
 
+        // REMOVED ImGuiWindowFlags_NoBringToFrontOnFocus so title bar CAN come to front
         ImGuiWindowFlags wflags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                                  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+                                  ImGuiWindowFlags_NoSavedSettings;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -111,6 +112,18 @@ namespace moosic
             ImVec4 bg = m_isFocused ? m_theme.BackgroundColorActive : m_theme.BackgroundColorInactive;
             bg.w *= m_theme.BackgroundOpacity;
             dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(bg));
+
+            // ── Window border (outer frame) ──
+            if (m_theme.ShowWindowBorder && m_theme.WindowBorderThickness > 0.0f)
+            {
+                dl->AddRect(
+                    pos,
+                    ImVec2(pos.x + size.x, pos.y + size.y),
+                    ImGui::GetColorU32(m_theme.WindowBorderColor),
+                    m_theme.WindowBorderRounding,
+                    ImDrawFlags_RoundCornersAll,
+                    m_theme.WindowBorderThickness);
+            }
 
             if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
@@ -239,6 +252,9 @@ namespace moosic
             // Bottom border
             if (m_theme.ShowBottomBorder)
                 dl->AddLine(ImVec2(pos.x, pos.y + size.y), ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(m_theme.BottomBorderColor), m_theme.BottomBorderThickness);
+
+            // Force title bar to render on top of everything
+            ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
         }
         ImGui::End();
         ImGui::SetItemAllowOverlap();

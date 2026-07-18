@@ -55,26 +55,26 @@ namespace moosic
         // Audio Processing
         // ──────────────────────────────────────────────
 
-        float SpectrumSensitivity = 2.0f;
+        float SpectrumSensitivity = 2.5f;
         float HighFrequencyBoost = 5.0f;
         float FrequencyBoostCurve = 2.4f;
-        float DynamicRange = 0.65f;
-        float AttackSpeed = 0.72f;
-        float ReleaseSpeed = 0.14f;
+        float DynamicRange = 0.55f;
+        float AttackSpeed = 0.95f;
+        float ReleaseSpeed = 0.35f;
         float PeakDecay = 0.90f;
-        float NoiseFloor = 0.015f;
+        float NoiseFloor = 0.02f;
 
-        float NeighborSmoothing = 0.45f;
+        float NeighborSmoothing = 0.3f;
         bool EnableNeighborBlur = true;
 
-        bool EnableSpringAnimation = true;
+        bool EnableSpringAnimation = false;
         float SpringStiffness = 0.25f;
         float SpringDamping = 0.8f;
 
         bool EnableAutoGain = true;
-        float AutoGainSpeed = 0.97f;
+        float AutoGainSpeed = 0.95f;
 
-        float ScaleMultiplier = 0.6f;
+        float ScaleMultiplier = 0.35f;
         bool VolumeAffectsScale = false;
         bool ClampToBounds = true;
 

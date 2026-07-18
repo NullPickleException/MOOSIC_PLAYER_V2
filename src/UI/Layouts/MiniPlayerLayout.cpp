@@ -10,12 +10,15 @@ namespace moosic
 
 MiniPlayerLayout::MiniPlayerLayout(LibraryDataModel& libraryData,
                                    DirectoryDataModel& directoryData,
+                                   PlaylistDataModel& playlistData,
                                    MusicLibrary& library, 
                                    PlaybackController& playbackController)
     : m_libraryData(libraryData)
     , m_directoryData(directoryData)
+    , m_playlistData(playlistData)
     , m_directoryWindow(directoryData)
     , m_libraryWindow(libraryData, &playbackController)
+    , m_playlistWindow(playlistData, &playbackController)
     , m_playbackController(playbackController)
 {
     m_miniPlayerBar.SetPlaybackController(&playbackController);
@@ -26,6 +29,7 @@ MiniPlayerLayout::MiniPlayerLayout(LibraryDataModel& libraryData,
 void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
 {
     m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
+    m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
     m_mainPlayerBar.UpdatePlaybackState();
     m_miniPlayerBar.UpdatePlaybackState();
@@ -40,7 +44,10 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
                              ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
     ImGui::Begin("MiniPlayerLayout", nullptr, flags);
 
+    // Tab buttons for switching between Library, Playlists, and Directories
     if (ImGui::Button("Library")) m_activeWindow = ActiveWindow::Library;
+    ImGui::SameLine();
+    if (ImGui::Button("Playlists")) m_activeWindow = ActiveWindow::Playlists;
     ImGui::SameLine();
     if (ImGui::Button("Directories")) m_activeWindow = ActiveWindow::Directory;
     ImGui::Separator();
@@ -49,7 +56,8 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
     ImGui::BeginChild("Content", ImVec2(0, -PLAYER_HEIGHT), true);
     switch (m_activeWindow)
     {
-    case ActiveWindow::Library: m_libraryWindow.Draw(); break;
+    case ActiveWindow::Library:   m_libraryWindow.Draw(); break;
+    case ActiveWindow::Playlists: m_playlistWindow.Draw(); break;
     case ActiveWindow::Directory: m_directoryWindow.Draw(); break;
     }
     ImGui::EndChild();

@@ -6,6 +6,7 @@
 
 #include "../Data/LibraryDataModel.h"
 #include "../Data/DirectoryDataModel.h"
+#include "../Data/PlaylistDataModel.h"       
 #include "../../Models/MusicLibrary.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/StandardPlayerBar.h"
@@ -23,6 +24,7 @@ namespace moosic
     public:
         MainLayout(LibraryDataModel& libraryData,
                    DirectoryDataModel& directoryData,
+                   PlaylistDataModel& playlistData,      
                    MusicLibrary& library,
                    PlaybackController& playbackController);
 
@@ -39,6 +41,7 @@ namespace moosic
     private:
         LibraryDataModel& m_libraryData;
         DirectoryDataModel& m_directoryData;
+        PlaylistDataModel& m_playlistData;      
 
         WindowContentPanel m_contentPanel;
         StandardPlayerBar m_playerBar;

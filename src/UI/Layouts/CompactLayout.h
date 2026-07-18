@@ -6,6 +6,7 @@
 
 #include "../Data/LibraryDataModel.h"
 #include "../Data/DirectoryDataModel.h"
+#include "../Data/PlaylistDataModel.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/CompactPlayerBar.h"
 #include "../../Services/PlaybackController.h"
@@ -22,6 +23,7 @@ class CompactLayout : public ILayout
 public:
     CompactLayout(LibraryDataModel& libraryData,
                   DirectoryDataModel& directoryData,
+                  PlaylistDataModel& playlistData,
                   MusicLibrary& library, 
                   PlaybackController& playbackController);
 
@@ -38,6 +40,7 @@ public:
 private:
     LibraryDataModel& m_libraryData;
     DirectoryDataModel& m_directoryData;
+    PlaylistDataModel& m_playlistData;
     WindowContentPanel m_contentPanel;
     CompactPlayerBar m_playerBar;
     PlaybackController& m_playbackController;

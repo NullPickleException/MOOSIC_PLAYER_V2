@@ -10,12 +10,14 @@ namespace moosic
 
     MainLayout::MainLayout(LibraryDataModel& libraryData,
                            DirectoryDataModel& directoryData,
+                           PlaylistDataModel& playlistData,
                            MusicLibrary& library,
                            PlaybackController& playbackController)
         : m_libraryData(libraryData)
         , m_directoryData(directoryData)
+        , m_playlistData(playlistData)
         , m_playbackController(playbackController)
-        , m_contentPanel(libraryData, directoryData, library, &playbackController)
+        , m_contentPanel(libraryData, directoryData, playlistData, library, &playbackController)
     {
         m_playerBar.SetPlaybackController(&playbackController);
         m_playbackController.SetCurrentTrackList(m_libraryData.GetTracks());
@@ -23,8 +25,9 @@ namespace moosic
 
     void MainLayout::Draw(SDL_Renderer* renderer)
     {
-        // Sync playback state with data model before drawing
+        // Sync playback state with data models before drawing
         m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
+        m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
 
         m_playerBar.UpdatePlaybackState();
         m_playerBar.SetRenderer(renderer);

@@ -41,7 +41,30 @@ namespace moosic
         const ImVec4 TextDim = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
         const ImVec4 TextWhite = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 
-          //==========================================================================
+       
+        //==========================================================================
+        // Title Bar
+        //==========================================================================
+
+        t.TitleBar.BackgroundColor = DarkBgAlt;
+        t.TitleBar.BackgroundColorActive = DarkBgHi;
+        t.TitleBar.BackgroundColorInactive = ImVec4(DarkBg.x, DarkBg.y, DarkBg.z, 0.85f);
+        t.TitleBar.BackgroundOpacity = 1.0f;
+
+        t.TitleBar.ShowBottomBorder = true;
+        t.TitleBar.BottomBorderColor = GreyDarker;
+
+        // Light blue outer border for dark theme
+        t.TitleBar.ShowWindowBorder = true;
+        t.TitleBar.WindowBorderColor = BlueLight;
+
+        t.TitleBar.ShowAccentLine = false;
+        t.TitleBar.AccentLineColor = Blue;
+
+        t.TitleBar.TitleTextColor = TextBright;
+        t.TitleBar.TitleTextColorInactive = TextDim;
+
+        //==========================================================================
         // Content Panel
         //==========================================================================
 
@@ -58,8 +81,7 @@ namespace moosic
         t.ContentPanel.ButtonActive = BlueDark;
         t.ContentPanel.ButtonRounding = 2.0f;
 
-        t.ContentPanel.BorderColor = GreyDarker;
-        t.ContentPanel.BorderThickness = 2.0f;
+        t.ContentPanel.BorderColor = BlueLight;
 
         t.ContentPanel.TabSpacing = 4.0f;
         t.ContentPanel.HeaderSpacing = 4.0f;

@@ -16,7 +16,6 @@ namespace moosic
 
     void UI::ApplyImGuiStyle(const Theme &theme)
     {
-        // Safety check - ImGui must be initialized
         if (!ImGui::GetCurrentContext())
             return;
 
@@ -27,13 +26,11 @@ namespace moosic
         //--------------------------------------------------------------------------
         // Window Colors
         //--------------------------------------------------------------------------
-
         style.Colors[ImGuiCol_WindowBg] = w.WindowBg;
-        style.Colors[ImGuiCol_Border] = w.WindowBorder;
+        style.Colors[ImGuiCol_Border] = cp.BorderColor;
         style.Colors[ImGuiCol_TitleBg] = w.TitleBar;
         style.Colors[ImGuiCol_TitleBgActive] = w.TitleBarActive;
         style.Colors[ImGuiCol_TitleBgCollapsed] = w.TitleBar;
-
         style.Colors[ImGuiCol_ChildBg] = w.ChildBg;
         style.Colors[ImGuiCol_Text] = w.TextPrimary;
         style.Colors[ImGuiCol_TextDisabled] = w.TextDisabled;
@@ -55,10 +52,7 @@ namespace moosic
         style.Colors[ImGuiCol_SliderGrab] = w.ProgressBar;
         style.Colors[ImGuiCol_SliderGrabActive] = w.ButtonActive;
 
-        //--------------------------------------------------------------------------
-        // Tab Colors (for both Settings and ContentPanel tabs)
-        //--------------------------------------------------------------------------
-
+        // Tab Colors
         style.Colors[ImGuiCol_Tab] = cp.TabInactive;
         style.Colors[ImGuiCol_TabHovered] = cp.TabHovered;
         style.Colors[ImGuiCol_TabActive] = cp.TabActive;
@@ -66,25 +60,29 @@ namespace moosic
         style.Colors[ImGuiCol_TabUnfocusedActive] = cp.TabActive;
 
         //--------------------------------------------------------------------------
-        // Style Properties
+        // Style Properties - Main Window Rounding (Top flat, Bottom rounded)
         //--------------------------------------------------------------------------
-
-        style.WindowRounding = 4.0f;
+        style.WindowRounding = 0.0f; // Top corners flat (connects to title bar)
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
         style.GrabRounding = 4.0f;
         style.PopupRounding = 4.0f;
-        style.TabRounding = 4.0f;
+        style.TabRounding = cp.TabRounding;
         style.ScrollbarRounding = 4.0f;
-        style.WindowPadding = ImVec2(8.0f, 8.0f);
-        style.FramePadding = ImVec2(6.0f, 4.0f);
-        style.ItemSpacing = ImVec2(6.0f, 4.0f);
-        style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
-        style.WindowBorderSize = 1.0f;
+
+        // Main window borders
+        style.WindowBorderSize = cp.BorderThickness;
         style.ChildBorderSize = 0.0f;
         style.PopupBorderSize = 1.0f;
         style.FrameBorderSize = 0.0f;
         style.TabBorderSize = 0.0f;
+
+        // Padding & Spacing
+        style.WindowPadding = ImVec2(8.0f, 8.0f);
+        style.FramePadding = ImVec2(6.0f, 4.0f);
+        style.ItemSpacing = ImVec2(6.0f, 4.0f);
+        style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
+
         style.ScrollbarSize = 12.0f;
         style.GrabMinSize = 8.0f;
         style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
@@ -151,11 +149,14 @@ namespace moosic
           ,
           m_directoryData(library) // Create directory data model ONCE
           ,
-          m_standardLayout(m_libraryData, m_directoryData, library, playbackController), m_sidebarLayout(m_libraryData, m_directoryData, library, playbackController), m_compactLayout(m_libraryData, m_directoryData, library, playbackController), m_miniPlayerLayout(m_libraryData, m_directoryData, library, playbackController), m_theaterLayout(m_libraryData, m_directoryData, library, playbackController), m_standardArtLeftLayout(m_libraryData, m_directoryData, library, playbackController)
+          m_playlistData(library) // <-- ADDED: Create playlist data model ONCE
+          ,
+          m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_sidebarLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_compactLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_miniPlayerLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_theaterLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_standardArtLeftLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController)
     {
-        // All layouts share the SAME m_libraryData and m_directoryData references!
+        // All layouts share the SAME data models!
         // State persists across layout switches automatically.
     }
+
     //==============================================================================
     // Initialization
     //==============================================================================
@@ -213,6 +214,8 @@ namespace moosic
         {
             ApplyImGuiStyle(theme);
         }
+
+        m_titleBar.ApplyTheme(theme.TitleBar);
 
         m_standardLayout.ApplyTheme(theme);
         m_sidebarLayout.ApplyTheme(theme);
@@ -284,27 +287,35 @@ namespace moosic
     {
         HandleLayoutSwitch(input);
 
-        // Shift viewport down for layouts
         ImGuiViewport *viewport = ImGui::GetMainViewport();
         float titleBarHeight = m_titleBar.GetTheme().Height;
 
+        // Small overlap to eliminate the gap between title bar and content
+        // Caused by window rounding and title bar bottom border
+        const float TITLEBAR_OVERLAP = 0.0f;
+
+        // Save original viewport state
         ImVec2 originalPos = viewport->Pos;
         ImVec2 originalSize = viewport->Size;
-        viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight);
-        viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight);
+        ImVec2 originalWorkPos = viewport->WorkPos;
+        ImVec2 originalWorkSize = viewport->WorkSize;
+
+        // Shift the entire drawable area down so layouts can't draw over title bar
+        viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight - TITLEBAR_OVERLAP);
+        viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight + TITLEBAR_OVERLAP);
         viewport->WorkPos = viewport->Pos;
         viewport->WorkSize = viewport->Size;
 
-        // Draw layouts
+        // Draw layouts (now forced below title bar area)
         DrawCurrentLayout(renderer);
 
-        // Restore viewport
+        // Restore full viewport for title bar rendering
         viewport->Pos = originalPos;
         viewport->Size = originalSize;
-        viewport->WorkPos = originalPos;
-        viewport->WorkSize = originalSize;
+        viewport->WorkPos = originalWorkPos;
+        viewport->WorkSize = originalWorkSize;
 
-        // Draw title bar LAST so it's on top
+        // Draw title bar LAST - it renders at the original full viewport position on top of everything
         m_titleBar.Render();
     }
 

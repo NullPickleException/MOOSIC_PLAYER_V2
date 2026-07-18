@@ -94,44 +94,61 @@ void StandardArtLeftPlayerBar::Draw()
     float volumeSectionWidth = volBtnW + ControlGap + VolumeSliderWidth;
     float rowY = ImGui::GetCursorPosY();
 
-    //==================================================================
-    // CASE 1: All on one row
+     //==================================================================
+    // CASE 1: All on one row - CENTER ALIGNED
     //==================================================================
     float allOnOneRow = visWidth + SectionGap + controlsGroupWidth + SectionGap + volumeSectionWidth + visOffsetX;
     constexpr float EXTRA_PADDING = 20.0f;
 
     if (allOnOneRow + EXTRA_PADDING <= rightWidth)
     {
+        float baseY = rowY;
+        float centerLine = baseY + visHeight * 0.5f;
+
+        float btnHeight = ImGui::GetFrameHeight();
+
+        // Visualizer
         ImGui::SetCursorPosX(rightStartX + visOffsetX);
-        ImGui::SetCursorPosY(rowY);
+        ImGui::SetCursorPosY(baseY);
         DrawVisualizer();
 
-        ImGui::SameLine(0, SectionGap);
-
+        // Controls - centered
         float controlsStartX = rightStartX + playCenterX - leftOfPlayCenter;
         float minControlsX = rightStartX + visOffsetX + visWidth + SectionGap;
         if (controlsStartX < minControlsX) controlsStartX = minControlsX;
 
-        ImGui::SetCursorPosX(controlsStartX);
-        ImGui::SetCursorPosY(rowY);
+        float controlsY = centerLine - btnHeight * 0.5f;
 
+        ImGui::SetCursorPosX(controlsStartX);
+        ImGui::SetCursorPosY(controlsY);
         DrawPreviousButton();
-        ImGui::SameLine(0, ControlGap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevW + ControlGap);
+        ImGui::SetCursorPosY(controlsY);
         DrawPlayPauseButton();
-        ImGui::SameLine(0, ControlGap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevW + ControlGap + playW + ControlGap);
+        ImGui::SetCursorPosY(controlsY);
         DrawNextButton();
-        ImGui::SameLine(0, ControlGap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevW + ControlGap + playW + ControlGap + nextW + ControlGap);
+        ImGui::SetCursorPosY(controlsY);
         DrawPlayModeButton();
 
+        // Volume - centered
         float volumeStartX = rightStartX + rightWidth - volumeSectionWidth - 8.0f;
         float controlsEndX = controlsStartX + controlsGroupWidth;
         if (volumeStartX < controlsEndX + SectionGap)
             volumeStartX = controlsEndX + SectionGap;
 
+        float volumeY = centerLine - btnHeight * 0.5f;
+
         ImGui::SetCursorPosX(volumeStartX);
-        ImGui::SetCursorPosY(rowY);
+        ImGui::SetCursorPosY(volumeY);
         DrawVolumeIcon();
-        ImGui::SameLine(0, ControlGap);
+
+        ImGui::SetCursorPosX(volumeStartX + volBtnW + ControlGap);
+        ImGui::SetCursorPosY(volumeY);
         ImGui::SetNextItemWidth(VolumeSliderWidth);
         DrawVolumeSlider();
     }

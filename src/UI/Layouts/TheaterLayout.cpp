@@ -10,10 +10,12 @@ namespace moosic
 
 TheaterLayout::TheaterLayout(LibraryDataModel& libraryData,
                              DirectoryDataModel& directoryData,
+                             PlaylistDataModel& playlistData,
                              MusicLibrary& library, 
                              PlaybackController& playbackController)
     : m_libraryData(libraryData)
     , m_directoryData(directoryData)
+    , m_playlistData(playlistData)
     , m_playbackController(playbackController)
 {
     m_playerBar.SetPlaybackController(&playbackController);
@@ -23,6 +25,7 @@ TheaterLayout::TheaterLayout(LibraryDataModel& libraryData,
 void TheaterLayout::Draw(SDL_Renderer* renderer)
 {
     m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
+    m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
     m_playerBar.UpdatePlaybackState();
     m_playerBar.SetRenderer(renderer);

@@ -15,6 +15,7 @@
 #include "../Widgets/AlbumArtLightBox.h"
 #include "../Widgets/TitleBar/TitleBar.h"
 
+
 namespace moosic
 {
 

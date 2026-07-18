@@ -13,50 +13,63 @@ namespace moosic
 
     struct TitleBarTheme
     {
-        ImVec4 BackgroundColor = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
-        ImVec4 BackgroundColorActive = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+        // ── Background ──
+        ImVec4 BackgroundColor         = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
+        ImVec4 BackgroundColorActive   = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
         ImVec4 BackgroundColorInactive = ImVec4(0.15f, 0.15f, 0.15f, 0.85f);
-        float BackgroundOpacity = 1.0f;
+        float BackgroundOpacity        = 1.0f;
 
-        bool ShowBottomBorder = true;
-        ImVec4 BottomBorderColor = ImVec4(1.0f, 1.0f, 1.0f, 0.12f);
-        float BottomBorderThickness = 1.0f;
+        // ── Bottom Border ──
+        bool  ShowBottomBorder         = true;
+        ImVec4 BottomBorderColor       = ImVec4(1.0f, 1.0f, 1.0f, 0.12f);
+        float BottomBorderThickness    = 1.0f;
 
-        bool ShowAccentLine = false;
-        ImVec4 AccentLineColor = ImVec4(0.459f, 0.671f, 0.851f, 1.00f);
-        float AccentLineThickness = 2.0f;
+        // ── Window Border (outer frame of entire title bar window) ──
+        bool  ShowWindowBorder         = true;
+        ImVec4 WindowBorderColor       = ImVec4(0.459f, 0.671f, 0.851f, 0.60f);  // Light blue
+        float WindowBorderThickness    = 1.0f;
+        float WindowBorderRounding     = 2.0f;
 
-        ImVec4 TitleTextColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-        ImVec4 TitleTextColorInactive = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
-        float TitleOffsetX = 12.0f;
-        std::string TitleText = "MOOSIC PLAYER";
+        // ── Accent Line ──
+        bool  ShowAccentLine           = false;
+        ImVec4 AccentLineColor         = ImVec4(0.459f, 0.671f, 0.851f, 1.00f);
+        float AccentLineThickness      = 2.0f;
 
-        bool ShowLogo = false;
-        float LogoSize = 24.0f;
-        float LogoPaddingLeft = 10.0f;
-        float LogoPaddingRight = 8.0f;
+        // ── Title Text ──
+        ImVec4 TitleTextColor          = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 TitleTextColorInactive  = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
+        float TitleOffsetX             = 12.0f;
+        std::string TitleText          = "MOOSIC PLAYER";
 
-        float ButtonWidth = 46.0f;
-        float ButtonIconSize = 1.5f;
+        // ── Logo ──
+        bool ShowLogo                  = false;
+        float LogoSize                 = 24.0f;
+        float LogoPaddingLeft          = 10.0f;
+        float LogoPaddingRight         = 8.0f;
 
-        ImVec4 MinimizeButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-        ImVec4 MinimizeButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        // ── Window Buttons ──
+        float ButtonWidth              = 46.0f;
+        float ButtonIconSize           = 1.5f;
 
-        ImVec4 MaximizeButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-        ImVec4 MaximizeButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        ImVec4 MinimizeButtonColor     = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 MinimizeButtonHoverBg   = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-        ImVec4 CloseButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-        ImVec4 CloseButtonHoverBg = ImVec4(0.86f, 0.20f, 0.20f, 0.78f);
+        ImVec4 MaximizeButtonColor     = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 MaximizeButtonHoverBg   = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-        bool ShowCustomButtons = false;
-        ImVec4 CustomButtonColor = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-        ImVec4 CustomButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
+        ImVec4 CloseButtonColor        = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 CloseButtonHoverBg      = ImVec4(0.86f, 0.20f, 0.20f, 0.78f);
 
-        float Height = 35.0f;
-        float ResizeBorderWidth = 8.0f;
+        bool ShowCustomButtons         = false;
+        ImVec4 CustomButtonColor       = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 CustomButtonHoverBg     = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
-        int MinWindowWidth = 590;
-        int MinWindowHeight = 440;
+        // ── Layout ──
+        float Height                   = 35.0f;
+        float ResizeBorderWidth        = 8.0f;
+
+        int MinWindowWidth             = 590;
+        int MinWindowHeight            = 440;
     };
 
     class TitleBar

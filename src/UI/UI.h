@@ -12,6 +12,7 @@
 
 #include "Data/LibraryDataModel.h"
 #include "Data/DirectoryDataModel.h"
+#include "Data/PlaylistDataModel.h"
 
 #include "Layouts/MainLayout.h"
 #include "Layouts/SidebarLeftLayout.h"
@@ -99,6 +100,7 @@ private:
     // Shared data models - created once, shared by all layouts
     LibraryDataModel m_libraryData;
     DirectoryDataModel m_directoryData;
+    PlaylistDataModel m_playlistData;
 
     // Theme
     ThemeManager m_themeManager;
@@ -125,4 +127,4 @@ private:
     bool m_initialized = false;
 };
 
-} // namespace moosic   
+} // namespace moosic

@@ -102,39 +102,57 @@ namespace moosic
         float controlsEndX = controlsStartX + controlsGroupWidth;
         float volumeStartX = windowWidth - volumeSectionWidth - rightMargin;
 
-        //==================================================================
-        // CASE 1: All on one row (visualizer + controls + volume all fit with no overlap)
-        //==================================================================
-        if (controlsEndX + Gap + volumeSectionWidth <= windowWidth - rightMargin)
-        {
-            ImGui::SetCursorPosX(visOffsetX);
-            ImGui::SetCursorPosY(rowY);
-            DrawVisualizer();
+     //==================================================================
+    // CASE 1: All on one row - PROPER CENTER ALIGNMENT
+    //==================================================================
+    if (controlsEndX + Gap + volumeSectionWidth <= windowWidth - rightMargin)
+    {
+        float baseY = ImGui::GetCursorPosY();
+        
+        // Target center line for all elements
+        float centerLine = baseY + visHeight * 0.5f;
 
-            ImGui::SameLine(0, Gap);
+        // 1. Visualizer
+        ImGui::SetCursorPosX(visOffsetX);
+        ImGui::SetCursorPosY(baseY);                    // Visualizer starts at base
+        DrawVisualizer();
 
-            ImGui::SetCursorPosX(controlsStartX);
-            ImGui::SetCursorPosY(rowY);
+        // 2. Playback Controls (centered)
+        float btnHeight = ImGui::GetFrameHeight();
+        float controlsY = centerLine - btnHeight * 0.5f;
 
-            DrawPreviousButton();
-            ImGui::SameLine(0, Gap);
-            DrawPlayPauseButton();
-            ImGui::SameLine(0, Gap);
-            DrawNextButton();
-            ImGui::SameLine(0, Gap);
-            DrawPlayModeButton();
+        ImGui::SetCursorPosX(controlsStartX);
+        ImGui::SetCursorPosY(controlsY);
+        DrawPreviousButton();
 
-            // Volume - positioned after controls with gap
-            float volX = controlsEndX + Gap;
-            if (volX + volumeSectionWidth > windowWidth - ImGui::GetStyle().WindowPadding.x)
-                volX = windowWidth - volumeSectionWidth - ImGui::GetStyle().WindowPadding.x;
-            ImGui::SameLine(0, Gap);
-            ImGui::SetCursorPosX(volX);
-            DrawVolumeIcon();
-            ImGui::SameLine(0, Gap);
-            ImGui::SetNextItemWidth(VolumeSliderWidth);
-            DrawVolumeSlider();
-        }
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap);   // manual positioning
+        ImGui::SetCursorPosY(controlsY);
+        DrawPlayPauseButton();
+
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap + playWidth + Gap);
+        ImGui::SetCursorPosY(controlsY);
+        DrawNextButton();
+
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap + playWidth + Gap + nextWidth + Gap);
+        ImGui::SetCursorPosY(controlsY);
+        DrawPlayModeButton();
+
+        // 3. Volume Section (centered)
+        float volX = controlsEndX + Gap;
+        if (volX + volumeSectionWidth > windowWidth - ImGui::GetStyle().WindowPadding.x)
+            volX = windowWidth - volumeSectionWidth - ImGui::GetStyle().WindowPadding.x;
+
+        float volumeY = centerLine - btnHeight * 0.5f;
+
+        ImGui::SetCursorPosX(volX);
+        ImGui::SetCursorPosY(volumeY);
+        DrawVolumeIcon();
+
+        ImGui::SetCursorPosX(volX + volBtnWidth + Gap);
+        ImGui::SetCursorPosY(volumeY);
+        ImGui::SetNextItemWidth(VolumeSliderWidth);
+        DrawVolumeSlider();
+    }
         //==================================================================
         // CASE 2: Volume wraps to next row
         //==================================================================

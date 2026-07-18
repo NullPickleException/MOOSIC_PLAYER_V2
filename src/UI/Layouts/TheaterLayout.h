@@ -6,6 +6,7 @@
 
 #include "../Data/LibraryDataModel.h"
 #include "../Data/DirectoryDataModel.h"
+#include "../Data/PlaylistDataModel.h"
 #include "../Widgets/PlayerBar/TheaterPlayerBar.h"
 #include "../../Services/PlaybackController.h"
 #include "../Theme/Theme.h"
@@ -21,6 +22,7 @@ class TheaterLayout : public ILayout
 public:
     TheaterLayout(LibraryDataModel& libraryData,
                   DirectoryDataModel& directoryData,
+                  PlaylistDataModel& playlistData,
                   MusicLibrary& library, 
                   PlaybackController& playbackController);
 
@@ -36,6 +38,7 @@ public:
 private:
     LibraryDataModel& m_libraryData;
     DirectoryDataModel& m_directoryData;
+    PlaylistDataModel& m_playlistData;
     TheaterPlayerBar m_playerBar;
     PlaybackController& m_playbackController;
 };

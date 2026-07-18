@@ -92,36 +92,53 @@ void CompactPlayerBar::Draw()
     float controlsEndX = controlsStartX + controlsGroupWidth;
     float volumeStartX = windowWidth - volumeSectionWidth - rightMargin;
 
-    //==================================================================
-    // CASE 1: All on one row (visualizer + controls + volume all fit with no overlap)
+     //==================================================================
+    // CASE 1: All on one row - CENTER ALIGNED
     //==================================================================
     if (controlsEndX + Gap + volumeSectionWidth <= windowWidth - rightMargin)
     {
+        float baseY = rowY;
+        float centerLine = baseY + visHeight * 0.5f;
+
+        float btnHeight = ImGui::GetFrameHeight();
+
+        // Visualizer
         ImGui::SetCursorPosX(visOffsetX);
-        ImGui::SetCursorPosY(rowY);
+        ImGui::SetCursorPosY(baseY);
         DrawVisualizer();
 
-        ImGui::SameLine(0, Gap);
+        // Playback Controls - centered
+        float controlsY = centerLine - btnHeight * 0.5f;
 
         ImGui::SetCursorPosX(controlsStartX);
-        ImGui::SetCursorPosY(rowY);
-
+        ImGui::SetCursorPosY(controlsY);
         DrawPreviousButton();
-        ImGui::SameLine(0, Gap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap);
+        ImGui::SetCursorPosY(controlsY);
         DrawPlayPauseButton();
-        ImGui::SameLine(0, Gap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap + playWidth + Gap);
+        ImGui::SetCursorPosY(controlsY);
         DrawNextButton();
-        ImGui::SameLine(0, Gap);
+
+        ImGui::SetCursorPosX(controlsStartX + prevWidth + Gap + playWidth + Gap + nextWidth + Gap);
+        ImGui::SetCursorPosY(controlsY);
         DrawPlayModeButton();
 
-        // Volume - positioned after controls with gap
+        // Volume Section - centered
         float volX = controlsEndX + Gap;
         if (volX + volumeSectionWidth > windowWidth - ImGui::GetStyle().WindowPadding.x)
             volX = windowWidth - volumeSectionWidth - ImGui::GetStyle().WindowPadding.x;
-        ImGui::SameLine(0, Gap);
+
+        float volumeY = centerLine - btnHeight * 0.5f;
+
         ImGui::SetCursorPosX(volX);
+        ImGui::SetCursorPosY(volumeY);
         DrawVolumeIcon();
-        ImGui::SameLine(0, Gap);
+
+        ImGui::SetCursorPosX(volX + volBtnWidth + Gap);
+        ImGui::SetCursorPosY(volumeY);
         ImGui::SetNextItemWidth(VolumeSliderWidth);
         DrawVolumeSlider();
     }

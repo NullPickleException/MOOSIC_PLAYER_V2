@@ -6,8 +6,10 @@
 
 #include "../Data/LibraryDataModel.h"
 #include "../Data/DirectoryDataModel.h"
+#include "../Data/PlaylistDataModel.h"
 #include "../Windows/DirectoryWindow.h"
 #include "../Windows/LibraryWindow.h"
+#include "../Windows/PlaylistWindow.h"
 #include "../Widgets/PlayerBar/MiniPlayerBar.h"
 #include "../Widgets/PlayerBar/StandardPlayerBar.h"
 #include "../../Services/PlaybackController.h"
@@ -24,6 +26,7 @@ class MiniPlayerLayout : public ILayout
 public:
     MiniPlayerLayout(LibraryDataModel& libraryData,
                      DirectoryDataModel& directoryData,
+                     PlaylistDataModel& playlistData,
                      MusicLibrary& library, 
                      PlaybackController& playbackController);
 
@@ -33,6 +36,8 @@ public:
     {
         m_libraryWindow.ApplyTheme(theme.Window);
         m_libraryWindow.ApplyTrackTableTheme(theme.TrackTable);
+        m_playlistWindow.ApplyTheme(theme.Window);
+        m_playlistWindow.ApplyTrackTableTheme(theme.TrackTable);
         m_directoryWindow.ApplyTheme(theme.Window);
         m_miniPlayerBar.ApplyTheme(theme.PlayerBar);
         m_mainPlayerBar.ApplyTheme(theme.PlayerBar);
@@ -41,13 +46,15 @@ public:
     WindowContentPanel* GetContentPanel() override { return nullptr; }
 
 private:
-    enum class ActiveWindow { Library, Directory };
+    enum class ActiveWindow { Library, Playlists, Directory };
     ActiveWindow m_activeWindow = ActiveWindow::Library;
 
     LibraryDataModel& m_libraryData;
     DirectoryDataModel& m_directoryData;
+    PlaylistDataModel& m_playlistData;
     DirectoryWindow m_directoryWindow;
     LibraryWindow   m_libraryWindow;
+    PlaylistWindow  m_playlistWindow;
     MiniPlayerBar   m_miniPlayerBar;
     StandardPlayerBar m_mainPlayerBar;
     PlaybackController& m_playbackController;

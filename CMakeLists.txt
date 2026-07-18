@@ -56,6 +56,7 @@ set(APP_SOURCES
 
     src/UI/Data/LibraryDataModel.cpp
     src/UI/Data/DirectoryDataModel.cpp
+    src/UI/Data/PlaylistDataModel.cpp
 
     src/UI/Layouts/MainLayout.cpp
     src/UI/Layouts/SidebarLeftLayout.cpp
@@ -65,8 +66,9 @@ set(APP_SOURCES
     src/UI/Layouts/StandardArtLeftLayout.cpp
     
     src/UI/Windows/WindowContentPanel.cpp
-    src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/LibraryWindow.cpp
+    src/UI/Windows/PlaylistWindow.cpp
+    src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/SettingsWindow.cpp
 
     src/UI/Widgets/PlayerBar/IPlayerBar.cpp

@@ -59,8 +59,12 @@ namespace moosic
 
         PushStyle();
 
+        // Use a unique table ID based on the table's address to avoid collisions
+        char tableId[64];
+        snprintf(tableId, sizeof(tableId), "TrackTable_%p", this);
+
         if (ImGui::BeginTable(
-                "TrackTable",
+                tableId,
                 static_cast<int>(m_config.Columns.size()),
                 BuildFlags()))
         {
@@ -97,7 +101,7 @@ namespace moosic
     }
 
     //==============================================================================
-    // GetTextColorForColumn — returns the appropriate text color per column
+    // GetTextColorForColumn
     //==============================================================================
 
     ImVec4 TrackTable::GetTextColorForColumn(TrackColumn column, bool isHeader) const
@@ -129,7 +133,7 @@ namespace moosic
     }
 
     //==============================================================================
-    // PushRowTextColor — push text color for a specific column
+    // PushRowTextColor
     //==============================================================================
 
     void TrackTable::PushRowTextColor(TrackColumn column)
@@ -176,7 +180,6 @@ namespace moosic
             ImGui::TableSetupColumn(GetColumnName(column), flags, width);
         }
 
-        // Push header style colors
         ImGui::PushStyleColor(ImGuiCol_Header, m_style.HeaderBackground);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, m_style.HeaderHovered);
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, m_style.HeaderActive);
@@ -189,7 +192,7 @@ namespace moosic
     }
 
     //==============================================================================
-    // Rows
+    // Rows - Dynamically renders based on configured columns
     //==============================================================================
 
     void TrackTable::DrawRows(const std::vector<const MusicTrack *> &tracks)
@@ -197,28 +200,19 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0, 0, 0, 0));
 
-        // Helper lambda to truncate text with ellipsis
         auto TruncateText = [](const std::string &text, float maxWidth) -> std::string
         {
-            if (text.empty())
-                return text;
-
+            if (text.empty()) return text;
             ImFont *font = ImGui::GetFont();
             float textWidth = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, text.c_str()).x;
-
-            if (textWidth <= maxWidth)
-                return text;
-
+            if (textWidth <= maxWidth) return text;
             std::string truncated = text;
             while (!truncated.empty())
             {
                 truncated.pop_back();
-                float truncatedWidth = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f,
-                                                           (truncated + "...").c_str())
-                                           .x;
-
-                if (truncatedWidth <= maxWidth)
-                    return truncated + "...";
+                float w = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f,
+                                               (truncated + "...").c_str()).x;
+                if (w <= maxWidth) return truncated + "...";
             }
             return text.substr(0, 1) + "...";
         };
@@ -226,76 +220,130 @@ namespace moosic
         for (size_t i = 0; i < tracks.size(); ++i)
         {
             const MusicTrack *track = tracks[i];
-            if (!track)
-                continue;
+            if (!track) continue;
 
             int rowIndex = static_cast<int>(i);
             bool isSelected = (m_selectedRow == rowIndex);
             bool isPlaying = (m_playingRow == rowIndex);
             bool isHovered = false;
 
-            // Fixed row height
             ImGui::TableNextRow(0, m_style.RowHeight);
 
-            // Get column widths for truncation
-            float titleWidth = GetColumnWidth(TrackColumn::Title) - 10.0f;
-            float artistWidth = GetColumnWidth(TrackColumn::Artist) - 10.0f;
-            float albumWidth = GetColumnWidth(TrackColumn::Album) - 10.0f;
-
-            // ── Push global text color for selected/playing rows ──
+            // Push global text color for selected/playing
             if (isSelected)
                 ImGui::PushStyleColor(ImGuiCol_Text, m_style.TextSelected);
             else if (isPlaying)
                 ImGui::PushStyleColor(ImGuiCol_Text, m_style.TextPlaying);
 
-            // ── Column 0: Title ──
-            ImGui::TableNextColumn();
-            if (!isSelected && !isPlaying)
-                PushRowTextColor(TrackColumn::Title);
-
-            std::string title = track->GetTitle();
-            std::string truncatedTitle = TruncateText(title, titleWidth);
-
-            bool clicked = ImGui::Selectable(
-                truncatedTitle.c_str(),
-                false,
-                ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns,
-                ImVec2(0, 0)
-            );
-
-            if (ImGui::IsItemHovered())
+            // ── Render each configured column dynamically ──
+            for (size_t colIdx = 0; colIdx < m_config.Columns.size(); ++colIdx)
             {
-                isHovered = true;
-                m_hoveredRow = rowIndex;
-                if (m_onRowHover)
-                    m_onRowHover(track, rowIndex);
+                TrackColumn column = m_config.Columns[colIdx];
+                ImGui::TableNextColumn();
 
-                if (title.length() > truncatedTitle.length())
+                if (!isSelected && !isPlaying)
+                    PushRowTextColor(column);
+
+                float colWidth = GetColumnWidth(column) - 10.0f;
+
+                switch (column)
                 {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted(title.c_str());
-                    ImGui::EndTooltip();
+                case TrackColumn::Title:
+                {
+                    std::string title = track->GetTitle();
+                    std::string truncated = TruncateText(title, colWidth);
+
+                    bool clicked = ImGui::Selectable(
+                        truncated.c_str(), false,
+                        ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns,
+                        ImVec2(0, 0));
+
+                    if (ImGui::IsItemHovered())
+                    {
+                        isHovered = true;
+                        m_hoveredRow = rowIndex;
+                        if (m_onRowHover) m_onRowHover(track, rowIndex);
+                        if (title.length() > truncated.length())
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::TextUnformatted(title.c_str());
+                            ImGui::EndTooltip();
+                        }
+                    }
+
+                    if (clicked)
+                    {
+                        m_selectedRow = rowIndex;
+                        m_selectedTrack = track;
+                        if (m_onRowClick) m_onRowClick(track, rowIndex);
+                    }
+
+                    if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered())
+                    {
+                        if (m_onRowDoubleClick) m_onRowDoubleClick(track, rowIndex);
+                    }
+                    break;
                 }
+                case TrackColumn::Artist:
+                {
+                    std::string artist = track->GetArtist();
+                    std::string truncated = TruncateText(artist, colWidth);
+                    ImGui::TextUnformatted(truncated.c_str());
+                    if (artist.length() > truncated.length() && ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::TextUnformatted(artist.c_str());
+                        ImGui::EndTooltip();
+                    }
+                    break;
+                }
+                case TrackColumn::Album:
+                {
+                    std::string album = track->GetAlbum();
+                    std::string truncated = TruncateText(album, colWidth);
+                    ImGui::TextUnformatted(truncated.c_str());
+                    if (album.length() > truncated.length() && ImGui::IsItemHovered())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::TextUnformatted(album.c_str());
+                        ImGui::EndTooltip();
+                    }
+                    break;
+                }
+                case TrackColumn::Extension:
+                {
+                    std::string ext = track->GetExtension();
+                    if (!ext.empty())
+                    {
+                        std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
+                        ImGui::TextUnformatted(ext.c_str());
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted("--");
+                    }
+                    break;
+                }
+                case TrackColumn::Duration:
+                {
+                    unsigned int duration = track->GetDuration();
+                    if (duration > 0)
+                        ImGui::TextUnformatted(FormatDuration(duration).c_str());
+                    else
+                        ImGui::TextUnformatted("--:--");
+                    break;
+                }
+                }
+
+                if (!isSelected && !isPlaying)
+                    ImGui::PopStyleColor();
             }
 
-            if (clicked)
-            {
-                m_selectedRow = rowIndex;
-                m_selectedTrack = track;
-                if (m_onRowClick)
-                    m_onRowClick(track, rowIndex);
-            }
-
-            if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered())
-            {
-                if (m_onRowDoubleClick)
-                    m_onRowDoubleClick(track, rowIndex);
-            }
-
-            if (!isSelected && !isPlaying)
+            // Pop global text color
+            if (isSelected || isPlaying)
                 ImGui::PopStyleColor();
 
-            // ── Row background color ──
+            // Row background color
             ImVec4 rowColor;
             if (isPlaying)
                 rowColor = m_style.RowPlaying;
@@ -308,95 +356,15 @@ namespace moosic
 
             ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(rowColor));
 
-            // ── Column 1: Artist ──
-            ImGui::TableNextColumn();
-            if (!isSelected && !isPlaying)
-                PushRowTextColor(TrackColumn::Artist);
-
-            std::string artist = track->GetArtist();
-            std::string truncatedArtist = TruncateText(artist, artistWidth);
-            ImGui::TextUnformatted(truncatedArtist.c_str());
-            if (artist.length() > truncatedArtist.length() && ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted(artist.c_str());
-                ImGui::EndTooltip();
-            }
-
-            if (!isSelected && !isPlaying)
-                ImGui::PopStyleColor();
-
-            // ── Column 2: Album ──
-            ImGui::TableNextColumn();
-            if (!isSelected && !isPlaying)
-                PushRowTextColor(TrackColumn::Album);
-
-            std::string album = track->GetAlbum();
-            std::string truncatedAlbum = TruncateText(album, albumWidth);
-            ImGui::TextUnformatted(truncatedAlbum.c_str());
-            if (album.length() > truncatedAlbum.length() && ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted(album.c_str());
-                ImGui::EndTooltip();
-            }
-
-            if (!isSelected && !isPlaying)
-                ImGui::PopStyleColor();
-
-            // ── Column 3: Extension ──
-            ImGui::TableNextColumn();
-            if (!isSelected && !isPlaying)
-                PushRowTextColor(TrackColumn::Extension);
-
-            std::string ext = track->GetExtension();
-            if (!ext.empty())
-            {
-                std::transform(ext.begin(), ext.end(), ext.begin(), ::toupper);
-                ImGui::TextUnformatted(ext.c_str());
-            }
-            else
-            {
-                ImGui::TextUnformatted("--");
-            }
-
-            if (!isSelected && !isPlaying)
-                ImGui::PopStyleColor();
-
-            // ── Column 4: Duration ──
-            ImGui::TableNextColumn();
-            if (!isSelected && !isPlaying)
-                PushRowTextColor(TrackColumn::Duration);
-
-            unsigned int duration = track->GetDuration();
-            if (duration > 0)
-            {
-                std::string durationStr = FormatDuration(duration);
-                ImGui::TextUnformatted(durationStr.c_str());
-            }
-            else
-            {
-                ImGui::TextUnformatted("--:--");
-            }
-
-            if (!isSelected && !isPlaying)
-                ImGui::PopStyleColor();
-
-            // ── Pop global text color ──
-            if (isSelected || isPlaying)
-                ImGui::PopStyleColor();
-
-            // ── Row separator ──
+            // Row separator
             if (m_style.ShowRowSeparators && m_config.Borders)
             {
                 ImVec2 rowMin = ImVec2(
                     ImGui::GetItemRectMin().x - ImGui::GetStyle().CellPadding.x,
-                    ImGui::GetItemRectMax().y
-                );
+                    ImGui::GetItemRectMax().y);
                 ImVec2 rowMax = ImVec2(
                     ImGui::GetItemRectMax().x + ImGui::GetStyle().CellPadding.x,
-                    ImGui::GetItemRectMax().y + 1.0f
-                );
+                    ImGui::GetItemRectMax().y + 1.0f);
                 ImGui::GetWindowDrawList()->AddLine(rowMin, rowMax,
                     ImGui::GetColorU32(m_style.RowSeparatorColor), 1.0f);
             }
@@ -412,13 +380,9 @@ namespace moosic
     void TrackTable::HandleSort()
     {
         ImGuiTableSortSpecs *specs = ImGui::TableGetSortSpecs();
-        if (!specs)
-            return;
-        if (!specs->SpecsDirty)
-            return;
+        if (!specs || !specs->SpecsDirty) return;
         specs->SpecsDirty = false;
-        if (specs->SpecsCount == 0)
-            return;
+        if (specs->SpecsCount == 0) return;
 
         const auto &spec = specs->Specs[0];
         m_pendingSort = SortRequest{
@@ -443,18 +407,11 @@ namespace moosic
             ImGuiTableFlags_SizingStretchProp |
             ImGuiTableFlags_RowBg;
 
-        if (m_config.Sortable)
-            flags |= ImGuiTableFlags_Sortable;
-        if (m_config.Resizable)
-            flags |= ImGuiTableFlags_Resizable;
-        if (m_config.Reorderable)
-            flags |= ImGuiTableFlags_Reorderable;
-        if (m_config.Hideable)
-            flags |= ImGuiTableFlags_Hideable;
-        if (m_config.Borders)
-            flags |= ImGuiTableFlags_Borders;
-        if (m_config.AlternateRows)
-            flags |= ImGuiTableFlags_RowBg;
+        if (m_config.Sortable)   flags |= ImGuiTableFlags_Sortable;
+        if (m_config.Resizable)  flags |= ImGuiTableFlags_Resizable;
+        if (m_config.Reorderable) flags |= ImGuiTableFlags_Reorderable;
+        if (m_config.Hideable)   flags |= ImGuiTableFlags_Hideable;
+        if (m_config.Borders)    flags |= ImGuiTableFlags_Borders;
 
         return flags;
     }
@@ -466,8 +423,6 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, m_style.HeaderHovered);
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, m_style.HeaderActive);
         ImGui::PushStyleColor(ImGuiCol_Border, m_style.BorderColor);
-
-        // Scrollbar styling
         ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, m_style.ScrollbarBg);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, m_style.ScrollbarGrab);
         ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, m_style.ScrollbarGrabHovered);
@@ -496,7 +451,6 @@ namespace moosic
     {
         unsigned int minutes = seconds / 60;
         unsigned int secs = seconds % 60;
-
         std::ostringstream stream;
         stream << std::setw(2) << std::setfill('0') << minutes
                << ":" << std::setw(2) << std::setfill('0') << secs;
