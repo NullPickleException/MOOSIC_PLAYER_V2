@@ -18,7 +18,6 @@ namespace moosic
     //==============================================================================
     // Setup & Configuration
     //==============================================================================
-
     void IPlayerBar::SetRenderer(SDL_Renderer *renderer)
     {
         m_renderer = renderer;
@@ -27,6 +26,9 @@ namespace moosic
         m_lightbox.ApplyTheme(m_theme.Lightbox);
         m_albumArtBox.ApplyTheme(m_theme.AlbumArtBox);
         m_visualizer.ApplyTheme(m_theme.Visualizer);
+
+        // Restore visualizer mode after theme application resets it
+        m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
     void IPlayerBar::SetPlaybackController(PlaybackController *controller)
@@ -38,7 +40,7 @@ namespace moosic
         }
     }
 
-    void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
+        void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
     {
         m_theme = theme;
 
@@ -46,6 +48,9 @@ namespace moosic
         m_lightbox.ApplyTheme(theme.Lightbox);
         m_albumArtBox.ApplyTheme(theme.AlbumArtBox);
         m_visualizer.ApplyTheme(theme.Visualizer);
+        
+        // Restore visualizer mode after theme application resets it
+        m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
     //==============================================================================
@@ -236,12 +241,16 @@ namespace moosic
             m_lightbox.SetInfo(m_songTitle, m_artistName);
         }
 
-        // Update visualizer with current stream
+        // Update visualizer with current stream and mode
         if (m_playbackController)
         {
             HSTREAM stream = m_playbackController->GetAudioStream();
             m_visualizer.SetAudioStream(stream);
             m_visualizer.SetVolume(m_volume);
+
+            // Read visualizer mode from PlaybackController and track it
+            m_lastVisualizerMode = m_playbackController->GetVisualizerMode();
+            m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
         }
     }
 

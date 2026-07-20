@@ -1,7 +1,7 @@
 //==============================================================================
 // SettingsWindow.cpp
 //==============================================================================
-// Implementation of settings window with theme selection
+// Implementation of settings window with theme selection and visualizer mode
 //==============================================================================
 
 #include "SettingsWindow.h"
@@ -36,6 +36,15 @@ void SettingsWindow::SetThemeManager(ThemeManager* manager)
 void SettingsWindow::OnThemeChanged(ThemeChangeCallback callback)
 {
     m_onThemeChanged = callback;
+}
+
+//==============================================================================
+// Visualizer Mode Callback
+//==============================================================================
+
+void SettingsWindow::OnVisualizerModeChanged(VisualizerModeCallback callback)
+{
+    m_onVisualizerModeChanged = callback;
 }
 
 //==============================================================================
@@ -87,6 +96,14 @@ void SettingsWindow::DrawAppearanceSection()
     ImGui::Spacing();
 
     DrawThemeSelector();
+
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::TextColored(m_theme.TextSecondary, "Visualization");
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    DrawVisualizerModeSelector();
 
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextSecondary, "Font");
@@ -198,6 +215,45 @@ void SettingsWindow::DrawThemeSelector()
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextDisabled, "Current: %s", 
                        themes[m_selectedThemeIndex].Name.c_str());
+}
+
+//==============================================================================
+// Visualizer Mode Selector
+//==============================================================================
+
+void SettingsWindow::DrawVisualizerModeSelector()
+{
+    ImGui::TextColored(m_theme.TextPrimary, "Visualization Mode:");
+
+    const char* modes[] = { "Spectrum", "Oscilloscope" };
+    
+    if (ImGui::BeginCombo("##VisualizerMode", modes[m_visualizerMode]))
+    {
+        for (int i = 0; i < 2; ++i)
+        {
+            bool isSelected = (i == m_visualizerMode);
+            
+            if (ImGui::Selectable(modes[i], isSelected))
+            {
+                m_visualizerMode = i;
+                
+                // Notify listener (UI class) to propagate to PlaybackController
+                if (m_onVisualizerModeChanged)
+                {
+                    m_onVisualizerModeChanged(i);
+                }
+            }
+
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::Spacing();
+    ImGui::TextColored(m_theme.TextDisabled, "Current: %s", modes[m_visualizerMode]);
 }
 
 //==============================================================================

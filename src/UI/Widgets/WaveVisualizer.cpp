@@ -214,74 +214,112 @@ namespace moosic
         }
 
         // Process PCM data for waveform
-        float pcm[1024];
-        DWORD pcmResult = BASS_ChannelGetData(m_stream, pcm, sizeof(pcm) | BASS_DATA_FLOAT);
+        float pcm[2048];
+
+        DWORD pcmResult = BASS_ChannelGetData(
+            m_stream,
+            pcm,
+            sizeof(pcm) | BASS_DATA_FLOAT);
+
         if (pcmResult != (DWORD)-1 && pcmResult > 0)
         {
             const int totalSamples = pcmResult / sizeof(float);
+
             BASS_CHANNELINFO info;
             BASS_ChannelGetInfo(m_stream, &info);
+
             const int channels = info.chans;
             const int monoSamples = totalSamples / channels;
+
             m_pcmData.resize(monoSamples);
-            float volFactor = m_style.VolumeAffectsScale ? m_volume : 1.0f;
-            float scale = volFactor * m_style.ScaleMultiplier * 0.5f;
+
+            float volFactor =
+                m_style.VolumeAffectsScale ? m_volume : 1.0f;
+
+            float scale =
+                volFactor *
+                m_style.ScaleMultiplier;
+
             for (int i = 0; i < monoSamples; ++i)
             {
-                float sum = 0.0f;
+                float sample = 0.0f;
+
                 for (int ch = 0; ch < channels; ++ch)
-                    sum += pcm[i * channels + ch];
-                sum /= (float)channels;
-                float value = sum * scale;
+                    sample += pcm[i * channels + ch];
+
+                sample /= (float)channels;
+
+                sample *= scale;
+
                 if (m_style.ClampToBounds)
-                    value = std::clamp(value, -1.0f, 1.0f);
-                m_pcmData[i] = value;
+                    sample = std::clamp(sample, -1.0f, 1.0f);
+
+                m_pcmData[i] = sample;
             }
         }
     }
 
     void WaveVisualizer::ProcessWaveform()
     {
-        int samples = m_style.WaveformSamples;
+        const int samples = m_style.WaveformSamples;
+
         m_waveformData.resize(samples);
+
         if (samples <= 0 || m_pcmData.empty())
             return;
 
-        int pcmSize = (int)m_pcmData.size();
+        const int pcmSize = (int)m_pcmData.size();
+
+        constexpr float EnvelopeBlend = 0.35f;
+        constexpr float TemporalSmooth = 0.65f;
+
         for (int i = 0; i < samples; ++i)
         {
-            float startT = (float)i / samples;
-            float endT = (float)(i + 1) / samples;
-            int startIdx = (int)(startT * pcmSize);
-            int endIdx = (int)(endT * pcmSize);
-            if (startIdx >= pcmSize)
-                startIdx = pcmSize - 1;
-            if (endIdx > pcmSize)
-                endIdx = pcmSize;
-            if (endIdx <= startIdx)
-                endIdx = startIdx + 1;
+            int start =
+                (i * pcmSize) / samples;
 
-            float maxAbs = 0.0f;
-            float bestVal = 0.0f;
-            for (int j = startIdx; j < endIdx; ++j)
+            int end =
+                ((i + 1) * pcmSize) / samples;
+
+            if (end <= start)
+                end = start + 1;
+
+            float average = 0.0f;
+            float peak = 0.0f;
+
+            for (int j = start; j < end; ++j)
             {
-                float absVal = std::abs(m_pcmData[j]);
-                if (absVal > maxAbs)
-                {
-                    maxAbs = absVal;
-                    bestVal = m_pcmData[j];
-                }
+                float s = m_pcmData[j];
+
+                average += s;
+
+                peak = (std::max)(peak, std::abs(s));
             }
 
-            if (i > 0 && m_style.Smoothing > 0.0f)
+            average /= (float)(end - start);
+
+            float value =
+                average * (1.0f - EnvelopeBlend);
+
+            value +=
+                peak *
+                (average >= 0.0f ? 1.0f : -1.0f) *
+                EnvelopeBlend;
+
+            if (i > 0)
             {
-                float prev = m_waveformData[i - 1];
-                bestVal = prev + (bestVal - prev) * (1.0f - m_style.Smoothing);
+                value =
+                    m_waveformData[i - 1] * TemporalSmooth +
+                    value * (1.0f - TemporalSmooth);
             }
-            m_waveformData[i] = std::clamp(bestVal, -1.0f, 1.0f);
+
+            m_waveformData[i] =
+                std::clamp(value, -1.0f, 1.0f);
         }
     }
 
+
+    
     void WaveVisualizer::UpdateSpectrumPeaks()
     {
         const int bands = m_style.SpectrumBands;
@@ -562,13 +600,12 @@ namespace moosic
         }
 
         ImDrawList *drawList = ImGui::GetWindowDrawList();
+
         const int sampleCount = (int)m_waveformData.size();
         const float centerY = pos.y + size.y * 0.5f;
 
-        // Apply vertical scaling
         const float amplitude = size.y * 0.45f * m_style.OscilloscopeScaleY;
 
-        // Calculate horizontal scale and offset for centering
         const float scaledWidth = size.x * m_style.OscilloscopeScaleX;
         const float xOffset = (size.x - scaledWidth) * 0.5f;
 
@@ -577,33 +614,29 @@ namespace moosic
 
         for (int i = 0; i < sampleCount; ++i)
         {
-            float t = (sampleCount > 1) ? (float)i / (sampleCount - 1) : 0.0f;
+            float t = (sampleCount > 1)
+                          ? (float)i / (sampleCount - 1)
+                          : 0.0f;
+
             float x = pos.x + xOffset + t * scaledWidth;
+
             float sample = std::clamp(m_waveformData[i], -1.0f, 1.0f);
+
             float y = centerY - sample * amplitude;
-            y = std::clamp(y, pos.y + 2.0f, pos.y + size.y - 2.0f);
+
+            y = std::clamp(y,
+                           pos.y + 2.0f,
+                           pos.y + size.y - 2.0f);
+
             points.emplace_back(x, y);
         }
 
-        // Draw fill between waveform and center line
-        if (m_style.EnableWaveformFill && points.size() > 1)
-        {
-            ImU32 fillColor = ImGui::GetColorU32(m_style.WaveformFillColor);
-            std::vector<ImVec2> fillPoints;
-            fillPoints.reserve(points.size() * 2);
-
-            for (const auto &p : points)
-                fillPoints.push_back(p);
-
-            for (int i = (int)points.size() - 1; i >= 0; --i)
-                fillPoints.push_back(ImVec2(points[i].x, centerY));
-
-            drawList->AddConvexPolyFilled(fillPoints.data(), (int)fillPoints.size(), fillColor);
-        }
-
-        // Draw the waveform line
-        drawList->AddPolyline(points.data(), (int)points.size(),
-                              ImGui::GetColorU32(m_style.WaveformColor), ImDrawFlags_None, m_style.WaveformLineWidth);
+        drawList->AddPolyline(
+            points.data(),
+            (int)points.size(),
+            ImGui::GetColorU32(m_style.WaveformColor),
+            ImDrawFlags_None,
+            m_style.WaveformLineWidth);
     }
 
     //==============================================================================

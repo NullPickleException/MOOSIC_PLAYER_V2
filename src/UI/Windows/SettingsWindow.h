@@ -1,7 +1,7 @@
 //==============================================================================
 // SettingsWindow.h
 //==============================================================================
-// Settings window with theme selection and other preferences
+// Settings window with theme selection, visualizer mode, and other preferences
 //==============================================================================
 
 #pragma once
@@ -40,6 +40,13 @@ public:
     using ThemeChangeCallback = std::function<void()>;
     void OnThemeChanged(ThemeChangeCallback callback);
 
+    //--------------------------------------------------------------------------
+    // Visualizer Mode Callback - Called when user changes visualization type
+    //--------------------------------------------------------------------------
+
+    using VisualizerModeCallback = std::function<void(int mode)>;
+    void OnVisualizerModeChanged(VisualizerModeCallback callback);
+
 private:
     //--------------------------------------------------------------------------
     // Drawing Sections
@@ -47,6 +54,7 @@ private:
 
     void DrawAppearanceSection();
     void DrawThemeSelector();
+    void DrawVisualizerModeSelector();
     void DrawGeneralSection();
     void DrawAudioSection();
 
@@ -61,6 +69,13 @@ private:
     ThemeManager* m_themeManager = nullptr;
     int m_selectedThemeIndex = 0;
     ThemeChangeCallback m_onThemeChanged;
+
+    //--------------------------------------------------------------------------
+    // Visualizer Mode
+    //--------------------------------------------------------------------------
+
+    int m_visualizerMode = 0; // 0=Spectrum, 1=Oscilloscope
+    VisualizerModeCallback m_onVisualizerModeChanged;
 };
 
 } // namespace moosic

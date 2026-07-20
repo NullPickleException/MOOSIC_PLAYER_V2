@@ -92,17 +92,31 @@ namespace moosic
     // Settings Window Connection
     //==============================================================================
 
+    //==============================================================================
+    // Settings Window Connection
+    //==============================================================================
+
     void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
     {
         if (!contentPanel)
             return;
 
         auto &settingsWindow = contentPanel->GetSettingsWindow();
+
+        // Theme manager
         settingsWindow.SetThemeManager(&m_themeManager);
         settingsWindow.OnThemeChanged(
             [this]()
             {
                 ApplyThemeToLayouts();
+            });
+
+        // Visualizer mode callback - propagates directly to PlaybackController
+        // IPlayerBar reads this value in UpdatePlaybackState() automatically
+        settingsWindow.OnVisualizerModeChanged(
+            [this](int mode)
+            {
+                m_playbackController.SetVisualizerMode(mode);
             });
     }
 

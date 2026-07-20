@@ -1,3 +1,10 @@
+//==============================================================================
+// PlaybackController.h
+//==============================================================================
+// Central playback controller managing audio engine, track navigation,
+// playback modes, volume, and visualizer settings
+//==============================================================================
+
 #pragma once
 
 #include "AudioEngine.h"
@@ -85,8 +92,22 @@ namespace moosic
         void SetPlaybackMode(PlaybackMode mode);
         PlaybackMode GetPlaybackMode() const;
 
-        // Add this method
+        //--------------------------------------------------------------------------
+        // Audio Stream
+        //--------------------------------------------------------------------------
+
         HSTREAM GetAudioStream() const { return m_audioEngine.GetStream(); }
+
+        //--------------------------------------------------------------------------
+        // Visualizer Mode
+        //--------------------------------------------------------------------------
+
+        void SetVisualizerMode(int mode) { m_visualizerMode = mode; }
+        int GetVisualizerMode() const { return m_visualizerMode; }
+
+        //--------------------------------------------------------------------------
+        // Update
+        //--------------------------------------------------------------------------
 
         void Update();       // Call each frame to check if track ended
         void OnTrackEnded(); // Handle end-of-track auto-advance
@@ -110,9 +131,10 @@ namespace moosic
         // Playback state
         size_t m_currentIndex = 0;
         PlaybackMode m_playbackMode = PlaybackMode::Normal;
-
-        // In PlaybackController.h, add to private members:
         bool m_trackEndProcessed = false;
+
+        // Visualizer mode (0=Spectrum, 1=Oscilloscope)
+        int m_visualizerMode = 0;
     };
 
 } // namespace moosic

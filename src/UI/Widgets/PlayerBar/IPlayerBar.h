@@ -203,6 +203,9 @@ namespace moosic
         AlbumArtLightbox m_lightbox;
         AlbumArtBox m_albumArtBox;
         WaveVisualizer m_visualizer;
+
+
+         int m_lastVisualizerMode = 0;
     };
 
 } // namespace moosic

@@ -33,7 +33,7 @@ namespace moosic
 
         // Per-mode scaling factors
         float OscilloscopeScaleX = 1.0f;
-        float OscilloscopeScaleY = 1.0f;
+        float OscilloscopeScaleY = 3.0f;
         float SpectrumScaleX = 1.0f;
         float SpectrumScaleY = 1.0f;
 
@@ -48,8 +48,8 @@ namespace moosic
 
         // Waveform Settings
         int WaveformSamples = 128;
-        float WaveformLineWidth = 1.5f;
-        bool EnableWaveformFill = true;
+        float WaveformLineWidth = 2.0f;
+        bool EnableWaveformFill = false;
 
         // ──────────────────────────────────────────────
         // Audio Processing
@@ -116,7 +116,7 @@ namespace moosic
         bool UseFrequencyTint       = false;
         ImVec4 LowFreqTint          = ImVec4(1.0f, 0.6f, 0.3f, 1.0f);    // Warm tint for bass
         ImVec4 HighFreqTint         = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);    // Cool tint for treble
-        float FrequencyTintBlend    = 0.3f;   // How much the tint affects the color (0 = none, 1 = full)
+        float FrequencyTintBlend    = 0.4f;   // How much the tint affects the color (0 = none, 1 = full)
 
         // ──────────────────────────────────────────────
         // Legacy flat colors (used when UseColorRamp is false)
@@ -143,7 +143,7 @@ namespace moosic
         bool ShowPeaks = false;
 
         // Waveform smoothing (legacy)
-        float Smoothing = 0.4f;
+        float Smoothing = 0.8f;
     };
 
     class WaveVisualizer
