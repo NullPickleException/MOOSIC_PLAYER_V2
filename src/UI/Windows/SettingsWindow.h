@@ -2,11 +2,13 @@
 // SettingsWindow.h
 //==============================================================================
 // Settings window with theme selection, visualizer mode, and other preferences
+// Now uses SettingsDataModel for centralized state management
 //==============================================================================
 
 #pragma once
 
 #include "IWindow.h"
+#include "../Data/SettingsDataModel.h"
 #include "../Theme/ThemeManager.h"
 #include <vector>
 #include <string>
@@ -26,6 +28,13 @@ public:
 
     void Draw() override;
     void ApplyTheme(const WindowTheme& theme) override;
+
+    //--------------------------------------------------------------------------
+    // Settings Data Model (shared state)
+    //--------------------------------------------------------------------------
+
+    void SetSettingsDataModel(SettingsDataModel* model);
+    SettingsDataModel* GetSettingsDataModel() const { return m_settingsModel; }
 
     //--------------------------------------------------------------------------
     // Theme Manager
@@ -66,14 +75,12 @@ private:
 
 private:
     WindowTheme m_theme;
+    SettingsDataModel* m_settingsModel = nullptr;
     ThemeManager* m_themeManager = nullptr;
     int m_selectedThemeIndex = 0;
     ThemeChangeCallback m_onThemeChanged;
-
-    //--------------------------------------------------------------------------
-    // Visualizer Mode
-    //--------------------------------------------------------------------------
-
+    
+    // Local UI state for visualizer mode (synced with SettingsDataModel)
     int m_visualizerMode = 0; // 0=Spectrum, 1=Oscilloscope
     VisualizerModeCallback m_onVisualizerModeChanged;
 };

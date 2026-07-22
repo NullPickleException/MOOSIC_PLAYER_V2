@@ -47,7 +47,7 @@ namespace moosic
         bool RoundBarTops = true;
 
         // Waveform Settings
-        int WaveformSamples = 128;
+        int WaveformSamples = 512;
         float WaveformLineWidth = 2.0f;
         bool EnableWaveformFill = false;
 

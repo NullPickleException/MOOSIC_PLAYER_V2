@@ -1,26 +1,52 @@
 //==============================================================================
 // Application.cpp
 //==============================================================================
-// Main application entry point and lifecycle management
-//==============================================================================
 
 #include "Application.h"
+#include "UI/Windows/WindowContentPanel.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 #include <iostream>
 
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#else
+#include <unistd.h>
+#include <limits.h>
+#endif
+
 namespace moosic
 {
 
-    //==============================================================================
-    // Construction / Destruction
-    //==============================================================================
+    std::filesystem::path Application::GetExecutableDir()
+    {
+        char buffer[4096];
+
+#ifdef _WIN32
+        GetModuleFileNameA(NULL, buffer, sizeof(buffer));
+#elif defined(__APPLE__)
+        uint32_t size = sizeof(buffer);
+        if (_NSGetExecutablePath(buffer, &size) != 0)
+            return std::filesystem::current_path();
+#else
+        ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+        if (count != -1)
+            buffer[count] = '\0';
+        else
+            return std::filesystem::current_path();
+#endif
+
+        return std::filesystem::path(buffer).parent_path();
+    }
 
     Application::Application()
         : m_playbackController(m_library),
-          m_ui(m_library, m_playbackController)
+          m_ui(m_library, m_playbackController),
+          m_savingSystem(GetExecutableDir() / "moosic_state.json")
     {
     }
 
@@ -28,10 +54,6 @@ namespace moosic
     {
         Shutdown();
     }
-
-    //==============================================================================
-    // Run
-    //==============================================================================
 
     int Application::Run()
     {
@@ -47,22 +69,14 @@ namespace moosic
             {
                 ImGui_ImplSDL2_ProcessEvent(&event);
 
-                // Handle window resize events
-                if (event.type == SDL_WINDOWEVENT)
+                if (event.type == SDL_WINDOWEVENT &&
+                    (event.window.event == SDL_WINDOWEVENT_RESIZED ||
+                     event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED))
                 {
-                    if (event.window.event == SDL_WINDOWEVENT_RESIZED ||
-                        event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-                    {
-                        // Update ImGui display size
-                        ImGuiIO &io = ImGui::GetIO();
-                        io.DisplaySize = ImVec2(
-                            static_cast<float>(event.window.data1),
-                            static_cast<float>(event.window.data2));
-
-                        std::cout << "Window resized to: "
-                                  << event.window.data1 << "x"
-                                  << event.window.data2 << "\n";
-                    }
+                    ImGuiIO &io = ImGui::GetIO();
+                    io.DisplaySize = ImVec2(
+                        static_cast<float>(event.window.data1),
+                        static_cast<float>(event.window.data2));
                 }
 
                 m_input.ProcessEvent(event);
@@ -75,10 +89,6 @@ namespace moosic
         return 0;
     }
 
-    //==============================================================================
-    // Initialization
-    //==============================================================================
-
     bool Application::init()
     {
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -88,16 +98,10 @@ namespace moosic
             return false;
         }
 
-        //--------------------------------------------------------------------------
-        // Create Window - BORDERLESS for custom title bar
-        //--------------------------------------------------------------------------
-
         m_window = SDL_CreateWindow(
             "MOOSIC PLAYER",
-            SDL_WINDOWPOS_CENTERED,
-            SDL_WINDOWPOS_CENTERED,
-            800,
-            600,
+            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            800, 600,
             SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_BORDERLESS);
 
         if (!m_window)
@@ -107,20 +111,13 @@ namespace moosic
             return false;
         }
 
-        // Set minimum window size
         SDL_SetWindowMinimumSize(m_window, 590, 440);
 
-        // Get actual window size (may differ from requested)
         int width, height;
         SDL_GetWindowSize(m_window, &width, &height);
 
-        //--------------------------------------------------------------------------
-        // Create Renderer
-        //--------------------------------------------------------------------------
-
         m_renderer = SDL_CreateRenderer(
-            m_window,
-            -1,
+            m_window, -1,
             SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
         if (!m_renderer)
@@ -130,86 +127,104 @@ namespace moosic
             return false;
         }
 
-        //--------------------------------------------------------------------------
-        // Initialize ImGui
-        //--------------------------------------------------------------------------
-
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.DisplaySize = ImVec2(
-            static_cast<float>(width),
-            static_cast<float>(height));
+        io.DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
 
-        // Setup ImGui for SDL
         ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_renderer);
         ImGui_ImplSDLRenderer2_Init(m_renderer);
 
-        //--------------------------------------------------------------------------
-        // Initialize UI (AFTER ImGui context is created)
-        // Pass the window to UI for title bar initialization
-        //--------------------------------------------------------------------------
-
-        m_ui.Initialize(m_window); // <-- FIXED: pass m_window
+        m_ui.Initialize(m_window);
+        LoadState();
 
         std::cout << "Window initialized: " << width << "x" << height << "\n";
-        std::cout << "Window is resizable - drag edges to resize!\n";
-
         return true;
     }
 
     void Application::Shutdown()
     {
+        SaveState();
+
         ImGui_ImplSDLRenderer2_Shutdown();
         ImGui_ImplSDL2_Shutdown();
         ImGui::DestroyContext();
 
         if (m_renderer)
-        {
             SDL_DestroyRenderer(m_renderer);
-            m_renderer = nullptr;
-        }
-
         if (m_window)
-        {
             SDL_DestroyWindow(m_window);
-            m_window = nullptr;
-        }
-
         SDL_Quit();
     }
 
-    //==============================================================================
-    // Update / Render
-    //==============================================================================
-
     void Application::Update()
     {
-        // Update application state
+        static auto lastAutoSave = std::chrono::steady_clock::now();
+        auto now = std::chrono::steady_clock::now();
+
+        if (std::chrono::duration_cast<std::chrono::seconds>(now - lastAutoSave).count() >= 30)
+        {
+            SaveState();
+            lastAutoSave = now;
+        }
     }
 
     void Application::Render()
     {
-        // Clear with dark background
         SDL_SetRenderDrawColor(m_renderer, 30, 30, 30, 255);
         SDL_RenderClear(m_renderer);
 
-        // Start ImGui frame
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        // Draw UI (pass input for layout switching)
         m_ui.Draw(m_renderer, m_input);
 
-        // Render ImGui
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_renderer);
-
-        // Present
         SDL_RenderPresent(m_renderer);
+    }
+
+    //==========================================================================
+    // Save/Load - Thin wrappers, all work delegated to SavingSystem
+    //==========================================================================
+
+    void Application::SaveState()
+    {
+        auto *contentPanel = m_ui.GetCurrentContentPanel();
+        if (!contentPanel)
+            return;
+
+        m_savingSystem.Save(
+            m_library,
+            contentPanel->GetPlaylistData(),
+            m_playbackController,
+            m_ui.GetSettingsDataModel());
+    }
+
+    void Application::LoadState()
+    {
+        auto *contentPanel = m_ui.GetCurrentContentPanel();
+        if (!contentPanel)
+            return;
+
+        if (m_savingSystem.Load(
+                m_library,
+                contentPanel->GetPlaylistData(),
+                m_playbackController,
+                m_ui.GetSettingsDataModel()))
+        {
+            contentPanel->GetLibraryData().Refresh();
+
+            // Apply loaded settings
+            const auto &settings = m_ui.GetSettingsDataModel();
+            m_ui.SetTheme(settings.GetThemeName());
+            m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
+        }
+
+        m_playbackController.Pause();
     }
 
 } // namespace moosic

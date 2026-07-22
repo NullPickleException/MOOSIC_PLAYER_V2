@@ -16,6 +16,7 @@
 #include <imgui.h>
 #include <SDL.h>
 #include <string>
+#include <unordered_map>
 
 namespace moosic
 {
@@ -77,6 +78,16 @@ namespace moosic
     };
 
     //==============================================================================
+    // Album Art Cache Entry
+    //==============================================================================
+    struct CachedAlbumArt
+    {
+        void* texture = nullptr;
+        int width = 0;
+        int height = 0;
+    };
+
+    //==============================================================================
     // IPlayerBar - Base Interface
     //==============================================================================
 
@@ -98,6 +109,11 @@ namespace moosic
         void SetPlaybackController(PlaybackController *controller);
         void SetRenderer(SDL_Renderer *renderer);
         void UpdatePlaybackState();
+        
+        //--------------------------------------------------------------------------
+        // Album Art Cache - Clears all cached textures (call on library refresh)
+        //--------------------------------------------------------------------------
+        void ClearAlbumArtCache();
 
     protected:
         //--------------------------------------------------------------------------
@@ -159,6 +175,10 @@ namespace moosic
 
         void LoadAlbumArt(const MusicTrack *track);
         void UpdateAlbumArtTexture();
+        
+        // Album art cache lookup
+        CachedAlbumArt* GetCachedArt(std::size_t trackId);
+        void CacheArt(std::size_t trackId, void* texture, int width, int height);
 
         //--------------------------------------------------------------------------
         // Member Variables
@@ -193,6 +213,9 @@ namespace moosic
         std::size_t m_lastAlbumArtTrackId = 0;
         int m_albumArtWidth = 0;
         int m_albumArtHeight = 0;
+        
+        // Album Art Cache - persists across track changes during session
+        std::unordered_map<std::size_t, CachedAlbumArt> m_albumArtCache;
 
         // Scrolling text state
         float m_titleScrollOffset = 0.0f;
@@ -204,8 +227,9 @@ namespace moosic
         AlbumArtBox m_albumArtBox;
         WaveVisualizer m_visualizer;
 
+        int m_lastVisualizerMode = 0;
 
-         int m_lastVisualizerMode = 0;
+        bool m_artLoadAttempted = false;
     };
 
 } // namespace moosic

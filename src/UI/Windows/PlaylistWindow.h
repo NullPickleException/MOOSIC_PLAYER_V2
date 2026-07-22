@@ -34,7 +34,6 @@ namespace moosic
         void DrawAddTrackPopup();
         void DrawCreatePlaylistPopup();
         void DrawRenamePlaylistPopup();
-        void DrawTrackContextMenu(int trackIndex);
 
         void OnTrackClicked(const MusicTrack *track, int rowIndex);
         void HandleTableSorting();
@@ -43,13 +42,8 @@ namespace moosic
         PlaylistDataModel &m_data;
         PlaybackController *m_playbackController;
         TrackTable m_trackTable;
-        TrackTable m_addTrackTable; // Separate track table for the Add Tracks popup
+        TrackTable m_addTrackTable;
         WindowTheme m_theme;
-
-        // Popup menus
-        PopupMenu m_playlistContextMenu;
-        PopupMenu m_trackContextMenu;
-        int m_contextTrackIndex = -1; // Track index for context menu
 
         // Sidebar splitter
         float m_sidebarWidth = 220.0f;

@@ -2,6 +2,7 @@
 // SettingsWindow.cpp
 //==============================================================================
 // Implementation of settings window with theme selection and visualizer mode
+// Now uses SettingsDataModel for centralized state management
 //==============================================================================
 
 #include "SettingsWindow.h"
@@ -21,6 +22,17 @@ SettingsWindow::SettingsWindow()
 void SettingsWindow::ApplyTheme(const WindowTheme& theme)
 {
     m_theme = theme;
+}
+
+void SettingsWindow::SetSettingsDataModel(SettingsDataModel* model)
+{
+    m_settingsModel = model;
+    
+    // Sync local state from the data model
+    if (m_settingsModel)
+    {
+        m_visualizerMode = m_settingsModel->GetVisualizerMode();
+    }
 }
 
 void SettingsWindow::SetThemeManager(ThemeManager* manager)
@@ -53,6 +65,19 @@ void SettingsWindow::OnVisualizerModeChanged(VisualizerModeCallback callback)
 
 void SettingsWindow::Draw()
 {
+    // Sync visualizer mode from data model on every frame
+    if (m_settingsModel)
+    {
+        m_visualizerMode = m_settingsModel->GetVisualizerMode();
+        
+        // Update selected theme index from theme manager
+        if (m_themeManager)
+        {
+            m_selectedThemeIndex = m_themeManager->GetCurrentThemeIndex();
+            if (m_selectedThemeIndex < 0) m_selectedThemeIndex = 0;
+        }
+    }
+    
     ImGui::Text("Settings");
     ImGui::Separator();
 
@@ -126,7 +151,7 @@ void SettingsWindow::DrawThemeSelector()
     }
 
     const auto& themes = m_themeManager->GetAvailableThemes();
-    const auto& themeNames = m_themeManager->GetThemeNames();
+    const auto themeNames = m_themeManager->GetThemeNames();
 
     if (themes.empty())
     {
@@ -140,17 +165,18 @@ void SettingsWindow::DrawThemeSelector()
 
     ImGui::TextColored(m_theme.TextPrimary, "Select Theme:");
 
+    // Get current theme name for display
+    std::string currentThemeName = m_themeManager->GetCurrentThemeName();
+    
     // Combo box for theme selection
-    if (ImGui::BeginCombo("##ThemeSelector", 
-                          themeNames[m_selectedThemeIndex].c_str()))
+    if (ImGui::BeginCombo("##ThemeSelector", currentThemeName.c_str()))
     {
         for (int i = 0; i < static_cast<int>(themes.size()); ++i)
         {
-            bool isSelected = (i == m_selectedThemeIndex);
+            bool isSelected = (themes[i].Name == currentThemeName);
             
             if (ImGui::Selectable(themes[i].Name.c_str(), isSelected))
             {
-                m_selectedThemeIndex = i;
                 ApplySelectedTheme(i);
             }
 
@@ -171,8 +197,8 @@ void SettingsWindow::DrawThemeSelector()
     ImGui::TextColored(m_theme.TextSecondary, "Preview:");
     ImGui::Spacing();
 
-    // Get the current selected theme
-    const Theme& selectedTheme = themes[m_selectedThemeIndex].Factory();
+    // Get the current selected theme for preview
+    const Theme& selectedTheme = m_themeManager->GetTheme();
     
     // Show a simple color preview
     float previewSize = 20.0f;
@@ -214,7 +240,7 @@ void SettingsWindow::DrawThemeSelector()
 
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextDisabled, "Current: %s", 
-                       themes[m_selectedThemeIndex].Name.c_str());
+                       m_themeManager->GetCurrentThemeName().c_str());
 }
 
 //==============================================================================
@@ -236,6 +262,12 @@ void SettingsWindow::DrawVisualizerModeSelector()
             if (ImGui::Selectable(modes[i], isSelected))
             {
                 m_visualizerMode = i;
+                
+                // Update the shared data model
+                if (m_settingsModel)
+                {
+                    m_settingsModel->SetVisualizerMode(i);
+                }
                 
                 // Notify listener (UI class) to propagate to PlaybackController
                 if (m_onVisualizerModeChanged)
@@ -271,8 +303,14 @@ void SettingsWindow::ApplySelectedTheme(int index)
 
     // Apply the theme through the manager
     m_themeManager->SetThemeByIndex(index);
+    
+    // Update the shared data model with the new theme name
+    if (m_settingsModel)
+    {
+        m_settingsModel->SetThemeName(themes[index].Name);
+    }
 
-    // Notify listeners - no parameter needed
+    // Notify listeners - UI class will call ApplyThemeToLayouts()
     if (m_onThemeChanged)
     {
         m_onThemeChanged();

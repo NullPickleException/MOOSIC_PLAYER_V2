@@ -62,7 +62,7 @@ namespace moosic
         //--------------------------------------------------------------------------
         // Style Properties - Main Window Rounding (Top flat, Bottom rounded)
         //--------------------------------------------------------------------------
-        style.WindowRounding = 0.0f; // Top corners flat (connects to title bar)
+        style.WindowRounding = 6.0f; // Top corners flat (connects to title bar)
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
         style.GrabRounding = 4.0f;
@@ -92,10 +92,6 @@ namespace moosic
     // Settings Window Connection
     //==============================================================================
 
-    //==============================================================================
-    // Settings Window Connection
-    //==============================================================================
-
     void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
     {
         if (!contentPanel)
@@ -103,6 +99,9 @@ namespace moosic
 
         auto &settingsWindow = contentPanel->GetSettingsWindow();
 
+        // Set the shared settings data model
+        settingsWindow.SetSettingsDataModel(&m_settingsData);
+        
         // Theme manager
         settingsWindow.SetThemeManager(&m_themeManager);
         settingsWindow.OnThemeChanged(
@@ -116,6 +115,7 @@ namespace moosic
         settingsWindow.OnVisualizerModeChanged(
             [this](int mode)
             {
+                m_settingsData.SetVisualizerMode(mode);
                 m_playbackController.SetVisualizerMode(mode);
             });
     }
@@ -154,18 +154,18 @@ namespace moosic
     // Constructor
     //==============================================================================
 
-    //==============================================================================
-    // UI.cpp - Constructor section only
-    //==============================================================================
-
     UI::UI(MusicLibrary &library, PlaybackController &playbackController)
-        : m_library(library), m_playbackController(playbackController), m_libraryData(library) // Create library data model ONCE
-          ,
-          m_directoryData(library) // Create directory data model ONCE
-          ,
-          m_playlistData(library) // <-- ADDED: Create playlist data model ONCE
-          ,
-          m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_sidebarLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_compactLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_miniPlayerLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_theaterLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController), m_standardArtLeftLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController)
+        : m_library(library), m_playbackController(playbackController),
+          m_libraryData(library),
+          m_directoryData(library),
+          m_playlistData(library),
+          // SettingsDataModel is default-initialized with "Dark" theme, spectrum mode, standard layout
+          m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
+          m_sidebarLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
+          m_compactLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
+          m_miniPlayerLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
+          m_theaterLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
+          m_standardArtLeftLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController)
     {
         // All layouts share the SAME data models!
         // State persists across layout switches automatically.
@@ -199,6 +199,9 @@ namespace moosic
     void UI::SetTheme(const Theme &theme)
     {
         m_themeManager.SetTheme(theme);
+        // When setting a raw Theme object, we update the data model with the 
+        // current theme name from the manager (which tracks it internally)
+        m_settingsData.SetThemeName(m_themeManager.GetCurrentThemeName());
         ApplyThemeToLayouts();
     }
 
@@ -206,6 +209,7 @@ namespace moosic
     {
         if (m_themeManager.SetTheme(themeName))
         {
+            m_settingsData.SetThemeName(themeName);  // Sync to data model
             ApplyThemeToLayouts();
         }
     }
@@ -263,6 +267,7 @@ namespace moosic
         if (newMode != m_layoutMode)
         {
             m_layoutMode = newMode;
+            m_settingsData.SetLayoutMode(static_cast<int>(newMode));  // Sync to data model
             // Reconnect settings window for the new layout
             ConnectSettingsWindowForCurrentLayout();
         }

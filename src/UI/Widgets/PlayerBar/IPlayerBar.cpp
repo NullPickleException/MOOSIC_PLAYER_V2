@@ -1,11 +1,9 @@
 //==============================================================================
 // IPlayerBar.cpp
 //==============================================================================
-// Base implementation for player bar functionality including playback controls,
-// album art management, and audio visualization
-//==============================================================================
 
 #include "IPlayerBar.h"
+#include "../../../Services/Metadata/MetadataReader.h"
 #include <imgui.h>
 #include <iostream>
 #include <iomanip>
@@ -21,13 +19,9 @@ namespace moosic
     void IPlayerBar::SetRenderer(SDL_Renderer *renderer)
     {
         m_renderer = renderer;
-
-        // Apply themes to child widgets
         m_lightbox.ApplyTheme(m_theme.Lightbox);
         m_albumArtBox.ApplyTheme(m_theme.AlbumArtBox);
         m_visualizer.ApplyTheme(m_theme.Visualizer);
-
-        // Restore visualizer mode after theme application resets it
         m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
@@ -35,116 +29,152 @@ namespace moosic
     {
         m_playbackController = controller;
         if (m_playbackController)
-        {
             UpdatePlaybackState();
-        }
     }
 
     void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
     {
         m_theme = theme;
-
-        // Forward theme to child widgets
         m_lightbox.ApplyTheme(theme.Lightbox);
         m_albumArtBox.ApplyTheme(theme.AlbumArtBox);
         m_visualizer.ApplyTheme(theme.Visualizer);
-
-        // Restore visualizer mode after theme application resets it
         m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
     //==============================================================================
-    // Album Art Management
+    // Album Art Cache Management
+    //==============================================================================
+
+    CachedAlbumArt *IPlayerBar::GetCachedArt(std::size_t trackId)
+    {
+        auto it = m_albumArtCache.find(trackId);
+        return (it != m_albumArtCache.end()) ? &it->second : nullptr;
+    }
+
+    void IPlayerBar::CacheArt(std::size_t trackId, void *texture, int width, int height)
+    {
+        if (trackId == 0 || !texture)
+            return;
+        m_albumArtCache[trackId] = {texture, width, height};
+    }
+
+    void IPlayerBar::ClearAlbumArtCache()
+    {
+        // Destroy ALL cached textures
+        for (auto &[id, cached] : m_albumArtCache)
+        {
+            if (cached.texture)
+                m_imageLoader.DestroyImGuiTexture(cached.texture);
+        }
+        m_albumArtCache.clear();
+
+        // Reset current state (texture pointer is now invalid)
+        m_albumArtTexture = nullptr;
+        m_albumArtWidth = 0;
+        m_albumArtHeight = 0;
+        m_lastAlbumArtTrackId = 0;
+        m_albumArtBox.ClearTexture();
+        m_lightbox.SetTexture(nullptr, 0, 0);
+    }
+
+    //==============================================================================
+    // Album Art Management - SIMPLE: try once per track, stop if fails
     //==============================================================================
 
     void IPlayerBar::LoadAlbumArt(const MusicTrack *track)
     {
-        // Check if we already have the art for this track
-        if (track && track->GetId() != 0 &&
-            m_lastAlbumArtTrackId == track->GetId() &&
-            m_albumArtTexture)
+        // Don't retry if we already attempted for this track
+        if (m_artLoadAttempted)
             return;
 
-        // Clear existing texture
+        if (!track || !m_renderer)
+        {
+            m_albumArtBox.ClearTexture();
+            m_lightbox.SetTexture(nullptr, 0, 0);
+            m_artLoadAttempted = true;
+            return;
+        }
+
+        std::size_t trackId = track->GetId();
+
+        // Already showing correct art
+        if (m_lastAlbumArtTrackId == trackId && m_albumArtTexture)
+            return;
+
+        // Clear old
         if (m_albumArtTexture)
         {
             m_imageLoader.DestroyImGuiTexture(m_albumArtTexture);
             m_albumArtTexture = nullptr;
-            m_albumArtWidth = 0;
-            m_albumArtHeight = 0;
-            m_albumArtBox.ClearTexture();
         }
+        m_albumArtWidth = 0;
+        m_albumArtHeight = 0;
+        m_albumArtBox.ClearTexture();
+        m_artLoadAttempted = true; // Mark attempted - won't retry
 
-        // Validate track and renderer
-        if (!track || !track->HasAlbumArt() || !m_renderer)
+        // Get art data
+        std::vector<unsigned char> artData;
+        const auto &trackArt = track->GetAlbumArtData();
+
+        if (!trackArt.empty())
         {
-            m_lastAlbumArtTrackId = 0;
-            return;
-        }
-
-        // Get album art data
-        const auto &artData = track->GetAlbumArtData();
-        if (artData.empty())
-        {
-            m_lastAlbumArtTrackId = 0;
-            return;
-        }
-
-        // Load image from memory
-        ImageData image = m_imageLoader.LoadFromMemory(artData.data(), artData.size());
-        if (image.data.empty())
-        {
-            m_lastAlbumArtTrackId = 0;
-            return;
-        }
-
-        // Resize if too large
-        int maxDimension = 512;
-        if (image.width > maxDimension || image.height > maxDimension)
-        {
-            float scale = static_cast<float>(maxDimension) / (std::max)(image.width, image.height);
-            int newWidth = static_cast<int>(image.width * scale);
-            int newHeight = static_cast<int>(image.height * scale);
-            image = m_imageLoader.Resize(image, newWidth, newHeight);
-        }
-
-        // Create ImGui texture
-        m_albumArtTexture = m_imageLoader.CreateImGuiTexture(m_renderer, image);
-        if (m_albumArtTexture)
-        {
-            m_lastAlbumArtTrackId = track->GetId();
-            m_albumArtWidth = image.width;
-            m_albumArtHeight = image.height;
-
-            // Update lightbox
-            m_lightbox.SetTexture(m_albumArtTexture, image.width, image.height);
-            m_lightbox.SetInfo(m_songTitle, m_artistName);
-            m_lightbox.ApplyTheme(m_theme.Lightbox);
-
-            // Update album art box
-            m_albumArtBox.SetTexture(m_albumArtTexture, image.width, image.height);
-            m_albumArtBox.ApplyTheme(m_theme.AlbumArtBox);
+            artData = trackArt;
         }
         else
         {
-            m_lastAlbumArtTrackId = 0;
-            m_albumArtBox.ClearTexture();
+            // Read once from file
+            MetadataReader reader;
+            MusicTrack refreshed = reader.ReadMetadataForSingleTrack(track->GetPath());
+            if (refreshed.HasAlbumArt())
+                artData = refreshed.GetAlbumArtData();
         }
+
+        if (artData.empty())
+            return;
+
+        // Decode
+        ImageData image = m_imageLoader.LoadFromMemory(artData.data(), artData.size());
+        if (image.data.empty())
+            return;
+
+        // Resize
+        int maxDim = 512;
+        if (image.width > maxDim || image.height > maxDim)
+        {
+            float scale = (float)maxDim / (std::max)(image.width, image.height);
+            image = m_imageLoader.Resize(image, (int)(image.width * scale), (int)(image.height * scale));
+        }
+
+        // Create texture
+        void *texture = m_imageLoader.CreateImGuiTexture(m_renderer, image);
+        if (!texture)
+            return;
+
+        m_albumArtTexture = texture;
+        m_albumArtWidth = image.width;
+        m_albumArtHeight = image.height;
+        m_lastAlbumArtTrackId = trackId;
+
+        m_albumArtBox.SetTexture(texture, image.width, image.height);
+        m_lightbox.SetTexture(texture, image.width, image.height);
+        m_lightbox.SetInfo(m_songTitle, m_artistName);
     }
 
     void IPlayerBar::UpdateAlbumArtTexture()
     {
+        // Only called on track change from UpdatePlaybackState
         if (!m_playbackController)
             return;
-
         const MusicTrack *track = m_playbackController->GetCurrentTrack();
+        if (!track)
+            return;
 
-        std::size_t currentTrackId = track ? track->GetId() : 0;
-        if (currentTrackId != m_lastAlbumArtTrackId ||
-            (track && !m_albumArtTexture && track->HasAlbumArt()))
-        {
+        // Reset the attempt flag when track changes
+        if (track->GetId() != m_lastTrackId)
+            m_artLoadAttempted = false;
+
+        if (track->GetId() != m_lastAlbumArtTrackId)
             LoadAlbumArt(track);
-        }
     }
 
     //==============================================================================
@@ -167,6 +197,8 @@ namespace moosic
         // Handle track changes
         if (trackChanged)
         {
+            m_artLoadAttempted = false; // ADD THIS - reset for new track
+
             m_lastTrackId = currentTrackId;
             m_isSeeking = false;
             m_playbackProgress = 0.0f;

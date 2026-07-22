@@ -57,6 +57,7 @@ set(APP_SOURCES
     src/UI/Data/LibraryDataModel.cpp
     src/UI/Data/DirectoryDataModel.cpp
     src/UI/Data/PlaylistDataModel.cpp
+    src/UI/Data/SettingsDataModel.cpp
 
     src/UI/Layouts/MainLayout.cpp
     src/UI/Layouts/SidebarLeftLayout.cpp
@@ -84,7 +85,6 @@ set(APP_SOURCES
     src/UI/Widgets/AlbumArtLightBox.cpp
     src/UI/Widgets/AlbumArtBox.cpp
     src/UI/Widgets/WaveVisualizer.cpp
-
 )
 
 # =============================================================================
@@ -138,6 +138,9 @@ set(STB_DEPRECATED_DIR ${STB_DIR}/deprecated)
 # TagLib
 set(TAGLIB_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/taglib-2.3)
 
+# nlohmann_json
+set(NLOHMANN_JSON_DIR ${CMAKE_SOURCE_DIR}/thirdparty/nlohmann_json)
+
 # =============================================================================
 # Native File Dialog Extended
 # =============================================================================
@@ -169,6 +172,7 @@ target_include_directories(
         ${FFMPEG_ROOT}/include
         ${STB_DIR}
         ${STB_DEPRECATED_DIR}
+        ${NLOHMANN_JSON_DIR}/include  # nlohmann_json include directory
 )
 
 # =============================================================================
@@ -331,12 +335,38 @@ if(WIN32)
     # No TAGLIB_STATIC needed - this is a shared (DLL) build
 endif()
 
+# =============================================================================
 # Native File Dialog Extended
+# =============================================================================
+
 target_link_libraries(
     MOOSIC_PLAYER
     PRIVATE
         nfd
 )
+
+# =============================================================================
+# nlohmann_json - Header-only library (no linking required)
+# =============================================================================
+
+# nlohmann_json is header-only, so we just need to ensure the include
+# directory is added (already done in target_include_directories above).
+# If you need to use it in your source files, just include:
+#   #include <nlohmann/json.hpp>
+
+# Optional: If you want to use the nlohmann_json library via a target
+# for better dependency management, you can create an interface target:
+add_library(nlohmann_json INTERFACE)
+target_include_directories(nlohmann_json INTERFACE ${NLOHMANN_JSON_DIR}/include)
+
+# Then link it to your target:
+target_link_libraries(
+    MOOSIC_PLAYER
+    PRIVATE
+        nlohmann_json
+)
+
+# This approach is cleaner and more modern CMake style.
 
 # =============================================================================
 # Platform Defines
@@ -364,6 +394,7 @@ message(STATUS "  SDL2              : ${SDL2_ROOT}")
 message(STATUS "  BASS              : ${BASS_ROOT}")
 message(STATUS "  FFmpeg            : ${FFMPEG_ROOT}")
 message(STATUS "  ImGui             : ${IMGUI_DIR}")
+message(STATUS "  nlohmann_json     : ${NLOHMANN_JSON_DIR}")
 
 if(WIN32)
     message(STATUS "  TagLib Variant    : ${TAGLIB_VARIANT}")
