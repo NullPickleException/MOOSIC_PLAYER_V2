@@ -79,6 +79,7 @@ set(APP_SOURCES
     src/UI/Widgets/PlayerBar/MiniPlayerBar.cpp
     src/UI/Widgets/PlayerBar/TheaterPlayerBar.cpp
     src/UI/Widgets/TitleBar/TitleBar.cpp    
+    src/UI/Widgets/TrackSearchBar.cpp
     src/UI/Widgets/TrackTable.cpp
     src/UI/Widgets/AlbumArtLightBox.cpp
     src/UI/Widgets/AlbumArtBox.cpp

@@ -6,6 +6,7 @@
 
 #include "../Data/LibraryDataModel.h"
 #include "../Widgets/TrackTable.h"
+#include "../Widgets/TrackSearchBar.h"
 #include "IWindow.h"
 #include "../../Services/PlaybackController.h"
 #include <vector>
@@ -24,22 +25,29 @@ namespace moosic
 
         std::string BrandText   = "MOOSIC LIBRARY";
         std::string SearchHint  = "Search title, artist or album...";
-        float SearchBarWidth    = 300.0f;
+        float SearchBarWidth    = 500.0f;
     };
 
     class LibraryWindow : public IWindow
     {
     public:
-        // Now takes LibraryDataModel + optional PlaybackController
         explicit LibraryWindow(LibraryDataModel& dataModel, 
                                PlaybackController* playbackController = nullptr);
         void Draw() override;
 
         void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
         void ApplyTrackTableTheme(const TrackTableStyle& theme) { m_trackTable.ApplyTheme(theme); }
+        void ApplySearchBarTheme(const TrackSearchBarTheme& theme) { m_searchBar.SetTheme(theme); }
 
         void SetToolbarOptions(const LibraryToolbarOptions& options) { m_toolbarOptions = options; }
         LibraryToolbarOptions& GetToolbarOptions() { return m_toolbarOptions; }
+
+        //--------------------------------------------------------------------------
+        // Search Mode
+        //--------------------------------------------------------------------------
+
+        void SetUseDropdownSearch(bool useDropdown) { m_useDropdownSearch = useDropdown; }
+        bool IsUsingDropdownSearch() const { return m_useDropdownSearch; }
 
     private:
         void DrawHeader();
@@ -49,15 +57,22 @@ namespace moosic
         
         void OnTrackClicked(const MusicTrack* track, int rowIndex);
         void HandleTableSorting();
+        void SetupSearchBar();
+
+        // Search modes
+        void DrawDropdownSearch();
+        void DrawInlineSearch();
 
     private:
-        LibraryDataModel& m_data;              // Shared data - we don't own it!
+        LibraryDataModel& m_data;
         PlaybackController* m_playbackController;
         TrackTable m_trackTable;
+        TrackSearchBar m_searchBar;
         WindowTheme m_theme;
         LibraryToolbarOptions m_toolbarOptions;
-        
-        // UI-only state (search buffer for the input field)
+
+        // Search state
+        bool m_useDropdownSearch = true;     // true = dropdown, false = inline filter only
         char m_searchBuffer[256] = "";
     };
 

@@ -39,9 +39,13 @@ public:
 
         m_libraryWindow.ApplyTheme(theme.Window);
         m_libraryWindow.ApplyTrackTableTheme(theme.TrackTable);
+        m_libraryWindow.ApplySearchBarTheme(theme.SearchBar);
+
         m_playlistWindow.ApplyTheme(theme.Window);
         m_playlistWindow.ApplyTrackTableTheme(theme.TrackTable);
+        
         m_directoryWindow.ApplyTheme(theme.Window);
+        
         m_settingsWindow.ApplyTheme(theme.Window);
     }
 

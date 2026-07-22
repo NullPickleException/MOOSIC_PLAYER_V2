@@ -14,7 +14,7 @@
 #include "../Widgets/AlbumArtBox.h"
 #include "../Widgets/AlbumArtLightBox.h"
 #include "../Widgets/TitleBar/TitleBar.h"
-
+#include "../Widgets/TrackSearchBar.h"
 
 namespace moosic
 {
@@ -42,6 +42,7 @@ namespace moosic
         WaveVisualizerStyle Visualizer;
         AlbumArtBoxTheme AlbumArtBox;
         LightboxTheme AlbumArtLightbox;
+        TrackSearchBarTheme SearchBar;
 
         //--------------------------------------------------------------------------
         // Composite Widgets
@@ -53,7 +54,6 @@ namespace moosic
         // Future Widgets
         //--------------------------------------------------------------------------
 
-        // SearchBarTheme SearchBar;
         // PlaylistTheme Playlist;
         // QueueTheme Queue;
         // SpectrumTheme Spectrum;

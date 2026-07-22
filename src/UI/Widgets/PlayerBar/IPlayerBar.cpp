@@ -40,7 +40,7 @@ namespace moosic
         }
     }
 
-        void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
+    void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
     {
         m_theme = theme;
 
@@ -48,7 +48,7 @@ namespace moosic
         m_lightbox.ApplyTheme(theme.Lightbox);
         m_albumArtBox.ApplyTheme(theme.AlbumArtBox);
         m_visualizer.ApplyTheme(theme.Visualizer);
-        
+
         // Restore visualizer mode after theme application resets it
         m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }

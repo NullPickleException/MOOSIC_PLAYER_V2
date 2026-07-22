@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../Theme.h"
+#include "../../Theme.h"
 
 namespace moosic
 {
@@ -267,6 +267,27 @@ namespace moosic
         t.AlbumArtLightbox.Padding = 30.0f;
         t.AlbumArtLightbox.TitleSpacing = 12.0f;
         t.AlbumArtLightbox.ArtistSpacing = 8.0f;
+
+        //==========================================================================
+        // Search Bar
+        //==========================================================================
+
+        // ── Dropdown Colors ──
+        t.SearchBar.shadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.15f);
+        t.SearchBar.backgroundColor = LightBgPanel;
+        t.SearchBar.borderColor = GreyDarker;
+        t.SearchBar.textColor = TextDark;
+        t.SearchBar.highlightTextColor = Blue;
+        t.SearchBar.rowHoverColor = LightBgHi;
+        t.SearchBar.separatorColor = GreyDarker;
+
+        // ── Input Colors ──
+        t.SearchBar.inputBgColor = LightBg;
+        t.SearchBar.inputBorderColor = GreyDarker;
+        t.SearchBar.inputTextColor = TextDark;
+        t.SearchBar.inputHintColor = TextDim;
+
+     
 
         //==========================================================================
         // Player Bar
