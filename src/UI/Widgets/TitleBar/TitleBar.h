@@ -28,7 +28,7 @@ namespace moosic
         bool  ShowWindowBorder         = true;
         ImVec4 WindowBorderColor       = ImVec4(0.459f, 0.671f, 0.851f, 0.60f);  // Light blue
         float WindowBorderThickness    = 1.0f;
-        float WindowBorderRounding     = 4.0f;
+        float WindowBorderRounding     = 0.0f;
 
         // ── Accent Line ──
         bool  ShowAccentLine           = false;

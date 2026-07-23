@@ -27,6 +27,11 @@ namespace moosic
             m_trackTable.ApplyTheme(theme);
             m_addTrackTable.ApplyTheme(theme);
         }
+        void ApplyContextMenuTheme(const PopupMenuTheme &theme)
+        {
+            m_trackContextMenu.ApplyTheme(theme);
+            m_playlistContextMenu.ApplyTheme(theme);
+        }
 
     private:
         void DrawPlaylistSidebar();
@@ -45,12 +50,16 @@ namespace moosic
         TrackTable m_addTrackTable;
         WindowTheme m_theme;
 
-        // Sidebar splitter
+        // ── Context Menus ───────────────────────────
+        ContextMenu m_trackContextMenu;
+        ContextMenu m_playlistContextMenu;
+
+        // ── Sidebar Splitter ────────────────────────
         float m_sidebarWidth = 220.0f;
         static constexpr float MIN_SIDEBAR_WIDTH = 150.0f;
         static constexpr float MAX_SIDEBAR_WIDTH = 400.0f;
 
-        // UI state
+        // ── UI State ────────────────────────────────
         char m_playlistSearchBuffer[256] = "";
         char m_newPlaylistNameBuffer[256] = "";
         char m_renamePlaylistBuffer[256] = "";
@@ -63,9 +72,13 @@ namespace moosic
         int m_selectedPlaylistForAdd = -1;
         int m_renamePlaylistIndex = -1;
 
-        // Add track selection
+        // ── Add Track Selection ─────────────────────
         int m_selectedAddTrackIndex = -1;
         const MusicTrack *m_selectedAddTrack = nullptr;
+
+        // ── Context Menu State ──────────────────────
+        int m_contextRow = -1;
+        const MusicTrack *m_contextTrack = nullptr;
     };
 
 } // namespace moosic

@@ -21,55 +21,63 @@
 namespace moosic
 {
 
-class WindowContentPanel
-{
-public:
-    WindowContentPanel(LibraryDataModel& libraryData,
-                       DirectoryDataModel& directoryData,
-                       PlaylistDataModel& playlistData,
-                       MusicLibrary& library,
-                       PlaybackController* playbackController);
-
-    void Draw();
-    void UpdatePlayingTrack(const MusicTrack* track);
-
-    void ApplyTheme(const Theme& theme)
+    class WindowContentPanel
     {
-        m_theme = theme.ContentPanel;
+    public:
+        WindowContentPanel(LibraryDataModel &libraryData,
+                           DirectoryDataModel &directoryData,
+                           PlaylistDataModel &playlistData,
+                           MusicLibrary &library,
+                           PlaybackController *playbackController);
 
-        m_libraryWindow.ApplyTheme(theme.Window);
-        m_libraryWindow.ApplyTrackTableTheme(theme.TrackTable);
-        m_libraryWindow.ApplySearchBarTheme(theme.SearchBar);
+        void Draw();
+        void UpdatePlayingTrack(const MusicTrack *track);
 
-        m_playlistWindow.ApplyTheme(theme.Window);
-        m_playlistWindow.ApplyTrackTableTheme(theme.TrackTable);
-        
-        m_directoryWindow.ApplyTheme(theme.Window);
-        
-        m_settingsWindow.ApplyTheme(theme.Window);
-    }
+        void ApplyTheme(const Theme &theme)
+        {
+            m_theme = theme.ContentPanel;
 
-    SettingsWindow& GetSettingsWindow() { return m_settingsWindow; }
-    LibraryDataModel& GetLibraryData() { return m_libraryData; }
-    PlaylistDataModel& GetPlaylistData() { return m_playlistData; }
+            m_libraryWindow.ApplyTheme(theme.Window);
+            m_libraryWindow.ApplyTrackTableTheme(theme.TrackTable);
+            m_libraryWindow.ApplySearchBarTheme(theme.SearchBar);
+            m_libraryWindow.ApplyContextMenuTheme(theme.ContextMenu);
 
-private:
-    enum class Tab { Library, Playlists, Directory, Settings };
+            m_playlistWindow.ApplyTheme(theme.Window);
+            m_playlistWindow.ApplyTrackTableTheme(theme.TrackTable);
+            m_playlistWindow.ApplyContextMenuTheme(theme.ContextMenu);
 
-private:
-    Tab m_activeTab = Tab::Library;
+            m_directoryWindow.ApplyTheme(theme.Window);
 
-    LibraryDataModel& m_libraryData;
-    DirectoryDataModel& m_directoryData;
-    PlaylistDataModel& m_playlistData;
-    MusicLibrary& m_library;
+            m_settingsWindow.ApplyTheme(theme.Window);
+        }
 
-    DirectoryWindow m_directoryWindow;
-    LibraryWindow m_libraryWindow;
-    PlaylistWindow m_playlistWindow;
-    SettingsWindow m_settingsWindow;
+        SettingsWindow &GetSettingsWindow() { return m_settingsWindow; }
+        LibraryDataModel &GetLibraryData() { return m_libraryData; }
+        PlaylistDataModel &GetPlaylistData() { return m_playlistData; }
 
-    WindowContentPanelTheme m_theme;
-};
+    private:
+        enum class Tab
+        {
+            Library,
+            Playlists,
+            Directory,
+            Settings
+        };
+
+    private:
+        Tab m_activeTab = Tab::Library;
+
+        LibraryDataModel &m_libraryData;
+        DirectoryDataModel &m_directoryData;
+        PlaylistDataModel &m_playlistData;
+        MusicLibrary &m_library;
+
+        DirectoryWindow m_directoryWindow;
+        LibraryWindow m_libraryWindow;
+        PlaylistWindow m_playlistWindow;
+        SettingsWindow m_settingsWindow;
+
+        WindowContentPanelTheme m_theme;
+    };
 
 } // namespace moosic

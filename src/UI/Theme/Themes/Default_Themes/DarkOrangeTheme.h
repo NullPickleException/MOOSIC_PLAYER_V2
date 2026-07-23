@@ -30,7 +30,7 @@ namespace moosic
         const ImVec4 Grey = ImVec4(0.380f, 0.427f, 0.471f, 1.00f);
         const ImVec4 GreyDark = ImVec4(0.280f, 0.327f, 0.371f, 1.00f);
         const ImVec4 GreyDarker = ImVec4(0.200f, 0.247f, 0.291f, 1.00f);
-        const ImVec4 GreyLight = ImVec4(0.480f, 0.527f, 0.571f, 1.00f);
+         const ImVec4 GreyLight = ImVec4(0.910f, 0.898f, 0.878f, 1.00f);
 
         const ImVec4 DarkBg = ImVec4(0.149f, 0.161f, 0.173f, 1.00f);
         const ImVec4 DarkBgAlt = ImVec4(0.176f, 0.192f, 0.204f, 1.00f);
@@ -46,8 +46,8 @@ namespace moosic
         // Title Bar
         //==========================================================================
 
-        t.TitleBar.BackgroundColor = DarkBgAlt;
-        t.TitleBar.BackgroundColorActive = DarkBgHi;
+        t.TitleBar.BackgroundColor = DarkBg;
+        t.TitleBar.BackgroundColorActive = DarkBg;
         t.TitleBar.BackgroundColorInactive = ImVec4(DarkBg.x, DarkBg.y, DarkBg.z, 0.85f);
         t.TitleBar.BackgroundOpacity = 1.0f;
         t.TitleBar.ShowBottomBorder = true;
@@ -236,8 +236,6 @@ namespace moosic
         t.SearchBar.inputTextColor = TextBright;
         t.SearchBar.inputHintColor = TextDim;
 
-      
-
         //==========================================================================
         // Player Bar
         //==========================================================================
@@ -256,6 +254,19 @@ namespace moosic
         t.PlayerBar.Lightbox = t.AlbumArtLightbox;
         t.PlayerBar.AlbumArtBox = t.AlbumArtBox;
         t.PlayerBar.Visualizer = t.Visualizer;
+
+        //==========================================================================
+        // Popup Menu
+        //==========================================================================
+
+        t.ContextMenu.BackgroundColor = DarkBgPanel;
+        t.ContextMenu.BorderColor = OrangeLight;
+        t.ContextMenu.TextColor = TextBright;
+        t.ContextMenu.TextDisabledColor = TextDim;
+        t.ContextMenu.HoverColor = Orange;
+        t.ContextMenu.HoverTextColor = TextWhite;
+        t.ContextMenu.SeparatorColor = Grey;
+        t.ContextMenu.ShadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.35f);
 
         return t;
     }

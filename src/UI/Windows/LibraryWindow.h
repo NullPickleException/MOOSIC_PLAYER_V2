@@ -7,6 +7,7 @@
 #include "../Data/LibraryDataModel.h"
 #include "../Widgets/TrackTable.h"
 #include "../Widgets/TrackSearchBar.h"
+#include "../Widgets/PopupMenu.h"
 #include "IWindow.h"
 #include "../../Services/PlaybackController.h"
 #include <vector>
@@ -38,6 +39,7 @@ namespace moosic
         void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
         void ApplyTrackTableTheme(const TrackTableStyle& theme) { m_trackTable.ApplyTheme(theme); }
         void ApplySearchBarTheme(const TrackSearchBarTheme& theme) { m_searchBar.SetTheme(theme); }
+        void ApplyContextMenuTheme(const PopupMenuTheme& theme) { m_contextMenu.ApplyTheme(theme); }
 
         void SetToolbarOptions(const LibraryToolbarOptions& options) { m_toolbarOptions = options; }
         LibraryToolbarOptions& GetToolbarOptions() { return m_toolbarOptions; }
@@ -71,8 +73,13 @@ namespace moosic
         WindowTheme m_theme;
         LibraryToolbarOptions m_toolbarOptions;
 
+        // ── Context Menu ────────────────────────────
+        ContextMenu m_contextMenu;
+        int m_contextRow = -1;
+        const MusicTrack* m_contextTrack = nullptr;
+
         // Search state
-        bool m_useDropdownSearch = true;     // true = dropdown, false = inline filter only
+        bool m_useDropdownSearch = true;
         char m_searchBuffer[256] = "";
     };
 

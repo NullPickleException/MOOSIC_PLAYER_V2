@@ -234,8 +234,6 @@ namespace moosic
         t.SearchBar.inputTextColor = TextDark;
         t.SearchBar.inputHintColor = TextDim;
 
-      
-
         //==========================================================================
         // Player Bar
         //==========================================================================
@@ -254,6 +252,19 @@ namespace moosic
         t.PlayerBar.Lightbox = t.AlbumArtLightbox;
         t.PlayerBar.AlbumArtBox = t.AlbumArtBox;
         t.PlayerBar.Visualizer = t.Visualizer;
+
+        //==========================================================================
+        // Popup Menu
+        //==========================================================================
+
+        t.ContextMenu.BackgroundColor = LightBgPanel;
+        t.ContextMenu.BorderColor = Pink;
+        t.ContextMenu.TextColor = TextDark;
+        t.ContextMenu.TextDisabledColor = TextDim;
+        t.ContextMenu.HoverColor = Pink;
+        t.ContextMenu.HoverTextColor = TextWhite;
+        t.ContextMenu.SeparatorColor = GreyLight;
+        t.ContextMenu.ShadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.15f);
 
         return t;
     }

@@ -15,6 +15,7 @@
 #include "../Widgets/AlbumArtLightBox.h"
 #include "../Widgets/TitleBar/TitleBar.h"
 #include "../Widgets/TrackSearchBar.h"
+#include "../Widgets/PopupMenu.h"
 
 namespace moosic
 {
@@ -49,6 +50,13 @@ namespace moosic
         //--------------------------------------------------------------------------
 
         PlayerBarTheme PlayerBar;
+
+        //--------------------------------------------------------------------------
+        // Popup Menu
+        //--------------------------------------------------------------------------
+        
+        PopupMenuTheme ContextMenu;
+
 
         //--------------------------------------------------------------------------
         // Future Widgets

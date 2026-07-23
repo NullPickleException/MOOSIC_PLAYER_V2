@@ -62,7 +62,7 @@ namespace moosic
         //--------------------------------------------------------------------------
         // Style Properties - Main Window Rounding (Top flat, Bottom rounded)
         //--------------------------------------------------------------------------
-        style.WindowRounding = 6.0f; // Top corners flat (connects to title bar)
+        style.WindowRounding =0.0f; // Top corners flat (connects to title bar)
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
         style.GrabRounding = 4.0f;

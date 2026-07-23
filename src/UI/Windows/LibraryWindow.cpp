@@ -7,6 +7,12 @@
 #include <iostream>
 #include <imgui.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
+#include <filesystem>
+
 namespace moosic
 {
 
@@ -18,7 +24,10 @@ namespace moosic
                                  PlaybackController *playbackController)
         : m_data(dataModel), m_playbackController(playbackController)
     {
-        // Table configuration
+        //======================================================================
+        // Track Table Configuration
+        //======================================================================
+
         TrackTableConfig config;
         config.Columns = {
             TrackColumn::Title,
@@ -28,7 +37,6 @@ namespace moosic
             TrackColumn::Duration};
         m_trackTable.ApplyConfig(config);
 
-        // Layout-only style
         TrackTableStyle style;
         style.TitleWidth = 350.0f;
         style.ArtistWidth = 180.0f;
@@ -38,7 +46,10 @@ namespace moosic
         style.RowHeight = 18.0f;
         m_trackTable.ApplyTheme(style);
 
-        // Default toolbar
+        //======================================================================
+        // Toolbar Defaults
+        //======================================================================
+
         m_toolbarOptions.ShowSearchBar = true;
         m_toolbarOptions.ShowRefreshButton = true;
         m_toolbarOptions.ShowClearButton = false;
@@ -48,41 +59,98 @@ namespace moosic
         m_toolbarOptions.SearchBarWidth = 500.0f;
         m_toolbarOptions.SearchHint = "Search title, artist or album...";
 
-        // Setup search bar (dropdown mode only - does NOT filter main table)
         SetupSearchBar();
 
-        // Row click callback - delegate to data model + playback
-        m_trackTable.OnRowClick([this](const MusicTrack *track, int rowIndex)
-                                { OnTrackClicked(track, rowIndex); });
+        //======================================================================
+        // Track Table Callbacks
+        //======================================================================
 
-        m_trackTable.OnRowDoubleClick([this](const MusicTrack *track, int rowIndex)
-                                      { OnTrackClicked(track, rowIndex); });
+        m_trackTable.OnRowClick([this](const RowEventData &event)
+                                { OnTrackClicked(event.track, event.rowIndex); });
 
-        // Listen for data changes
-        m_data.SetOnDataChanged([this]()
-                                {
-                                    // Data changed - next Draw() will pick it up
-                                });
+        m_trackTable.OnRowDoubleClick([this](const RowEventData &event)
+                                      { OnTrackClicked(event.track, event.rowIndex); });
+
+        //======================================================================
+        // Right-Click Context Menu
+        //======================================================================
+
+        m_trackTable.OnRowRightClick([this](const RowEventData &event)
+                                     {
+            m_contextRow = event.rowIndex;
+            m_contextTrack = event.track;
+            
+            std::vector<MenuItem> items;
+            
+            // ── Play ──
+            items.push_back({"Play", true, false, [this]() {
+                OnTrackClicked(m_contextTrack, m_contextRow);
+            }});
+            
+            items.push_back({"", false, true, nullptr});
+            
+            // ── Add to Playlist ──
+            items.push_back({"Add to Playlist", true, false, [this]() {
+                // TODO: Implement add to playlist sub-menu
+            }});
+            
+            items.push_back({"", false, true, nullptr});
+            
+            // ── Actions ──
+            items.push_back({"Open Folder", true, false, [this]() {
+                if (!m_contextTrack) return;
+                std::filesystem::path filePath = m_contextTrack->GetPath();
+#ifdef _WIN32
+                std::string cmd = "/select,\"" + filePath.string() + "\"";
+                ShellExecuteA(NULL, "open", "explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+                std::string cmd = "open -R \"" + filePath.string() + "\"";
+                system(cmd.c_str());
+#else
+                std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
+                system(cmd.c_str());
+#endif
+            }});
+            
+            items.push_back({"Edit Track Info", true, false, [this]() {
+                // TODO: Implement track metadata editing dialog
+            }});
+            
+            m_contextMenu.SetItems(items);
+            m_contextMenu.Open(
+                static_cast<int>(ImGui::GetMousePos().x),
+                static_cast<int>(ImGui::GetMousePos().y)
+            ); });
+
+        //======================================================================
+        // Sort Handler
+        //======================================================================
+
+        m_trackTable.OnSort([this](const SortRequest &sort)
+                            { m_data.ApplySort(sort); });
+
+        m_data.SetOnDataChanged([this]() {});
     }
 
     //==========================================================================
     // Main Draw
     //==========================================================================
+
     void LibraryWindow::Draw()
     {
-        // Auto-refresh if library has changed
         if (m_data.NeedsRefresh())
             m_data.Refresh();
 
-        // Sync playing state from controller
         if (m_playbackController)
             m_data.SyncPlayingTrack(m_playbackController->GetCurrentTrack());
 
         DrawHeader();
         DrawToolbar();
         ImGui::Separator();
-
         DrawTrackTable();
+
+        // ── Context Menu ──
+        m_contextMenu.Draw("##LibraryContextMenu");
     }
 
     //==========================================================================
@@ -123,19 +191,17 @@ namespace moosic
         if (!anyToolbar)
             return;
 
-        // Search bar
         if (m_toolbarOptions.ShowSearchBar)
         {
             if (m_useDropdownSearch)
             {
                 DrawDropdownSearch();
-                m_searchBar.BlockExternalScroll(); // Block track table scroll immediately after dropdown draws
+                m_searchBar.BlockExternalScroll();
             }
             else
                 DrawInlineSearch();
         }
 
-        // Clear button (only for inline mode)
         if (m_toolbarOptions.ShowClearButton && !m_useDropdownSearch)
         {
             if (m_toolbarOptions.ShowSearchBar)
@@ -147,7 +213,6 @@ namespace moosic
             }
         }
 
-        // Refresh button
         if (m_toolbarOptions.ShowRefreshButton)
         {
             bool hasSearch = m_toolbarOptions.ShowSearchBar;
@@ -162,19 +227,18 @@ namespace moosic
     }
 
     //==========================================================================
-    // Dropdown Search (TrackSearchBar widget - does NOT filter main table)
+    // Dropdown Search
     //==========================================================================
 
     void LibraryWindow::DrawDropdownSearch()
     {
-        // Set width BEFORE drawing - this ensures the input uses the correct width
         m_searchBar.SetWidth(m_toolbarOptions.SearchBarWidth);
         m_searchBar.SetHint(m_toolbarOptions.SearchHint);
         m_searchBar.Draw();
     }
 
     //==========================================================================
-    // Inline Search (original simple input - filters main table)
+    // Inline Search
     //==========================================================================
 
     void LibraryWindow::DrawInlineSearch()
@@ -184,7 +248,6 @@ namespace moosic
                                      m_toolbarOptions.SearchHint.c_str(),
                                      m_searchBuffer, sizeof(m_searchBuffer)))
         {
-            // Delegate filtering to data model (filters main track table)
             m_data.SetSearchFilter(m_searchBuffer);
         }
     }
@@ -195,17 +258,12 @@ namespace moosic
 
     void LibraryWindow::DrawTrackTable()
     {
-        // Set selection/playing state from data model
         m_trackTable.SetSelectedRow(m_data.GetSelectedIndex(),
                                     m_data.GetSelectedTrack());
         m_trackTable.SetPlayingRow(m_data.GetPlayingIndex(),
                                    m_data.GetPlayingTrack());
 
-        // Draw the table with data from the model
         m_trackTable.Draw(m_data.GetTracks());
-
-        // Handle sort requests from table header clicks
-        HandleTableSorting();
     }
 
     //==========================================================================
@@ -220,11 +278,9 @@ namespace moosic
         std::cout << "[LibraryWindow] Playing: " << track->GetTitle()
                   << " (" << track->GetDuration() << "s)\n";
 
-        // Update data model selection
         m_data.SetSelectedIndex(rowIndex);
         m_data.SetPlayingIndex(rowIndex);
 
-        // Trigger playback through controller
         if (m_playbackController)
         {
             m_playbackController->SetCurrentTrackList(m_data.GetTracks());
@@ -234,20 +290,7 @@ namespace moosic
     }
 
     //==========================================================================
-    // Sort Handling
-    //==========================================================================
-
-    void LibraryWindow::HandleTableSorting()
-    {
-        auto sortRequest = m_trackTable.GetSortRequest();
-        if (sortRequest)
-        {
-            m_data.ApplySort(sortRequest.value());
-        }
-    }
-
-    //==========================================================================
-    // Search Bar Setup (dropdown mode - searches independently)
+    // Search Bar Setup
     //==========================================================================
 
     void LibraryWindow::SetupSearchBar()
@@ -255,13 +298,10 @@ namespace moosic
         m_searchBar.SetWidth(m_toolbarOptions.SearchBarWidth);
         m_searchBar.SetHint(m_toolbarOptions.SearchHint);
 
-        // Search callback - searches tracks independently, does NOT filter main table
         m_searchBar.SetSearchCallback([this](const std::string &query) -> std::vector<TrackSearchResult>
                                       {
-            // Clear any existing filter on the main table so it shows all tracks
             m_data.SetSearchFilter("");
             
-            // Search through all tracks manually for dropdown display
             auto allTracks = m_data.GetTracks();
             std::vector<TrackSearchResult> results;
             
@@ -294,7 +334,6 @@ namespace moosic
             }
             return results; });
 
-        // Select callback - plays the selected track from dropdown
         m_searchBar.SetSelectCallback([this](const TrackSearchResult &result)
                                       {
             auto tracks = m_data.GetTracks();
