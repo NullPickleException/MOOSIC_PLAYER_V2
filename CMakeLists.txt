@@ -128,15 +128,9 @@ set(SDL2_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/SDL2/${PLATFORM_DIR})
 # BASS
 set(BASS_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/BASS)
 
-# FFmpeg
-set(FFMPEG_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/ffmpeg/${PLATFORM_DIR})
-
 # STB
 set(STB_DIR ${CMAKE_SOURCE_DIR}/thirdparty/stb)
 set(STB_DEPRECATED_DIR ${STB_DIR}/deprecated)
-
-# TagLib
-set(TAGLIB_ROOT ${CMAKE_SOURCE_DIR}/thirdparty/taglib-2.3)
 
 # nlohmann_json
 set(NLOHMANN_JSON_DIR ${CMAKE_SOURCE_DIR}/thirdparty/nlohmann_json)
@@ -169,7 +163,6 @@ target_include_directories(
         ${IMGUI_DIR}/backends
         ${SDL2_ROOT}/include
         ${BASS_ROOT}/include
-        ${FFMPEG_ROOT}/include
         ${STB_DIR}
         ${STB_DEPRECATED_DIR}
         ${NLOHMANN_JSON_DIR}/include  # nlohmann_json include directory
@@ -203,12 +196,16 @@ elseif(APPLE)
     )
 
 elseif(UNIX)
-    find_package(SDL2 REQUIRED)
+
+    # Require SDL2 version 2.30 or newer from the system
+    find_package(SDL2 2.30 REQUIRED CONFIG)
+
     target_link_libraries(
         MOOSIC_PLAYER
         PRIVATE
             SDL2::SDL2
     )
+
 endif()
 
 # BASS
@@ -249,91 +246,6 @@ elseif(UNIX)
     )
 endif()
 
-# FFmpeg
-if(WIN32)
-    target_link_libraries(
-        MOOSIC_PLAYER
-        PRIVATE
-            ${FFMPEG_ROOT}/lib/avformat.lib
-            ${FFMPEG_ROOT}/lib/avcodec.lib
-            ${FFMPEG_ROOT}/lib/avutil.lib
-            ${FFMPEG_ROOT}/lib/swresample.lib
-    )
-
-    add_custom_command(
-        TARGET MOOSIC_PLAYER POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${FFMPEG_ROOT}/bin/avformat-62.dll
-            ${FFMPEG_ROOT}/bin/avcodec-62.dll
-            ${FFMPEG_ROOT}/bin/avutil-60.dll
-            ${FFMPEG_ROOT}/bin/swresample-6.dll
-            $<TARGET_FILE_DIR:MOOSIC_PLAYER>
-    )
-
-elseif(APPLE)
-    target_link_libraries(
-        MOOSIC_PLAYER
-        PRIVATE
-            ${FFMPEG_ROOT}/lib/libavformat.dylib
-            ${FFMPEG_ROOT}/lib/libavcodec.dylib
-            ${FFMPEG_ROOT}/lib/libavutil.dylib
-            ${FFMPEG_ROOT}/lib/libswresample.dylib
-    )
-
-elseif(UNIX)
-    target_link_libraries(
-        MOOSIC_PLAYER
-        PRIVATE
-            ${FFMPEG_ROOT}/lib/libavformat.so
-            ${FFMPEG_ROOT}/lib/libavcodec.so
-            ${FFMPEG_ROOT}/lib/libavutil.so
-            ${FFMPEG_ROOT}/lib/libswresample.so
-    )
-endif()
-
-# =============================================================================
-# TagLib (from thirdparty/taglib-2.3/windows/) - Shared (DLL) build
-# =============================================================================
-
-if(WIN32)
-    # Determine architecture
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(TAGLIB_VARIANT "taglib_x64-windows")
-    else()
-        set(TAGLIB_VARIANT "taglib_x86-windows")
-    endif()
-    
-    # Add TagLib include directory
-    target_include_directories(
-        MOOSIC_PLAYER
-        PRIVATE
-            ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/include
-    )
-
-    # Determine Debug/Release library path
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(TAGLIB_LIB_DIR ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/debug/lib)
-    else()
-        set(TAGLIB_LIB_DIR ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/lib)
-    endif()
-
-    # Link TagLib (import library for DLL)
-    target_link_libraries(
-        MOOSIC_PLAYER
-        PRIVATE
-            ${TAGLIB_LIB_DIR}/tag.lib
-    )
-
-    # Copy TagLib DLL to output directory
-    add_custom_command(
-        TARGET MOOSIC_PLAYER POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/bin/tag.dll
-            $<TARGET_FILE_DIR:MOOSIC_PLAYER>
-    )
-
-    # No TAGLIB_STATIC needed - this is a shared (DLL) build
-endif()
 
 # =============================================================================
 # Native File Dialog Extended
@@ -392,16 +304,7 @@ message(STATUS "  Build Type        : ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Platform          : ${PLATFORM_DIR}")
 message(STATUS "  SDL2              : ${SDL2_ROOT}")
 message(STATUS "  BASS              : ${BASS_ROOT}")
-message(STATUS "  FFmpeg            : ${FFMPEG_ROOT}")
 message(STATUS "  ImGui             : ${IMGUI_DIR}")
 message(STATUS "  nlohmann_json     : ${NLOHMANN_JSON_DIR}")
-
-if(WIN32)
-    message(STATUS "  TagLib Variant    : ${TAGLIB_VARIANT}")
-    message(STATUS "  TagLib Include    : ${TAGLIB_ROOT}/windows/${TAGLIB_VARIANT}/include")
-    message(STATUS "  TagLib Library    : ${TAGLIB_LIB_DIR}/tag.lib")
-    message(STATUS "  TagLib Type       : Shared (DLL)")
-endif()
-
 message(STATUS "========================================")
 message(STATUS "")

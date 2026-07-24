@@ -1,7 +1,0 @@
-Package: taglib
-Version: 2.1.1
-Depends: utfcpp, vcpkg-cmake:x64-windows, vcpkg-cmake-config:x64-windows, zlib
-Architecture: x64-windows-static
-Multi-Arch: same
-Abi: 26a67078d83c9a0847ceb08c31f664acda7dbaea73081f74853198dbeecbe39d
-Description: TagLib Audio Meta-Data Library
