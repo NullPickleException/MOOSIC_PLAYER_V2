@@ -1,12 +1,19 @@
+//==============================================================================
+// MusicLibrary.cpp
+//==============================================================================
+// Central storage for music tracks and directories
+// Uses std::deque for stable pointers during insertion
+//==============================================================================
+
 #include "MusicLibrary.h"
 #include <algorithm>
 
 namespace moosic
 {
 
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 // Directory Management
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 
 void MusicLibrary::AddDirectory(const std::filesystem::path& directory)
 {
@@ -33,15 +40,16 @@ bool MusicLibrary::HasDirectory(const std::filesystem::path& directory) const
            != m_directories.end();
 }
 
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 // Track Management
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 
 void MusicLibrary::AddTrack(const MusicTrack& track)
 {
     MusicTrack copy = track;
     copy.SetId(m_nextTrackId++);
     m_tracks.push_back(std::move(copy));
+    // deque::push_back never invalidates existing pointers/references
 }
 
 void MusicLibrary::RemoveTrack(std::size_t id)
@@ -52,6 +60,8 @@ void MusicLibrary::RemoveTrack(std::size_t id)
                 return track.GetId() == id; 
             }),
         m_tracks.end());
+    // WARNING: Removing elements invalidates pointers to erased elements
+    // But pointers to other elements remain valid
 }
 
 void MusicLibrary::RemoveTracksFromDirectory(const std::filesystem::path& directory)
@@ -62,9 +72,11 @@ void MusicLibrary::RemoveTracksFromDirectory(const std::filesystem::path& direct
                 return track.GetPath().parent_path() == directory; 
             }),
         m_tracks.end());
+    // WARNING: Removing elements invalidates pointers to erased elements
+    // But pointers to other elements remain valid
 }
 
-const std::vector<MusicTrack>& MusicLibrary::GetTracks() const
+const std::deque<MusicTrack>& MusicLibrary::GetTracks() const
 {
     return m_tracks;
 }
@@ -74,9 +86,9 @@ std::size_t MusicLibrary::GetTrackCount() const
     return m_tracks.size();
 }
 
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 // Clear
-//----------------------------------------------------------
+//--------------------------------------------------------------------------
 
 void MusicLibrary::Clear()
 {
@@ -85,4 +97,4 @@ void MusicLibrary::Clear()
     m_nextTrackId = 1;
 }
 
-}
+} // namespace moosic

@@ -18,47 +18,118 @@ namespace moosic
     }
 
     //==============================================================================
+    // Safe Track Lookup
+    //==============================================================================
+
+    const MusicTrack* PlaybackController::GetTrackById(std::size_t id) const
+    {
+        const auto& tracks = m_library.GetTracks();
+        auto it = std::find_if(tracks.begin(), tracks.end(),
+            [id](const MusicTrack& t) { return t.GetId() == id; });
+        return (it != tracks.end()) ? &(*it) : nullptr;
+    }
+
+    const MusicTrack* PlaybackController::GetCurrentTrackSafe() const
+    {
+        if (m_currentIndex < m_currentTrackIds.size())
+            return GetTrackById(m_currentTrackIds[m_currentIndex]);
+        return nullptr;
+    }
+
+    //==============================================================================
     // Track List Management
     //==============================================================================
 
     void PlaybackController::SetCurrentTrackList(const std::vector<const MusicTrack *> &trackList)
     {
-        m_currentTrackList = trackList;
-        std::cout << "[PlaybackController] Track list updated: " << m_currentTrackList.size() << " tracks\n";
+        m_currentTrackIds.clear();
+        m_currentTrackIds.reserve(trackList.size());
+        for (const auto* track : trackList)
+        {
+            if (track)
+                m_currentTrackIds.push_back(track->GetId());
+        }
+        std::cout << "[PlaybackController] Track list updated: " << m_currentTrackIds.size() << " tracks\n";
+    }
+
+    void PlaybackController::SetCurrentTrackListByIds(const std::vector<std::size_t> &trackIds)
+    {
+        m_currentTrackIds = trackIds;
+        std::cout << "[PlaybackController] Track list updated by IDs: " << m_currentTrackIds.size() << " tracks\n";
+    }
+
+    void PlaybackController::RefreshTrackList()
+    {
+        const auto& tracks = m_library.GetTracks();
+        m_currentTrackIds.clear();
+        m_currentTrackIds.reserve(tracks.size());
+        for (const auto& track : tracks)
+            m_currentTrackIds.push_back(track.GetId());
+        std::cout << "[PlaybackController] Track list refreshed: " << m_currentTrackIds.size() << " tracks\n";
     }
 
     //==============================================================================
     // Track Selection
     //==============================================================================
+
     void PlaybackController::SelectTrackByIndex(size_t index)
     {
-        if (index < m_currentTrackList.size() && m_currentTrackList[index])
+        if (index < m_currentTrackIds.size())
         {
-            m_currentIndex = index;
-            m_audioEngine.Open(*m_currentTrackList[index]);
-            m_audioEngine.SetPosition(0.0f);
-            m_trackEndProcessed = false; // Reset guard
-            std::cout << "[PlaybackController] Selected index: " << index << "\n";
+            const MusicTrack* track = GetTrackById(m_currentTrackIds[index]);
+            if (track)
+            {
+                m_currentIndex = index;
+                m_audioEngine.Open(*track);
+                m_audioEngine.SetPosition(0.0f);
+                m_trackEndProcessed = false;
+                std::cout << "[PlaybackController] Selected index: " << index << "\n";
+            }
+            else
+            {
+                std::cout << "[PlaybackController] Track at index " << index << " no longer exists\n";
+            }
         }
     }
 
     void PlaybackController::SelectTrack(const MusicTrack &track)
     {
-        auto it = std::find_if(m_currentTrackList.begin(), m_currentTrackList.end(),
-                               [&track](const MusicTrack *t)
-                               {
-                                   return t && t->GetId() == track.GetId();
-                               });
-
-        if (it != m_currentTrackList.end())
+        std::size_t trackId = track.GetId();
+        
+        auto it = std::find(m_currentTrackIds.begin(), m_currentTrackIds.end(), trackId);
+        if (it != m_currentTrackIds.end())
         {
-            m_currentIndex = std::distance(m_currentTrackList.begin(), it);
+            m_currentIndex = std::distance(m_currentTrackIds.begin(), it);
             m_audioEngine.Open(track);
-            m_trackEndProcessed = false; // Reset guard
+            m_trackEndProcessed = false;
             std::cout << "[PlaybackController] Selected: " << track.GetTitle() << "\n";
+        }
+        else
+        {
+            // Track not in current list - add it and play
+            m_currentTrackIds.push_back(trackId);
+            m_currentIndex = m_currentTrackIds.size() - 1;
+            m_audioEngine.Open(track);
+            m_trackEndProcessed = false;
+            std::cout << "[PlaybackController] Selected (added to list): " << track.GetTitle() << "\n";
         }
     }
 
+    void PlaybackController::SelectTrackById(std::size_t trackId)
+    {
+        auto it = std::find(m_currentTrackIds.begin(), m_currentTrackIds.end(), trackId);
+        if (it != m_currentTrackIds.end())
+        {
+            m_currentIndex = std::distance(m_currentTrackIds.begin(), it);
+            const MusicTrack* track = GetTrackById(trackId);
+            if (track)
+            {
+                m_audioEngine.Open(*track);
+                m_trackEndProcessed = false;
+                std::cout << "[PlaybackController] Selected by ID: " << track->GetTitle() << "\n";
+            }
+        }
+    }
 
     //==============================================================================
     // Playback Control
@@ -69,7 +140,7 @@ namespace moosic
         if (!m_audioEngine.HasTrack())
         {
             UpdateTrackList();
-            if (!m_currentTrackList.empty())
+            if (!m_currentTrackIds.empty())
             {
                 SelectTrackByIndex(0);
             }
@@ -109,7 +180,7 @@ namespace moosic
     {
         UpdateTrackList();
 
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
             return;
 
         // Repeat mode: restart current track
@@ -123,7 +194,7 @@ namespace moosic
         size_t nextIndex = GetNextIndex();
 
         // If no valid next index, stop
-        if (nextIndex == m_currentIndex)
+        if (nextIndex == m_currentIndex && m_playbackMode != PlaybackMode::Shuffle)
         {
             Stop();
             return;
@@ -137,7 +208,7 @@ namespace moosic
     {
         UpdateTrackList();
 
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
             return;
 
         // Repeat mode: restart current track
@@ -242,19 +313,19 @@ namespace moosic
 
     void PlaybackController::UpdateTrackList()
     {
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
         {
             const auto &tracks = m_library.GetTracks();
-            m_currentTrackList.clear();
-            m_currentTrackList.reserve(tracks.size());
+            m_currentTrackIds.clear();
+            m_currentTrackIds.reserve(tracks.size());
             for (const auto &track : tracks)
-                m_currentTrackList.push_back(&track);
+                m_currentTrackIds.push_back(track.GetId());
         }
     }
 
     size_t PlaybackController::GetNextIndex() const
     {
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
             return 0;
 
         switch (m_playbackMode)
@@ -262,7 +333,7 @@ namespace moosic
         case PlaybackMode::Normal:
         {
             size_t nextIndex = m_currentIndex + 1;
-            if (nextIndex >= m_currentTrackList.size())
+            if (nextIndex >= m_currentTrackIds.size())
                 return m_currentIndex; // Stop at end
             return nextIndex;
         }
@@ -282,9 +353,9 @@ namespace moosic
         {
             static std::random_device rd;
             static std::mt19937 gen(rd());
-            if (m_currentTrackList.size() > 1)
+            if (m_currentTrackIds.size() > 1)
             {
-                std::uniform_int_distribution<size_t> dis(0, m_currentTrackList.size() - 1);
+                std::uniform_int_distribution<size_t> dis(0, m_currentTrackIds.size() - 1);
                 size_t newIndex;
                 do
                 {
@@ -301,7 +372,7 @@ namespace moosic
 
     size_t PlaybackController::GetPreviousIndex() const
     {
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
             return 0;
 
         switch (m_playbackMode)
@@ -317,7 +388,7 @@ namespace moosic
         {
             // In reverse mode, "previous" goes forward
             size_t prevIndex = m_currentIndex + 1;
-            if (prevIndex >= m_currentTrackList.size())
+            if (prevIndex >= m_currentTrackIds.size())
                 return m_currentIndex; // Stop at end
             return prevIndex;
         }
@@ -329,9 +400,9 @@ namespace moosic
         {
             static std::random_device rd;
             static std::mt19937 gen(rd());
-            if (m_currentTrackList.size() > 1)
+            if (m_currentTrackIds.size() > 1)
             {
-                std::uniform_int_distribution<size_t> dis(0, m_currentTrackList.size() - 1);
+                std::uniform_int_distribution<size_t> dis(0, m_currentTrackIds.size() - 1);
                 size_t newIndex;
                 do
                 {
@@ -346,7 +417,6 @@ namespace moosic
         return m_currentIndex;
     }
 
-    // In PlaybackController.cpp, modify Update():
     void PlaybackController::Update()
     {
         if (m_playbackMode == PlaybackMode::Repeat)
@@ -379,10 +449,10 @@ namespace moosic
     {
         std::cout << "[PlaybackController] Track ended, advancing to next\n";
 
-        if (m_currentTrackList.empty())
+        if (m_currentTrackIds.empty())
         {
             UpdateTrackList();
-            if (m_currentTrackList.empty())
+            if (m_currentTrackIds.empty())
                 return;
         }
 
@@ -392,7 +462,7 @@ namespace moosic
         if (nextIndex == m_currentIndex && m_playbackMode == PlaybackMode::Normal)
         {
             // Check if we're at the last track
-            if (m_currentIndex >= m_currentTrackList.size() - 1)
+            if (m_currentIndex >= m_currentTrackIds.size() - 1)
             {
                 // Loop back to first track
                 nextIndex = 0;
@@ -408,7 +478,7 @@ namespace moosic
         {
             if (m_currentIndex == 0)
             {
-                nextIndex = m_currentTrackList.size() - 1;
+                nextIndex = m_currentTrackIds.size() - 1;
             }
             else
             {

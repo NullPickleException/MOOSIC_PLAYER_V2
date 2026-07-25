@@ -10,6 +10,7 @@
 #include "AudioEngine.h"
 #include "../Models/MusicLibrary.h"
 #include <vector>
+#include <cstddef>
 
 namespace moosic
 {
@@ -40,6 +41,8 @@ namespace moosic
         //--------------------------------------------------------------------------
 
         void SetCurrentTrackList(const std::vector<const MusicTrack *> &trackList);
+        void SetCurrentTrackListByIds(const std::vector<std::size_t> &trackIds);
+        void RefreshTrackList();  // Rebuild from library (call after library changes)
 
         //--------------------------------------------------------------------------
         // Track Selection
@@ -47,6 +50,7 @@ namespace moosic
 
         void SelectTrack(const MusicTrack &track);
         void SelectTrackByIndex(size_t index);
+        void SelectTrackById(std::size_t trackId);
 
         //--------------------------------------------------------------------------
         // Playback Control
@@ -120,13 +124,18 @@ namespace moosic
         size_t GetNextIndex() const;
         size_t GetPreviousIndex() const;
         void UpdateTrackList();
+        
+        // Safe track lookup - returns nullptr if track no longer exists
+        const MusicTrack* GetTrackById(std::size_t id) const;
+        const MusicTrack* GetCurrentTrackSafe() const;
 
     private:
         MusicLibrary &m_library;
         AudioEngine m_audioEngine;
 
-        // Current track list (from library, playlist, etc.)
-        std::vector<const MusicTrack *> m_currentTrackList;
+        // Current track list - STORES IDs, NOT POINTERS!
+        // This prevents dangling pointers when vector reallocates
+        std::vector<std::size_t> m_currentTrackIds;
 
         // Playback state
         size_t m_currentIndex = 0;

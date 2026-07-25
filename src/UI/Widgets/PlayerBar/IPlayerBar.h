@@ -10,7 +10,7 @@
 
 #include "../../../Services/PlaybackController.h"
 #include "../../../Services/ImageLoader.h"
-#include "../AlbumArtLightbox.h"
+#include "../AlbumArtLightBox.h"
 #include "../AlbumArtBox.h"
 #include "../WaveVisualizer.h"
 #include <imgui.h>

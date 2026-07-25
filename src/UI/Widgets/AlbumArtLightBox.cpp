@@ -1,4 +1,4 @@
-#include "AlbumArtLightbox.h"
+#include "AlbumArtLightBox.h"
 #include <imgui.h>
 #include <algorithm>
 
