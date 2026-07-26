@@ -124,6 +124,9 @@ set(NLOHMANN_JSON_DIR ${CMAKE_SOURCE_DIR}/thirdparty/nlohmann_json)
 # Native File Dialog Extended
 # =============================================================================
 
+# NFD Extended needs SDL2 include path for nfd_sdl2.h backend
+set(NFD_INCLUDE_DIRECTORIES ${SDL2_ROOT}/include)
+
 add_subdirectory(thirdparty/nativefiledialog-extended)
 
 # =============================================================================

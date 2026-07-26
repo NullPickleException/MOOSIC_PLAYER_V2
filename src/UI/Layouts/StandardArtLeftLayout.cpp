@@ -28,8 +28,8 @@ void StandardArtLeftLayout::Draw(SDL_Renderer* renderer)
     m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
-    m_playerBar.UpdatePlaybackState();
     m_playerBar.SetRenderer(renderer);
+    m_playerBar.UpdatePlaybackState();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

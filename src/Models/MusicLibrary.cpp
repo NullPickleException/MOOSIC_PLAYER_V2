@@ -49,7 +49,6 @@ void MusicLibrary::AddTrack(const MusicTrack& track)
     MusicTrack copy = track;
     copy.SetId(m_nextTrackId++);
     m_tracks.push_back(std::move(copy));
-    // deque::push_back never invalidates existing pointers/references
 }
 
 void MusicLibrary::RemoveTrack(std::size_t id)
@@ -60,8 +59,6 @@ void MusicLibrary::RemoveTrack(std::size_t id)
                 return track.GetId() == id; 
             }),
         m_tracks.end());
-    // WARNING: Removing elements invalidates pointers to erased elements
-    // But pointers to other elements remain valid
 }
 
 void MusicLibrary::RemoveTracksFromDirectory(const std::filesystem::path& directory)
@@ -72,11 +69,14 @@ void MusicLibrary::RemoveTracksFromDirectory(const std::filesystem::path& direct
                 return track.GetPath().parent_path() == directory; 
             }),
         m_tracks.end());
-    // WARNING: Removing elements invalidates pointers to erased elements
-    // But pointers to other elements remain valid
 }
 
 const std::deque<MusicTrack>& MusicLibrary::GetTracks() const
+{
+    return m_tracks;
+}
+
+std::deque<MusicTrack>& MusicLibrary::GetTracks()
 {
     return m_tracks;
 }

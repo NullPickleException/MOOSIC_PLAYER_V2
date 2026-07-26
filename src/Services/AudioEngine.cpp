@@ -1,15 +1,9 @@
 #include "AudioEngine.h"
 
-#include <bass.h>
-#include <bass_aac.h>
-#include <bassflac.h>
-#include <bassopus.h>
-#include <basswma.h>
+#include "BassHeaders.h"
 
 #include <iostream>
 #include <algorithm>
-
-// BASS defines HSTREAM as DWORD, so we can use it directly
 
 namespace moosic
 {
@@ -20,35 +14,14 @@ namespace moosic
 
 AudioEngine::AudioEngine()
 {
-    // Initialize BASS
-    if (!BASS_Init(-1, 44100, 0, nullptr, nullptr))
-    {
-        std::cout << "[AudioEngine] Failed to initialize BASS. Error: " 
-                  << BASS_ErrorGetCode() << '\n';
-        return;
-    }
-
-    // Load plugins
-#ifdef _WIN32
-    BASS_PluginLoad("bass_aac.dll", 0);
-    BASS_PluginLoad("bassflac.dll", 0);
-    BASS_PluginLoad("bassopus.dll", 0);
-    BASS_PluginLoad("basswma.dll", 0);
-#endif
-
-    m_bassInitialized = true;
-    std::cout << "[AudioEngine] BASS initialized successfully\n";
+    // BASS is now initialized in Application::InitBass()
+    // Just verify it's ready
+    std::cout << "[AudioEngine] Ready (BASS initialized by Application)\n";
 }
 
 AudioEngine::~AudioEngine()
 {
     CloseStream();
-    
-    if (m_bassInitialized)
-    {
-        BASS_Free();
-        m_bassInitialized = false;
-    }
 }
 
 //==============================================================================
@@ -58,12 +31,6 @@ AudioEngine::~AudioEngine()
 bool AudioEngine::Open(const MusicTrack& track)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-
-    if (!m_bassInitialized)
-    {
-        std::cout << "[AudioEngine] BASS not initialized\n";
-        return false;
-    }
 
     CloseStream();
 
@@ -77,12 +44,12 @@ bool AudioEngine::Open(const MusicTrack& track)
     if (ext == "m4a" || ext == "mp4" || ext == "m4b")
     {
         stream = BASS_AAC_StreamCreateFile(FALSE, path.c_str(), 0, 0, 
-                                           BASS_STREAM_AUTOFREE);  // REMOVED BASS_STREAM_DECODE
+                                           BASS_STREAM_AUTOFREE);
     }
 
     if (!stream)
     {
-        // Generic stream creation - REMOVED BASS_STREAM_DECODE
+        // Generic stream creation
         stream = BASS_StreamCreateFile(FALSE, path.c_str(), 0, 0, 
                                        BASS_STREAM_AUTOFREE | BASS_STREAM_PRESCAN);
     }
@@ -118,14 +85,12 @@ void AudioEngine::Start()
 
     if (m_state == State::Paused)
     {
-        // Resume from pause
         BASS_ChannelPlay(m_stream, FALSE);
         m_state = State::Playing;
         std::cout << "[AudioEngine] Resumed\n";
     }
     else if (m_state == State::Stopped)
     {
-        // Start from beginning
         BASS_ChannelSetPosition(m_stream, 0, BASS_POS_BYTE);
         BASS_ChannelPlay(m_stream, FALSE);
         m_state = State::Playing;
@@ -206,7 +171,6 @@ bool AudioEngine::IsPlaying() const
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     
-    // Also check BASS state directly
     if (m_stream != 0)
         return BASS_ChannelIsActive(m_stream) == BASS_ACTIVE_PLAYING;
     
@@ -284,7 +248,6 @@ void AudioEngine::CloseStream()
 
 void AudioEngine::UpdatePlaybackState()
 {
-    // Check if playback finished naturally
     if (m_stream != 0 && m_state == State::Playing)
     {
         if (BASS_ChannelIsActive(m_stream) != BASS_ACTIVE_PLAYING)

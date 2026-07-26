@@ -21,10 +21,12 @@
 namespace moosic
 {
 
+class PlaylistDataModel;
+
 class DirectoryDataModel
 {
 public:
-    explicit DirectoryDataModel(MusicLibrary& library);
+    explicit DirectoryDataModel(MusicLibrary& library, PlaylistDataModel* playlistModel = nullptr);
     ~DirectoryDataModel();
 
     //--------------------------------------------------------------------------
@@ -93,6 +95,9 @@ private:
 
     // Notification
     DataChangedCallback m_onDataChanged;
+    
+    // Playlist model for cleaning up track IDs on directory removal
+    PlaylistDataModel* m_playlistModel = nullptr;
 };
 
 } // namespace moosic

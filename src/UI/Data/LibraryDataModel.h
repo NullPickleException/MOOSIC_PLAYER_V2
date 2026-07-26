@@ -17,6 +17,10 @@ class LibraryDataModel
 public:
     explicit LibraryDataModel(MusicLibrary& library);
 
+    //--------------------------------------------------------------------------
+    // Data Access
+    //--------------------------------------------------------------------------
+
     const std::vector<const MusicTrack*>& GetTracks() const { return m_filteredTracks; }
     size_t GetTrackCount() const { return m_filteredTracks.size(); }
     
@@ -24,12 +28,24 @@ public:
     int FindTrackIndex(const MusicTrack* track) const;
     int FindTrackIndex(std::size_t trackId) const;
 
+    //--------------------------------------------------------------------------
+    // Search
+    //--------------------------------------------------------------------------
+
     void SetSearchFilter(const std::string& query);
     const std::string& GetSearchFilter() const { return m_searchQuery; }
     
+    //--------------------------------------------------------------------------
+    // Sort
+    //--------------------------------------------------------------------------
+
     void ApplySort(const SortRequest& request);
     bool HasActiveSort() const { return m_currentSort.has_value(); }
     void ClearSort();
+
+    //--------------------------------------------------------------------------
+    // Selection & Playing State
+    //--------------------------------------------------------------------------
 
     void SetSelectedIndex(int index);
     int GetSelectedIndex() const { return m_selectedIndex; }
@@ -44,8 +60,22 @@ public:
     void SetPlayingTrack(const MusicTrack* track);
     void SyncPlayingTrack(const MusicTrack* currentTrack);
 
+    //--------------------------------------------------------------------------
+    // Refresh
+    //--------------------------------------------------------------------------
+
     void Refresh();
     bool NeedsRefresh() const;
+
+    //--------------------------------------------------------------------------
+    // Library Access (for direct track manipulation like play count)
+    //--------------------------------------------------------------------------
+
+    MusicLibrary& GetLibrary() { return m_sourceLibrary; }
+
+    //--------------------------------------------------------------------------
+    // Change Notification
+    //--------------------------------------------------------------------------
 
     using DataChangedCallback = std::function<void()>;
     void SetOnDataChanged(DataChangedCallback callback) { m_onDataChanged = std::move(callback); }

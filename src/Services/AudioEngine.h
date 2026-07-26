@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Models/MusicTrack.h"
-#include <bass.h> // ADD THIS - defines HSTREAM
+#include <bass.h>
 #include <atomic>
 #include <mutex>
 
@@ -30,7 +30,7 @@ namespace moosic
         //----------------------------------------------------------
 
         void SetPosition(float seconds);
-        void SetVolume(float volume); // 0.0 to 1.0
+        void SetVolume(float volume);
 
         //----------------------------------------------------------
         // Status
@@ -41,31 +41,21 @@ namespace moosic
         bool IsStopped() const;
         bool HasTrack() const;
 
-        float GetPosition() const; // seconds
-        float GetDuration() const; // seconds
-        float GetVolume() const;   // 0.0 to 1.0
+        float GetPosition() const;
+        float GetDuration() const;
+        float GetVolume() const;
 
         const MusicTrack *GetCurrentTrack() const;
-
-        // Add this method to expose the BASS stream
         HSTREAM GetStream() const { return m_stream; }
 
     private:
-        //----------------------------------------------------------
-        // Internal Helpers
-        //----------------------------------------------------------
-
         void CloseStream();
         void UpdatePlaybackState();
 
     private:
-        // BASS stream handle - now HSTREAM is defined because bass.h is included
         HSTREAM m_stream = 0;
-
-        // Current track
         const MusicTrack *m_currentTrack = nullptr;
 
-        // State
         enum class State
         {
             Stopped,
@@ -74,14 +64,8 @@ namespace moosic
         };
         State m_state = State::Stopped;
 
-        // Volume
         float m_volume = 1.0f;
-
-        // Thread safety
         mutable std::mutex m_mutex;
-
-        // BASS initialized flag
-        bool m_bassInitialized = false;
     };
 
 } // namespace moosic

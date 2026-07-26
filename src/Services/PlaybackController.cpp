@@ -21,21 +21,34 @@ namespace moosic
     // Safe Track Lookup
     //==============================================================================
 
-    const MusicTrack* PlaybackController::GetTrackById(std::size_t id) const
+    const MusicTrack *PlaybackController::GetTrackById(std::size_t id) const
     {
-        const auto& tracks = m_library.GetTracks();
+        const auto &tracks = m_library.GetTracks();
         auto it = std::find_if(tracks.begin(), tracks.end(),
-            [id](const MusicTrack& t) { return t.GetId() == id; });
+                               [id](const MusicTrack &t)
+                               { return t.GetId() == id; });
         return (it != tracks.end()) ? &(*it) : nullptr;
     }
 
-    const MusicTrack* PlaybackController::GetCurrentTrackSafe() const
+    const MusicTrack *PlaybackController::GetCurrentTrackSafe() const
     {
         if (m_currentIndex < m_currentTrackIds.size())
             return GetTrackById(m_currentTrackIds[m_currentIndex]);
         return nullptr;
     }
 
+    void PlaybackController::IncrementPlayCount(std::size_t trackId)
+    {
+        auto &tracks = m_library.GetTracks();
+        for (auto &t : tracks)
+        {
+            if (t.GetId() == trackId)
+            {
+                t.IncrementPlayCount();
+                break;
+            }
+        }
+    }
     //==============================================================================
     // Track List Management
     //==============================================================================
@@ -44,7 +57,7 @@ namespace moosic
     {
         m_currentTrackIds.clear();
         m_currentTrackIds.reserve(trackList.size());
-        for (const auto* track : trackList)
+        for (const auto *track : trackList)
         {
             if (track)
                 m_currentTrackIds.push_back(track->GetId());
@@ -60,10 +73,10 @@ namespace moosic
 
     void PlaybackController::RefreshTrackList()
     {
-        const auto& tracks = m_library.GetTracks();
+        const auto &tracks = m_library.GetTracks();
         m_currentTrackIds.clear();
         m_currentTrackIds.reserve(tracks.size());
-        for (const auto& track : tracks)
+        for (const auto &track : tracks)
             m_currentTrackIds.push_back(track.GetId());
         std::cout << "[PlaybackController] Track list refreshed: " << m_currentTrackIds.size() << " tracks\n";
     }
@@ -76,13 +89,17 @@ namespace moosic
     {
         if (index < m_currentTrackIds.size())
         {
-            const MusicTrack* track = GetTrackById(m_currentTrackIds[index]);
+            const MusicTrack *track = GetTrackById(m_currentTrackIds[index]);
             if (track)
             {
                 m_currentIndex = index;
                 m_audioEngine.Open(*track);
                 m_audioEngine.SetPosition(0.0f);
                 m_trackEndProcessed = false;
+
+                // Increment play count
+                IncrementPlayCount(m_currentTrackIds[index]);
+
                 std::cout << "[PlaybackController] Selected index: " << index << "\n";
             }
             else
@@ -95,22 +112,29 @@ namespace moosic
     void PlaybackController::SelectTrack(const MusicTrack &track)
     {
         std::size_t trackId = track.GetId();
-        
+
         auto it = std::find(m_currentTrackIds.begin(), m_currentTrackIds.end(), trackId);
         if (it != m_currentTrackIds.end())
         {
             m_currentIndex = std::distance(m_currentTrackIds.begin(), it);
             m_audioEngine.Open(track);
             m_trackEndProcessed = false;
+
+            // Increment play count
+            IncrementPlayCount(trackId);
+
             std::cout << "[PlaybackController] Selected: " << track.GetTitle() << "\n";
         }
         else
         {
-            // Track not in current list - add it and play
             m_currentTrackIds.push_back(trackId);
             m_currentIndex = m_currentTrackIds.size() - 1;
             m_audioEngine.Open(track);
             m_trackEndProcessed = false;
+
+            // Increment play count
+            IncrementPlayCount(trackId);
+
             std::cout << "[PlaybackController] Selected (added to list): " << track.GetTitle() << "\n";
         }
     }
@@ -121,11 +145,15 @@ namespace moosic
         if (it != m_currentTrackIds.end())
         {
             m_currentIndex = std::distance(m_currentTrackIds.begin(), it);
-            const MusicTrack* track = GetTrackById(trackId);
+            const MusicTrack *track = GetTrackById(trackId);
             if (track)
             {
                 m_audioEngine.Open(*track);
                 m_trackEndProcessed = false;
+
+                // Increment play count
+                IncrementPlayCount(trackId);
+
                 std::cout << "[PlaybackController] Selected by ID: " << track->GetTitle() << "\n";
             }
         }
@@ -489,6 +517,28 @@ namespace moosic
 
         SelectTrackByIndex(nextIndex);
         m_audioEngine.Start();
+    }
+
+    //==============================================================================
+    // Album Art Cache
+    //==============================================================================
+
+    const CachedAlbumArtData *PlaybackController::GetCachedAlbumArt(std::size_t trackId) const
+    {
+        auto it = m_albumArtCache.find(trackId);
+        return (it != m_albumArtCache.end()) ? &it->second : nullptr;
+    }
+
+    void PlaybackController::CacheAlbumArt(std::size_t trackId, const std::vector<unsigned char> &data, int width, int height)
+    {
+        if (trackId == 0 || data.empty())
+            return;
+        m_albumArtCache[trackId] = {data, width, height};
+    }
+
+    void PlaybackController::ClearAlbumArtCache()
+    {
+        m_albumArtCache.clear();
     }
 
 } // namespace moosic

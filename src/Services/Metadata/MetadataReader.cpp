@@ -14,11 +14,7 @@
 #include <cstring>
 
 // BASS headers
-#include <bass.h>
-#include <bass_aac.h>
-#include <bassflac.h>
-#include <bassopus.h>
-#include <basswma.h>
+#include "../BassHeaders.h"
 
 namespace moosic
 {
@@ -296,9 +292,9 @@ namespace moosic
         std::string ext = GetLowercaseExtension(filePath);
         unsigned int duration = 0;
 
-#ifdef _WIN32
-        const std::wstring path = filePath.wstring();
-        const void *filename = path.c_str();
+#if defined(_WIN32)
+        const std::wstring wpath = filePath.wstring();
+        const void *filename = wpath.c_str();
         DWORD flags = BASS_STREAM_DECODE | BASS_STREAM_PRESCAN | BASS_UNICODE;
 #else
         const std::string path = filePath.string();
@@ -308,19 +304,28 @@ namespace moosic
 
         HSTREAM stream = 0;
 
-        if (ext == ".m4a" || ext == ".m4b" || ext == ".mp4")
+        // Try generic BASS first (works for MP3 on all platforms without plugins)
+        stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, flags);
+
+#if defined(_WIN32) || defined(__linux__)
+        if (!stream && (ext == ".m4a" || ext == ".m4b" || ext == ".mp4"))
             stream = BASS_AAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
+
         if (!stream && ext == ".flac")
             stream = BASS_FLAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
+
         if (!stream && ext == ".opus")
             stream = BASS_OPUS_StreamCreateFile(FALSE, filename, 0, 0, flags);
+#endif
+
+#if defined(_WIN32)
         if (!stream && ext == ".wma")
             stream = BASS_WMA_StreamCreateFile(FALSE, filename, 0, 0, flags);
-        if (!stream)
-            stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, flags);
+#endif
+
         if (!stream)
         {
-#ifdef _WIN32
+#if defined(_WIN32)
             stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE | BASS_UNICODE);
 #else
             stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE);

@@ -31,10 +31,8 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
     m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
-    m_mainPlayerBar.UpdatePlaybackState();
-    m_miniPlayerBar.UpdatePlaybackState();
-    m_mainPlayerBar.SetRenderer(renderer);
     m_miniPlayerBar.SetRenderer(renderer);
+    m_mainPlayerBar.UpdatePlaybackState();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

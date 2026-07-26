@@ -253,7 +253,7 @@ namespace moosic
             if (isActive)
                 ImGui::PushStyleColor(ImGuiCol_Text, m_theme.BrandText);
 
-            char label[256];
+            char label[512];
             snprintf(label, sizeof(label), "  %s", playlist.name.c_str());
 
             ImGui::PushID(static_cast<int>(i));
@@ -268,27 +268,30 @@ namespace moosic
             {
                 std::vector<MenuItem> items;
 
-                items.push_back({"Add Tracks", true, false, [this, i]() {
-                    m_selectedPlaylistForAdd = static_cast<int>(i);
-                    m_addTrackSearchBuffer[0] = '\0';
-                    m_data.SetAddTrackSearchFilter("");
-                    m_selectedAddTrackIndex = -1;
-                    m_selectedAddTrack = nullptr;
-                    m_showAddTrackPopup = true;
-                }});
+                items.push_back({"Add Tracks", true, false, [this, i]()
+                                 {
+                                     m_selectedPlaylistForAdd = static_cast<int>(i);
+                                     m_addTrackSearchBuffer[0] = '\0';
+                                     m_data.SetAddTrackSearchFilter("");
+                                     m_selectedAddTrackIndex = -1;
+                                     m_selectedAddTrack = nullptr;
+                                     m_showAddTrackPopup = true;
+                                 }});
 
-                items.push_back({"Rename", true, false, [this, i, &playlist]() {
-                    m_renamePlaylistIndex = static_cast<int>(i);
-                    strncpy(m_renamePlaylistBuffer, playlist.name.c_str(), sizeof(m_renamePlaylistBuffer) - 1);
-                    m_renamePlaylistBuffer[sizeof(m_renamePlaylistBuffer) - 1] = '\0';
-                    m_showRenamePopup = true;
-                }});
+                items.push_back({"Rename", true, false, [this, i, &playlist]()
+                                 {
+                                     m_renamePlaylistIndex = static_cast<int>(i);
+                                     strncpy(m_renamePlaylistBuffer, playlist.name.c_str(), sizeof(m_renamePlaylistBuffer) - 1);
+                                     m_renamePlaylistBuffer[sizeof(m_renamePlaylistBuffer) - 1] = '\0';
+                                     m_showRenamePopup = true;
+                                 }});
 
                 items.push_back({"", false, true, nullptr});
 
-                items.push_back({"Delete", true, false, [this, i]() {
-                    m_data.DeletePlaylist(i);
-                }});
+                items.push_back({"Delete", true, false, [this, i]()
+                                 {
+                                     m_data.DeletePlaylist(i);
+                                 }});
 
                 m_playlistContextMenu.SetItems(items);
                 m_playlistContextMenu.Open(

@@ -31,6 +31,7 @@ namespace moosic
         void SaveState();
         void LoadState();
         std::filesystem::path GetExecutableDir();
+        bool InitBass();
 
     private:
         SDL_Window *m_window = nullptr;
@@ -41,6 +42,8 @@ namespace moosic
         PlaybackController m_playbackController;
         UI m_ui;
         SavingSystem m_savingSystem;
+
+        bool m_bassInitialized = false;
     };
 
 } // namespace moosic

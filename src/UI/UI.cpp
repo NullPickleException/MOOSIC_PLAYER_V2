@@ -157,7 +157,7 @@ namespace moosic
     UI::UI(MusicLibrary &library, PlaybackController &playbackController)
         : m_library(library), m_playbackController(playbackController),
           m_libraryData(library),
-          m_directoryData(library),
+          m_directoryData(library, &m_playlistData),  // <-- CHANGED: pass playlist model
           m_playlistData(library),
           // SettingsDataModel is default-initialized with "Dark" theme, spectrum mode, standard layout
           m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
@@ -268,7 +268,7 @@ namespace moosic
         {
             m_layoutMode = newMode;
             m_settingsData.SetLayoutMode(static_cast<int>(newMode));  // Sync to data model
-            // Reconnect settings window for the new layout
+            // Reconnect settings window for the current layout
             ConnectSettingsWindowForCurrentLayout();
         }
     }

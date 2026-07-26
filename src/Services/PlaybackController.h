@@ -11,6 +11,7 @@
 #include "../Models/MusicLibrary.h"
 #include <vector>
 #include <cstddef>
+#include <unordered_map>
 
 namespace moosic
 {
@@ -28,6 +29,17 @@ namespace moosic
     };
 
     //==============================================================================
+    // Cached Album Art Data (raw bytes, not textures)
+    //==============================================================================
+
+    struct CachedAlbumArtData
+    {
+        std::vector<unsigned char> data;
+        int width = 0;
+        int height = 0;
+    };
+
+    //==============================================================================
     // PlaybackController
     //==============================================================================
 
@@ -42,7 +54,7 @@ namespace moosic
 
         void SetCurrentTrackList(const std::vector<const MusicTrack *> &trackList);
         void SetCurrentTrackListByIds(const std::vector<std::size_t> &trackIds);
-        void RefreshTrackList();  // Rebuild from library (call after library changes)
+        void RefreshTrackList();
 
         //--------------------------------------------------------------------------
         // Track Selection
@@ -113,8 +125,16 @@ namespace moosic
         // Update
         //--------------------------------------------------------------------------
 
-        void Update();       // Call each frame to check if track ended
-        void OnTrackEnded(); // Handle end-of-track auto-advance
+        void Update();
+        void OnTrackEnded();
+
+        //--------------------------------------------------------------------------
+        // Album Art Cache (shared across all player bars)
+        //--------------------------------------------------------------------------
+
+        const CachedAlbumArtData* GetCachedAlbumArt(std::size_t trackId) const;
+        void CacheAlbumArt(std::size_t trackId, const std::vector<unsigned char>& data, int width, int height);
+        void ClearAlbumArtCache();
 
     private:
         //--------------------------------------------------------------------------
@@ -125,25 +145,22 @@ namespace moosic
         size_t GetPreviousIndex() const;
         void UpdateTrackList();
         
-        // Safe track lookup - returns nullptr if track no longer exists
         const MusicTrack* GetTrackById(std::size_t id) const;
         const MusicTrack* GetCurrentTrackSafe() const;
+        void IncrementPlayCount(std::size_t trackId);
 
     private:
         MusicLibrary &m_library;
         AudioEngine m_audioEngine;
 
-        // Current track list - STORES IDs, NOT POINTERS!
-        // This prevents dangling pointers when vector reallocates
         std::vector<std::size_t> m_currentTrackIds;
-
-        // Playback state
         size_t m_currentIndex = 0;
         PlaybackMode m_playbackMode = PlaybackMode::Normal;
         bool m_trackEndProcessed = false;
-
-        // Visualizer mode (0=Spectrum, 1=Oscilloscope)
         int m_visualizerMode = 0;
+
+        // Album art cache - raw image data, renderer-independent
+        std::unordered_map<std::size_t, CachedAlbumArtData> m_albumArtCache;
     };
 
 } // namespace moosic

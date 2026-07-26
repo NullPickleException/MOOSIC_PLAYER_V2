@@ -36,6 +36,7 @@ public:
     size_t GetPlaylistCount() const { return m_playlists.size(); }
     const PlaylistInfo* GetPlaylist(size_t index) const;
     const std::vector<PlaylistInfo>& GetAllPlaylists() const { return m_playlists; }
+    std::vector<PlaylistInfo>& GetAllPlaylists() { return m_playlists; }
     
     void SetActivePlaylist(std::optional<size_t> index);
     std::optional<size_t> GetActivePlaylistIndex() const { return m_activePlaylistIndex; }
@@ -101,14 +102,32 @@ public:
     const std::string& GetSearchFilter() const { return m_searchQuery; }
 
     //--------------------------------------------------------------------------
+    // Library Access (for direct track manipulation like play count)
+    //--------------------------------------------------------------------------
+
+    MusicLibrary& GetLibrary() { return m_library; }
+
+    //--------------------------------------------------------------------------
     // Change Notification
     //--------------------------------------------------------------------------
 
     using DataChangedCallback = std::function<void()>;
     void SetOnDataChanged(DataChangedCallback callback) { m_onDataChanged = std::move(callback); }
+    
+    // Called by DirectoryDataModel to trigger notification after bulk changes
+    void NotifyDataChanged() { if (m_onDataChanged) m_onDataChanged(); }
+    
+    // Called by DirectoryDataModel to clear active playlist data
+    void ClearActivePlaylistData()
+    {
+        m_activeTracks.clear();
+        m_filteredTracks.clear();
+    }
+    
+    // Called by DirectoryDataModel to rebuild after track removal
+    void RebuildActiveTrackList();
 
 private:
-    void RebuildActiveTrackList();
     void ApplyFilterAndSort();
     bool MatchesSearch(const MusicTrack* track) const;
 

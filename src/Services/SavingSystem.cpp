@@ -16,6 +16,8 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
+#include <codecvt>
+#include <locale>
 
 using json = nlohmann::json;
 
@@ -23,7 +25,24 @@ namespace moosic
 {
 
 //==============================================================================
-// Helper: Clean string of non-ASCII/UTF-8 characters for safe JSON
+// Helper: Escape non-ASCII characters for JSON compatibility
+// This preserves the original bytes so paths round-trip correctly
+//==============================================================================
+
+static std::string EscapePath(const std::string& input)
+{
+    // On Windows, convert to UTF-8 if needed
+    // On Linux/macOS, paths are already UTF-8 bytes
+    return input;
+}
+
+static std::string UnescapePath(const std::string& input)
+{
+    return input;
+}
+
+//==============================================================================
+// Helper: Clean string for display text only (title, artist, album)
 //==============================================================================
 
 static std::string SanitizeString(const std::string& input)
@@ -35,34 +54,31 @@ static std::string SanitizeString(const std::string& input)
     {
         unsigned char c = static_cast<unsigned char>(input[i]);
         
-        // ASCII printable
         if (c >= 0x20 && c <= 0x7E)
         {
             result += c;
         }
-        // Tab, newline, carriage return
         else if (c == '\t' || c == '\n' || c == '\r')
         {
             result += c;
         }
-        // Common Windows-1252 / extended ASCII characters mapped to ASCII
-        else if (c == 0x96 || c == 0x97)       result += '-';    // en-dash, em-dash
-        else if (c == 0x91 || c == 0x92)       result += '\'';   // left/right single quote
-        else if (c == 0x93 || c == 0x94)       result += '"';    // left/right double quote
-        else if (c == 0x85)                    result += "...";  // horizontal ellipsis
-        else if (c == 0xF6 || c == 0xD6)       result += "o";    // ö/Ö
-        else if (c == 0xE9 || c == 0xC9)       result += "e";    // é/É
-        else if (c == 0xE8 || c == 0xC8)       result += "e";    // è/È
-        else if (c == 0xE0 || c == 0xC0)       result += "a";    // à/À
-        else if (c == 0xF1 || c == 0xD1)       result += "n";    // ñ/Ñ
-        else if (c == 0xFC || c == 0xDC)       result += "u";    // ü/Ü
-        else if (c == 0xE4 || c == 0xC4)       result += "a";    // ä/Ä
-        else if (c == 0xF8 || c == 0xD8)       result += "o";    // ø/Ø
-        else if (c == 0xE6 || c == 0xC6)       result += "ae";   // æ/Æ
-        else if (c == 0xDF)                    result += "ss";   // ß
-        else if (c == 0xB0)                    result += "deg";  // °
-        else if (c >= 0x80 && c <= 0xBF)       result += '?';    // Other extended ASCII
-        else                                    result += ' ';    // Everything else
+        else if (c == 0x96 || c == 0x97)       result += '-';
+        else if (c == 0x91 || c == 0x92)       result += '\'';
+        else if (c == 0x93 || c == 0x94)       result += '"';
+        else if (c == 0x85)                    result += "...";
+        else if (c == 0xF6 || c == 0xD6)       result += "o";
+        else if (c == 0xE9 || c == 0xC9)       result += "e";
+        else if (c == 0xE8 || c == 0xC8)       result += "e";
+        else if (c == 0xE0 || c == 0xC0)       result += "a";
+        else if (c == 0xF1 || c == 0xD1)       result += "n";
+        else if (c == 0xFC || c == 0xDC)       result += "u";
+        else if (c == 0xE4 || c == 0xC4)       result += "a";
+        else if (c == 0xF8 || c == 0xD8)       result += "o";
+        else if (c == 0xE6 || c == 0xC6)       result += "ae";
+        else if (c == 0xDF)                    result += "ss";
+        else if (c == 0xB0)                    result += "deg";
+        else if (c >= 0x80 && c <= 0xBF)       result += '?';
+        else                                    result += ' ';
     }
     
     return result;
@@ -90,9 +106,6 @@ bool SavingSystem::Save(const MusicLibrary& library,
     {
         json j;
 
-        //======================================================================
-        // METADATA
-        //======================================================================
         j["metadata"]["version"] = "1.0.0";
         j["metadata"]["appName"] = "MOOSIC Player";
         
@@ -110,26 +123,26 @@ bool SavingSystem::Save(const MusicLibrary& library,
         j["metadata"]["platform"] = "linux";
 #endif
 
-        //======================================================================
-        // LIBRARY
-        //======================================================================
-        
+        //----------------------------------------------------------------------
         // Directories
+        //----------------------------------------------------------------------
         j["library"]["directories"] = json::array();
         for (const auto& d : library.GetDirectories())
-            j["library"]["directories"].push_back(SanitizeString(d.string()));
+            j["library"]["directories"].push_back(d.u8string());
 
+        //----------------------------------------------------------------------
         // Tracks
+        //----------------------------------------------------------------------
         j["library"]["tracks"] = json::array();
         for (const auto& track : library.GetTracks())
         {
             json t;
             t["id"] = track.GetId();
-            t["path"] = SanitizeString(track.GetPath().string());
-            t["title"] = SanitizeString(track.GetTitle());
-            t["artist"] = SanitizeString(track.GetArtist());
-            t["album"] = SanitizeString(track.GetAlbum());
-            t["genre"] = SanitizeString(track.GetGenre());
+            t["path"] = track.GetPath().u8string();
+            t["title"] = track.GetTitle();
+            t["artist"] = track.GetArtist();
+            t["album"] = track.GetAlbum();
+            t["genre"] = track.GetGenre();
             t["trackNumber"] = track.GetTrackNumber();
             t["year"] = track.GetYear();
             t["duration"] = track.GetDuration();
@@ -137,18 +150,18 @@ bool SavingSystem::Save(const MusicLibrary& library,
             t["bitRate"] = track.GetBitRate();
             t["channels"] = track.GetChannels();
             t["favourite"] = track.IsFavourite();
+            t["playCount"] = track.GetPlayCount();
             j["library"]["tracks"].push_back(t);
         }
 
-        //======================================================================
-        // PLAYLISTS
-        //======================================================================
-        
+        //----------------------------------------------------------------------
+        // Playlists
+        //----------------------------------------------------------------------
         j["playlists"] = json::array();
         for (const auto& playlist : playlists.GetAllPlaylists())
         {
             json p;
-            p["name"] = SanitizeString(playlist.name);
+            p["name"] = playlist.name;
             p["trackIds"] = playlist.trackIds;
             j["playlists"].push_back(p);
         }
@@ -158,10 +171,9 @@ bool SavingSystem::Save(const MusicLibrary& library,
         else
             j["playlists_activeIndex"] = -1;
 
-        //======================================================================
-        // PLAYER STATE
-        //======================================================================
-        
+        //----------------------------------------------------------------------
+        // Player State
+        //----------------------------------------------------------------------
         const MusicTrack* currentTrack = controller.GetCurrentTrack();
         j["playerState"]["currentTrackId"] = currentTrack ? currentTrack->GetId() : 0;
         j["playerState"]["position"] = controller.GetCurrentPosition();
@@ -176,29 +188,29 @@ bool SavingSystem::Save(const MusicLibrary& library,
         case PlaybackMode::Reverse: j["playerState"]["playbackMode"] = "reverse"; break;
         }
 
-        //======================================================================
-        // SETTINGS
-        //======================================================================
-        
-        j["settings"]["themeName"] = SanitizeString(settings.GetThemeName());
+        //----------------------------------------------------------------------
+        // Settings
+        //----------------------------------------------------------------------
+        j["settings"]["themeName"] = settings.GetThemeName();
         j["settings"]["visualizerMode"] = settings.GetVisualizerMode();
         j["settings"]["layoutMode"] = settings.GetLayoutMode();
 
-        //======================================================================
-        // ATOMIC SAVE
-        //======================================================================
-        
+        //----------------------------------------------------------------------
+        // Atomic save
+        //----------------------------------------------------------------------
         std::string tempPath = m_savePath.string() + ".tmp";
-        std::ofstream file(tempPath);
+        std::ofstream file(tempPath, std::ios::binary);
         if (!file.is_open())
         {
             std::cerr << "[SavingSystem] Failed to open: " << tempPath << "\n";
             return false;
         }
 
-        file << j.dump(2);
+        std::string jsonStr = j.dump(2);
+        file.write(jsonStr.c_str(), jsonStr.size());
         file.close();
 
+        // Delete old file and rename temp
         std::error_code ec;
         std::filesystem::remove(m_savePath, ec);
         std::filesystem::rename(tempPath, m_savePath, ec);
@@ -227,20 +239,26 @@ bool SavingSystem::Load(MusicLibrary& library,
 {
     try
     {
-        std::ifstream file(m_savePath);
+        std::ifstream file(m_savePath, std::ios::binary);
         if (!file.is_open())
         {
             std::cout << "[SavingSystem] No save file found (first run?) -> " << m_savePath << "\n";
             return false;
         }
 
-        json j;
-        file >> j;
+        // Read entire file as string
+        std::string content((std::istreambuf_iterator<char>(file)),
+                             std::istreambuf_iterator<char>());
+        file.close();
 
-        //======================================================================
-        // METADATA
-        //======================================================================
-        
+        if (content.empty())
+        {
+            std::cout << "[SavingSystem] Empty save file\n";
+            return false;
+        }
+
+        json j = json::parse(content);
+
         if (j.contains("metadata"))
         {
             std::cout << "[SavingSystem] Save version: " 
@@ -249,16 +267,15 @@ bool SavingSystem::Load(MusicLibrary& library,
                       << j["metadata"].value("lastSaved", "unknown") << "\n";
         }
 
-        //======================================================================
-        // LIBRARY
-        //======================================================================
-        
         if (j.contains("library"))
         {
             if (j["library"].contains("directories"))
             {
                 for (const auto& dir : j["library"]["directories"])
-                    library.AddDirectory(dir.get<std::string>());
+                {
+                    std::string dirStr = dir.get<std::string>();
+                    library.AddDirectory(std::filesystem::u8path(dirStr));
+                }
             }
 
             if (j["library"].contains("tracks"))
@@ -267,31 +284,32 @@ bool SavingSystem::Load(MusicLibrary& library,
                 {
                     MusicTrack track;
                     track.SetId(trackJson["id"].get<std::size_t>());
-                    track.SetPath(trackJson["path"].get<std::string>());
-                    track.SetTitle(trackJson["title"].get<std::string>());
-                    track.SetArtist(trackJson["artist"].get<std::string>());
-                    track.SetAlbum(trackJson["album"].get<std::string>());
+                    
+                    std::string pathStr = trackJson["path"].get<std::string>();
+                    std::filesystem::path filePath = std::filesystem::u8path(pathStr);
+                    track.SetPath(filePath);
+                    
+                    track.SetTitle(trackJson.value("title", "Unknown Track"));
+                    track.SetArtist(trackJson.value("artist", "Unknown Artist"));
+                    track.SetAlbum(trackJson.value("album", "Unknown Album"));
                     track.SetGenre(trackJson.value("genre", ""));
                     track.SetTrackNumber(trackJson.value("trackNumber", 0));
                     track.SetYear(trackJson.value("year", 0));
-                    track.SetDuration(trackJson["duration"].get<unsigned int>());
+                    track.SetDuration(trackJson.value("duration", 0));
                     track.SetSampleRate(trackJson.value("sampleRate", 0));
                     track.SetBitRate(trackJson.value("bitRate", 0));
                     track.SetChannels(trackJson.value("channels", 0));
                     track.SetFavourite(trackJson.value("favourite", false));
+                    track.SetPlayCount(trackJson.value("playCount", 0));
 
-                    if (std::filesystem::exists(track.GetPath()))
+                    if (std::filesystem::exists(filePath))
                         library.AddTrack(track);
                     else
-                        std::cout << "[SavingSystem] Missing file: " << track.GetPath() << "\n";
+                        std::cout << "[SavingSystem] Missing file: " << pathStr << "\n";
                 }
             }
         }
 
-        //======================================================================
-        // PLAYLISTS
-        //======================================================================
-        
         if (j.contains("playlists"))
         {
             for (const auto& playlistJson : j["playlists"])
@@ -312,10 +330,6 @@ bool SavingSystem::Load(MusicLibrary& library,
                 playlists.SetActivePlaylist(static_cast<size_t>(activeIndex));
         }
 
-        //======================================================================
-        // PLAYER STATE
-        //======================================================================
-        
         if (j.contains("playerState"))
         {
             std::size_t trackId = j["playerState"].value("currentTrackId", 0);
@@ -346,10 +360,6 @@ bool SavingSystem::Load(MusicLibrary& library,
             }
         }
 
-        //======================================================================
-        // SETTINGS
-        //======================================================================
-        
         if (j.contains("settings"))
         {
             settings.SetThemeName(j["settings"].value("themeName", "Dark"));

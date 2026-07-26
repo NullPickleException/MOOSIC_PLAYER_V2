@@ -38,6 +38,7 @@ public:
     void RemoveTrack(std::size_t id);
     void RemoveTracksFromDirectory(const std::filesystem::path& directory);
     const std::deque<MusicTrack>& GetTracks() const;
+    std::deque<MusicTrack>& GetTracks();
     std::size_t GetTrackCount() const;
 
     //--------------------------------------------------------------------------

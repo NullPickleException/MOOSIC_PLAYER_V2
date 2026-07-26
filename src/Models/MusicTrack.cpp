@@ -83,6 +83,16 @@ void MusicTrack::SetFavourite(bool value)
     m_isFavourite = value;
 }
 
+void MusicTrack::SetPlayCount(unsigned int count)
+{
+    m_playCount = count;
+}
+
+void MusicTrack::IncrementPlayCount()
+{
+    m_playCount++;
+}
+
 //----------------------------------------------------------
 // Getters
 //----------------------------------------------------------
@@ -173,6 +183,11 @@ const std::vector<unsigned char>& MusicTrack::GetAlbumArtData() const
 bool MusicTrack::IsFavourite() const
 {
     return m_isFavourite;
+}
+
+unsigned int MusicTrack::GetPlayCount() const
+{
+    return m_playCount;
 }
 
 }

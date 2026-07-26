@@ -3,6 +3,7 @@
 //==============================================================================
 
 #include "DirectoryDataModel.h"
+#include "PlaylistDataModel.h"
 #include "../../Models/MusicTrack.h"
 
 #include <nfd.h>
@@ -16,8 +17,9 @@ namespace moosic
 // Constructor / Destructor
 //==============================================================================
 
-DirectoryDataModel::DirectoryDataModel(MusicLibrary& library)
+DirectoryDataModel::DirectoryDataModel(MusicLibrary& library, PlaylistDataModel* playlistModel)
     : m_sourceLibrary(library)
+    , m_playlistModel(playlistModel)
 {
 }
 
@@ -47,9 +49,12 @@ bool DirectoryDataModel::HasDirectory(const std::filesystem::path& path) const
 
 float DirectoryDataModel::GetProgress() const
 {
-    int total = m_totalFiles.load();
+    int total = m_totalFiles.load(std::memory_order_acquire);
     if (total > 0)
-        return static_cast<float>(m_processedFiles.load()) / static_cast<float>(total);
+    {
+        int processed = m_processedFiles.load(std::memory_order_acquire);
+        return static_cast<float>(processed) / static_cast<float>(total);
+    }
     return 0.0f;
 }
 
@@ -84,6 +89,37 @@ void DirectoryDataModel::AddDirectory(const std::filesystem::path& folder)
 
 void DirectoryDataModel::RemoveDirectory(const std::filesystem::path& path)
 {
+    // Collect track IDs from this directory before removing them
+    if (m_playlistModel)
+    {
+        std::vector<std::size_t> idsToRemove;
+        for (const auto& track : m_sourceLibrary.GetTracks())
+        {
+            if (track.GetPath().parent_path() == path)
+                idsToRemove.push_back(track.GetId());
+        }
+        
+        // Remove these IDs from all playlists
+        auto& playlists = m_playlistModel->GetAllPlaylists();
+        for (auto& playlist : playlists)
+        {
+            playlist.trackIds.erase(
+                std::remove_if(playlist.trackIds.begin(), playlist.trackIds.end(),
+                    [&](std::size_t id) {
+                        return std::find(idsToRemove.begin(), idsToRemove.end(), id) != idsToRemove.end();
+                    }),
+                playlist.trackIds.end());
+        }
+        
+        // Rebuild active playlist if one is selected
+        if (m_playlistModel->GetActivePlaylistIndex().has_value())
+        {
+            m_playlistModel->RebuildActiveTrackList();
+        }
+        
+        m_playlistModel->NotifyDataChanged();
+    }
+
     m_sourceLibrary.RemoveTracksFromDirectory(path);
     m_sourceLibrary.RemoveDirectory(path);
     
@@ -92,6 +128,17 @@ void DirectoryDataModel::RemoveDirectory(const std::filesystem::path& path)
 
 void DirectoryDataModel::ClearAll()
 {
+    // Clear all track IDs from all playlists
+    if (m_playlistModel)
+    {
+        auto& playlists = m_playlistModel->GetAllPlaylists();
+        for (auto& playlist : playlists)
+            playlist.trackIds.clear();
+        
+        m_playlistModel->ClearActivePlaylistData();
+        m_playlistModel->NotifyDataChanged();
+    }
+
     m_sourceLibrary.Clear();
     NotifyChanged();
 }
@@ -102,7 +149,7 @@ void DirectoryDataModel::ClearAll()
 
 void DirectoryDataModel::Update()
 {
-    if (m_isFinished.load())
+    if (m_isFinished.load(std::memory_order_acquire))
         CommitImport();
 }
 
@@ -112,7 +159,10 @@ void DirectoryDataModel::Update()
 
 void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
 {
-    if (m_isImporting.load()) return;
+    // Prevent double-import
+    bool expected = false;
+    if (!m_isImporting.compare_exchange_strong(expected, true))
+        return;
 
     if (m_importThread.joinable())
         m_importThread.join();
@@ -120,24 +170,21 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
     // Reset state
     m_pendingDirectory = folder;
     m_importedTracks.clear();
-    m_totalFiles = 0;
-    m_processedFiles = 0;
-    m_successfulFiles = 0;
-    m_isFinished = false;
-    m_isImporting = true;
+    m_totalFiles.store(0, std::memory_order_release);
+    m_processedFiles.store(0, std::memory_order_release);
+    m_successfulFiles.store(0, std::memory_order_release);
+    m_isFinished.store(false, std::memory_order_release);
     
     NotifyChanged();
 
     m_importThread = std::thread([this, folder]()
     {
-        // Scan
         auto files = m_scanner.Scan(folder);
         int total = static_cast<int>(files.size());
-        m_totalFiles = total;
+        m_totalFiles.store(total, std::memory_order_release);
 
         if (total > 0)
         {
-            // Process in parallel
             unsigned int numThreads = std::max(1u, std::min(std::thread::hardware_concurrency(), 8u));
             
             std::vector<std::future<void>> futures;
@@ -162,14 +209,22 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
                             try
                             {
                                 auto track = m_reader.ReadMetadataForSingleTrack(files[i]);
-                                std::lock_guard<std::mutex> lock(tracksMutex);
-                                tracks.push_back(std::move(track));
+                                
+                                {
+                                    std::lock_guard<std::mutex> lock(tracksMutex);
+                                    tracks.push_back(std::move(track));
+                                }
                             }
                             catch (...) {}
 
-                            int count = processed.fetch_add(1) + 1;
-                            m_processedFiles.store(count);
-                            m_successfulFiles.store(static_cast<int>(tracks.size()));
+                            int count = processed.fetch_add(1, std::memory_order_relaxed) + 1;
+                            m_processedFiles.store(count, std::memory_order_release);
+                            
+                            // Read tracks.size() under the lock for correctness
+                            {
+                                std::lock_guard<std::mutex> lock(tracksMutex);
+                                m_successfulFiles.store(static_cast<int>(tracks.size()), std::memory_order_release);
+                            }
                         }
                     }
                 ));
@@ -181,14 +236,14 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
             m_importedTracks = std::move(tracks);
         }
 
-        m_isFinished = true;
-        m_isImporting = false;
+        m_isFinished.store(true, std::memory_order_release);
+        m_isImporting.store(false, std::memory_order_release);
     });
 }
 
 void DirectoryDataModel::CommitImport()
 {
-    if (!m_isFinished.load()) return;
+    if (!m_isFinished.load(std::memory_order_acquire)) return;
 
     if (m_importThread.joinable())
         m_importThread.join();
@@ -202,7 +257,7 @@ void DirectoryDataModel::CommitImport()
     }
 
     m_importedTracks.clear();
-    m_isFinished = false;
+    m_isFinished.store(false, std::memory_order_release);
     
     NotifyChanged();
 }

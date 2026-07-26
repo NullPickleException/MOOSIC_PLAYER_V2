@@ -36,6 +36,9 @@ public:
     void SetHasAlbumArt(bool value);
     void SetAlbumArtData(const std::vector<unsigned char>& data);
     void SetFavourite(bool value);
+    
+    void SetPlayCount(unsigned int count);
+    void IncrementPlayCount();
 
     //----------------------------------------------------------
     // Getters
@@ -62,6 +65,7 @@ public:
     bool HasAlbumArt() const;
     const std::vector<unsigned char>& GetAlbumArtData() const;
     bool IsFavourite() const;
+    unsigned int GetPlayCount() const;
 
 private:
     std::filesystem::path m_path;
@@ -82,9 +86,10 @@ private:
     bool m_hasAlbumArt = false;
     bool m_isFavourite = false;
     
-    std::vector<unsigned char> m_albumArtData;  // Raw image data
+    std::vector<unsigned char> m_albumArtData;
 
     std::size_t m_id = 0;
+    unsigned int m_playCount = 0;
 };
 
 }

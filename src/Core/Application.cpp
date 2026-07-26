@@ -10,6 +10,9 @@
 #include <imgui_impl_sdlrenderer2.h>
 #include <iostream>
 
+// BASS headers
+#include "Services/BassHeaders.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__APPLE__)
@@ -91,6 +94,9 @@ namespace moosic
 
     bool Application::init()
     {
+        //======================================================================
+        // SDL Initialization
+        //======================================================================
         if (SDL_Init(SDL_INIT_VIDEO) < 0)
         {
             std::cerr << "SDL could not initialize!\n"
@@ -127,6 +133,18 @@ namespace moosic
             return false;
         }
 
+        //======================================================================
+        // BASS Initialization (once, before anything else uses it)
+        //======================================================================
+        if (!InitBass())
+        {
+            std::cerr << "[Application] BASS initialization failed\n";
+            // Non-fatal - app can still work without audio
+        }
+
+        //======================================================================
+        // ImGui Initialization
+        //======================================================================
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -137,6 +155,9 @@ namespace moosic
         ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_renderer);
         ImGui_ImplSDLRenderer2_Init(m_renderer);
 
+        //======================================================================
+        // UI & State
+        //======================================================================
         m_ui.Initialize(m_window);
         LoadState();
 
@@ -157,6 +178,9 @@ namespace moosic
         if (m_window)
             SDL_DestroyWindow(m_window);
         SDL_Quit();
+
+        // Free BASS
+        BASS_Free();
     }
 
     void Application::Update()
@@ -185,6 +209,42 @@ namespace moosic
         ImGui::Render();
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_renderer);
         SDL_RenderPresent(m_renderer);
+    }
+
+    //==========================================================================
+    // BASS Initialization
+    //==========================================================================
+
+    bool Application::InitBass()
+    {
+        // Initialize BASS with default sound device
+        if (!BASS_Init(-1, 44100, 0, nullptr, nullptr))
+        {
+            std::cerr << "[Application] BASS_Init failed. Error: " 
+                      << BASS_ErrorGetCode() << "\n";
+            return false;
+        }
+
+        // Load format plugins
+#if defined(_WIN32)
+        BASS_PluginLoad("bass_aac.dll", 0);
+        BASS_PluginLoad("bassflac.dll", 0);
+        BASS_PluginLoad("bassopus.dll", 0);
+        BASS_PluginLoad("basswma.dll", 0);
+#elif defined(__linux__)
+        BASS_PluginLoad("libbass_aac.so", 0);
+        BASS_PluginLoad("libbassflac.so", 0);
+        BASS_PluginLoad("libbassopus.so", 0);
+#elif defined(__APPLE__)
+        // macOS: CoreAudio handles AAC/MP3/ALAC natively
+        // These plugins are optional if you have the dylibs
+        // BASS_PluginLoad("libbassflac.dylib", 0);
+        // BASS_PluginLoad("libbassopus.dylib", 0);
+#endif
+
+        m_bassInitialized = true;
+        std::cout << "[Application] BASS initialized successfully\n";
+        return true;
     }
 
     //==========================================================================
@@ -227,4 +287,4 @@ namespace moosic
         m_playbackController.Pause();
     }
 
-} // namespace moosic
+} // namespace moosic   

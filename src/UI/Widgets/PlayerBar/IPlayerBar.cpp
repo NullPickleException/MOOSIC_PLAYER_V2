@@ -83,11 +83,10 @@ namespace moosic
 
     void IPlayerBar::LoadAlbumArt(const MusicTrack *track)
     {
-        // Don't retry if we already attempted for this track
         if (m_artLoadAttempted)
             return;
 
-        if (!track || !m_renderer)
+        if (!track || !m_renderer || !m_playbackController)
         {
             m_albumArtBox.ClearTexture();
             m_lightbox.SetTexture(nullptr, 0, 0);
@@ -101,7 +100,7 @@ namespace moosic
         if (m_lastAlbumArtTrackId == trackId && m_albumArtTexture)
             return;
 
-        // Clear old
+        // Clear old texture
         if (m_albumArtTexture)
         {
             m_imageLoader.DestroyImGuiTexture(m_albumArtTexture);
@@ -110,23 +109,41 @@ namespace moosic
         m_albumArtWidth = 0;
         m_albumArtHeight = 0;
         m_albumArtBox.ClearTexture();
-        m_artLoadAttempted = true; // Mark attempted - won't retry
+        m_artLoadAttempted = true;
 
-        // Get art data
+        //----------------------------------------------------------------------
+        // Check shared cache in PlaybackController first
+        //----------------------------------------------------------------------
+        const CachedAlbumArtData *cachedData = m_playbackController->GetCachedAlbumArt(trackId);
+
         std::vector<unsigned char> artData;
-        const auto &trackArt = track->GetAlbumArtData();
 
-        if (!trackArt.empty())
+        if (cachedData && !cachedData->data.empty())
         {
-            artData = trackArt;
+            // Use cached raw data
+            artData = cachedData->data;
         }
         else
         {
-            // Read once from file
-            MetadataReader reader;
-            MusicTrack refreshed = reader.ReadMetadataForSingleTrack(track->GetPath());
-            if (refreshed.HasAlbumArt())
-                artData = refreshed.GetAlbumArtData();
+            // Load from track or file
+            const auto &trackArt = track->GetAlbumArtData();
+            if (!trackArt.empty())
+            {
+                artData = trackArt;
+            }
+            else
+            {
+                MetadataReader reader;
+                MusicTrack refreshed = reader.ReadMetadataForSingleTrack(track->GetPath());
+                if (refreshed.HasAlbumArt())
+                    artData = refreshed.GetAlbumArtData();
+            }
+
+            // Cache in PlaybackController for other player bars
+            if (!artData.empty())
+            {
+                m_playbackController->CacheAlbumArt(trackId, artData, 0, 0); // dimensions filled after decode
+            }
         }
 
         if (artData.empty())
