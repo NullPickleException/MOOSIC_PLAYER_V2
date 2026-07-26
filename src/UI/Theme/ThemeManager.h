@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Theme.h"
+
 #include "Themes/Default_Themes/DarkTheme.h"
 #include "Themes/Default_Themes/LightTheme.h"
 #include "Themes/Default_Themes/DarkGreenTheme.h"
@@ -19,6 +20,16 @@
 #include "Themes/Default_Themes/LightOrangeTheme.h"
 #include "Themes/Default_Themes/DarkPinkTheme.h"
 #include "Themes/Default_Themes/LightPinkTheme.h"
+
+#include "Themes/Ocean_Themes/CoralReefTheme.h"
+#include "Themes/Ocean_Themes/DeepBlueTheme.h"
+#include "Themes/Ocean_Themes/LagoonTheme.h"
+#include "Themes/Ocean_Themes/WhaleSongTheme.h"
+#include "Themes/Ocean_Themes/StormTheme.h"
+#include "Themes/Ocean_Themes/TsunamiTheme.h"
+#include "Themes/Ocean_Themes/SeafoamTheme.h"
+#include "Themes/Ocean_Themes/PearlTheme.h"
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -60,6 +71,9 @@ namespace moosic
         }
         void RegisterThemes()
         {
+            //===================================
+            // Default Themes
+            //===================================
             RegisterTheme("Dark", CreateDarkTheme);
             RegisterTheme("Light", CreateLightTheme);
             RegisterTheme("Dark Green", CreateDarkGreenTheme);
@@ -72,6 +86,18 @@ namespace moosic
             RegisterTheme("Light Orange", CreateLightOrangeTheme);
             RegisterTheme("Dark Pink", CreateDarkPinkTheme);
             RegisterTheme("Light Pink", CreateLightPinkTheme);
+
+            //===================================
+            // Ocean Themes
+            //===================================
+            RegisterTheme("Coral Reef", CreateCoralReefTheme);
+            RegisterTheme("Deep Blue", CreateDeepBlueTheme);
+            RegisterTheme("Lagoon", CreateLagoonTheme);
+            RegisterTheme("Whale Song", CreateWhaleSongTheme);
+            RegisterTheme("Storm", CreateStormTheme);
+            RegisterTheme("Tsunami", CreateTsunamiTheme);
+            RegisterTheme("Seafoam", CreateSeafoamTheme);
+            RegisterTheme("Pearl", CreatePearlTheme);
         }
 
         //--------------------------------------------------------------------------
