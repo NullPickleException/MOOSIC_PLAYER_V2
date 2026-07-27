@@ -1,14 +1,16 @@
 //==============================================================================
-// PlaybackController.h
+// Services/PlaybackController.h
 //==============================================================================
 // Central playback controller managing audio engine, track navigation,
-// playback modes, volume, and visualizer settings
+// playback modes, volume, and visualizer settings.
+// Owns PlayerBarData as the single source of truth for all player bar UI state.
 //==============================================================================
 
 #pragma once
 
 #include "AudioEngine.h"
 #include "../Models/MusicLibrary.h"
+#include "../UI/Data/PlayerBarData.h"
 #include <vector>
 #include <cstddef>
 #include <unordered_map>
@@ -16,151 +18,140 @@
 namespace moosic
 {
 
-    //==============================================================================
+//==============================================================================
+// PlaybackController
+//==============================================================================
+
+class PlaybackController
+{
+public:
+    explicit PlaybackController(MusicLibrary& library);
+
+    //--------------------------------------------------------------------------
+    // Track List Management
+    //--------------------------------------------------------------------------
+
+    void SetCurrentTrackList(const std::vector<const MusicTrack*>& trackList);
+    void SetCurrentTrackListByIds(const std::vector<std::size_t>& trackIds);
+    void RefreshTrackList();
+
+    //--------------------------------------------------------------------------
+    // Track Selection
+    //--------------------------------------------------------------------------
+
+    void SelectTrack(const MusicTrack& track);
+    void SelectTrackByIndex(size_t index);
+    void SelectTrackById(std::size_t trackId);
+
+    //--------------------------------------------------------------------------
+    // Playback Control
+    //--------------------------------------------------------------------------
+
+    void Play();
+    void Pause();
+    void Stop();
+    void TogglePlayPause();
+
+    //--------------------------------------------------------------------------
+    // Navigation
+    //--------------------------------------------------------------------------
+
+    void Next();
+    void Previous();
+    void SeekTo(float seconds);
+
+    //--------------------------------------------------------------------------
+    // Volume
+    //--------------------------------------------------------------------------
+
+    void SetVolume(float volume);
+    float GetVolume() const;
+
+    //--------------------------------------------------------------------------
+    // Status (direct engine queries, used by non-UI code)
+    //--------------------------------------------------------------------------
+
+    const MusicTrack* GetCurrentTrack() const;
+    bool IsPlaying() const;
+    bool IsPaused() const;
+    bool IsStopped() const;
+    bool HasTrack() const;
+    float GetCurrentPosition() const;
+    float GetCurrentDuration() const;
+
+    //--------------------------------------------------------------------------
     // Playback Modes
-    //==============================================================================
+    //--------------------------------------------------------------------------
 
-    enum class PlaybackMode
-    {
-        Normal,  // Play in order, stop at end
-        Reverse, // Play in reverse order, stop at beginning
-        Repeat,  // Repeat current track only
-        Shuffle  // Play in random order
-    };
+    void SetPlaybackMode(PlaybackMode mode);
+    PlaybackMode GetPlaybackMode() const;
 
-    //==============================================================================
-    // Cached Album Art Data (raw bytes, not textures)
-    //==============================================================================
+    //--------------------------------------------------------------------------
+    // Audio Stream
+    //--------------------------------------------------------------------------
 
-    struct CachedAlbumArtData
-    {
-        std::vector<unsigned char> data;
-        int width = 0;
-        int height = 0;
-    };
+    HSTREAM GetAudioStream() const { return m_audioEngine.GetStream(); }
 
-    //==============================================================================
-    // PlaybackController
-    //==============================================================================
+    //--------------------------------------------------------------------------
+    // Visualizer Mode
+    //--------------------------------------------------------------------------
 
-    class PlaybackController
-    {
-    public:
-        explicit PlaybackController(MusicLibrary &library);
+    void SetVisualizerMode(int mode) { m_visualizerMode = mode; }
+    int GetVisualizerMode() const { return m_visualizerMode; }
 
-        //--------------------------------------------------------------------------
-        // Track List Management
-        //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // Update (call once per frame from main loop)
+    // Handles track end detection AND refreshes PlayerBarData
+    //--------------------------------------------------------------------------
 
-        void SetCurrentTrackList(const std::vector<const MusicTrack *> &trackList);
-        void SetCurrentTrackListByIds(const std::vector<std::size_t> &trackIds);
-        void RefreshTrackList();
+    void Update();
 
-        //--------------------------------------------------------------------------
-        // Track Selection
-        //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // PlayerBarData - Single source of truth for all player bars
+    //--------------------------------------------------------------------------
 
-        void SelectTrack(const MusicTrack &track);
-        void SelectTrackByIndex(size_t index);
-        void SelectTrackById(std::size_t trackId);
+    const PlayerBarData& GetPlayerBarData() const { return m_playerBarData; }
 
-        //--------------------------------------------------------------------------
-        // Playback Control
-        //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // Album Art Cache (raw bytes stored in PlayerBarData)
+    //--------------------------------------------------------------------------
 
-        void Play();
-        void Pause();
-        void Stop();
-        void TogglePlayPause();
+    void CacheAlbumArt(std::size_t trackId, const std::vector<unsigned char>& data, int width, int height);
+    void ClearAlbumArtCache();
 
-        //--------------------------------------------------------------------------
-        // Navigation
-        //--------------------------------------------------------------------------
+private:
+    //--------------------------------------------------------------------------
+    // Internal Helpers
+    //--------------------------------------------------------------------------
 
-        void Next();
-        void Previous();
-        void SeekTo(float seconds);
+    size_t GetNextIndex() const;
+    size_t GetPreviousIndex() const;
+    void UpdateTrackList();
+    void OnTrackEnded();
+    void UpdatePlayerBarData();
 
-        //--------------------------------------------------------------------------
-        // Volume
-        //--------------------------------------------------------------------------
+    const MusicTrack* GetTrackById(std::size_t id) const;
+    const MusicTrack* GetCurrentTrackSafe() const;
+    void IncrementPlayCount(std::size_t trackId);
 
-        void SetVolume(float volume);
-        float GetVolume() const;
+    //--------------------------------------------------------------------------
+    // Members
+    //--------------------------------------------------------------------------
 
-        //--------------------------------------------------------------------------
-        // Status
-        //--------------------------------------------------------------------------
+    MusicLibrary& m_library;
+    AudioEngine m_audioEngine;
 
-        const MusicTrack *GetCurrentTrack() const;
-        bool IsPlaying() const;
-        bool IsPaused() const;
-        bool IsStopped() const;
-        bool HasTrack() const;
+    std::vector<std::size_t> m_currentTrackIds;
+    size_t m_currentIndex = 0;
+    PlaybackMode m_playbackMode = PlaybackMode::Normal;
+    bool m_trackEndProcessed = false;
+    int m_visualizerMode = 0;
 
-        float GetCurrentPosition() const;
-        float GetCurrentDuration() const;
+    // Single source of truth for all player bar UI state
+    PlayerBarData m_playerBarData;
 
-        //--------------------------------------------------------------------------
-        // Playback Modes
-        //--------------------------------------------------------------------------
-
-        void SetPlaybackMode(PlaybackMode mode);
-        PlaybackMode GetPlaybackMode() const;
-
-        //--------------------------------------------------------------------------
-        // Audio Stream
-        //--------------------------------------------------------------------------
-
-        HSTREAM GetAudioStream() const { return m_audioEngine.GetStream(); }
-
-        //--------------------------------------------------------------------------
-        // Visualizer Mode
-        //--------------------------------------------------------------------------
-
-        void SetVisualizerMode(int mode) { m_visualizerMode = mode; }
-        int GetVisualizerMode() const { return m_visualizerMode; }
-
-        //--------------------------------------------------------------------------
-        // Update
-        //--------------------------------------------------------------------------
-
-        void Update();
-        void OnTrackEnded();
-
-        //--------------------------------------------------------------------------
-        // Album Art Cache (shared across all player bars)
-        //--------------------------------------------------------------------------
-
-        const CachedAlbumArtData* GetCachedAlbumArt(std::size_t trackId) const;
-        void CacheAlbumArt(std::size_t trackId, const std::vector<unsigned char>& data, int width, int height);
-        void ClearAlbumArtCache();
-
-    private:
-        //--------------------------------------------------------------------------
-        // Internal Helpers
-        //--------------------------------------------------------------------------
-
-        size_t GetNextIndex() const;
-        size_t GetPreviousIndex() const;
-        void UpdateTrackList();
-        
-        const MusicTrack* GetTrackById(std::size_t id) const;
-        const MusicTrack* GetCurrentTrackSafe() const;
-        void IncrementPlayCount(std::size_t trackId);
-
-    private:
-        MusicLibrary &m_library;
-        AudioEngine m_audioEngine;
-
-        std::vector<std::size_t> m_currentTrackIds;
-        size_t m_currentIndex = 0;
-        PlaybackMode m_playbackMode = PlaybackMode::Normal;
-        bool m_trackEndProcessed = false;
-        int m_visualizerMode = 0;
-
-        // Album art cache - raw image data, renderer-independent
-        std::unordered_map<std::size_t, CachedAlbumArtData> m_albumArtCache;
-    };
+    // Album art cache - raw image data, renderer-independent
+    std::unordered_map<std::size_t, CachedAlbumArtData> m_albumArtCache;
+};
 
 } // namespace moosic

@@ -1,5 +1,5 @@
 //==============================================================================
-// SidebarLeftLayout.cpp
+// UI/Layouts/SidebarLeftLayout.cpp
 //==============================================================================
 
 #include "SidebarLeftLayout.h"
@@ -29,7 +29,6 @@ void SidebarLeftLayout::Draw(SDL_Renderer* renderer)
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
     m_playerBar.SetRenderer(renderer);
-    m_playerBar.UpdatePlaybackState();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

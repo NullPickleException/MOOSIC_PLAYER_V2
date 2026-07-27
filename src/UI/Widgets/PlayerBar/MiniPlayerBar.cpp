@@ -1,5 +1,5 @@
 //==============================================================================
-// MiniPlayerBar.cpp
+// UI/Widgets/PlayerBar/MiniPlayerBar.cpp
 //==============================================================================
 
 #include "MiniPlayerBar.h"
@@ -25,40 +25,39 @@ void MiniPlayerBar::Draw()
     float winWidth = ImGui::GetContentRegionAvail().x;
     constexpr float Gap = 4.0f;
 
-    // Song info
+    //--------------------------------------------------------------------------
+    // Song Info
+    //--------------------------------------------------------------------------
     ImGui::PushTextWrapPos(winWidth);
-    ImGui::TextColored(m_theme.TextPrimary, "%s", m_songTitle);
-    ImGui::TextColored(m_theme.TextSecondary, "%s", m_artistName);
+    ImGui::TextColored(m_theme.TextPrimary, "%s", Data().title.c_str());
+    ImGui::TextColored(m_theme.TextSecondary, "%s", Data().artist.c_str());
     ImGui::PopTextWrapPos();
 
     ImGui::Spacing();
 
-    // Progress bar
+    //--------------------------------------------------------------------------
+    // Progress Bar
+    //--------------------------------------------------------------------------
     ImGui::SetNextItemWidth(winWidth);
     PushSliderStyle();
-    if (ImGui::SliderFloat("##MiniProgress", &m_playbackProgress, 0.0f, 1.0f, ""))
+    float progress = Data().progress;
+    if (ImGui::SliderFloat("##MiniProgress", &progress, 0.0f, 1.0f, ""))
     {
         m_isSeeking = true;
-        if (m_songDuration > 0.0f) m_elapsedTime = m_playbackProgress * m_songDuration;
-        OnPlaybackSliderChanged(m_playbackProgress);
+        OnPlaybackSliderChanged(progress);
     }
     if (!ImGui::IsItemActive() && m_isSeeking)
     {
         m_isSeeking = false;
-        if (m_playbackController)
-        {
-            m_elapsedTime = m_playbackController->GetCurrentPosition();
-            m_songDuration = m_playbackController->GetCurrentDuration();
-            if (m_songDuration > 0.0f) m_playbackProgress = m_elapsedTime / m_songDuration;
-        }
     }
     PopStyle();
 
     ImGui::Spacing();
 
-    // Controls row
+    //--------------------------------------------------------------------------
+    // Controls Row
+    //--------------------------------------------------------------------------
     float btnWidth = (winWidth - Gap * 4) / 4.0f;
-    float volWidth = btnWidth * 1.5f;
 
     // Previous
     PushNormalButtonStyle();
@@ -69,7 +68,7 @@ void MiniPlayerBar::Draw()
 
     // Play/Pause
     PushPrimaryButtonStyle();
-    if (ImGui::Button(m_isPlaying ? "||" : ">", ImVec2(btnWidth, 0))) OnPlayPauseButtonPressed();
+    if (ImGui::Button(Data().isPlaying ? "||" : ">", ImVec2(btnWidth, 0))) OnPlayPauseButtonPressed();
     PopStyle();
 
     ImGui::SameLine(0, Gap);
@@ -81,19 +80,21 @@ void MiniPlayerBar::Draw()
 
     ImGui::SameLine(0, Gap);
 
-    // Shuffle/Repeat
+    // Mode
     const char* modeLabels[] = {"Norm", "Rev", "Rep", "Shuf"};
     PushNormalButtonStyle();
-    if (ImGui::Button(modeLabels[static_cast<int>(m_playbackMode)], ImVec2(btnWidth, 0)))
+    if (ImGui::Button(modeLabels[static_cast<int>(Data().playbackMode)], ImVec2(btnWidth, 0)))
         OnPlayModeButtonPressed();
     PopStyle();
 
     ImGui::Spacing();
 
+    //--------------------------------------------------------------------------
     // Volume
+    //--------------------------------------------------------------------------
     ImGui::SetNextItemWidth(winWidth);
     PushSliderStyle();
-    float tempVolume = m_volume;
+    float tempVolume = Data().volume;
     if (ImGui::SliderFloat("##MiniVol", &tempVolume, 0.0f, 1.0f, "Vol: %.2f"))
         OnVolumeSliderChanged(tempVolume);
     PopStyle();

@@ -1,3 +1,7 @@
+//==============================================================================
+// UI/Widgets/PlayerBar/StandardArtLeftPlayerBar.cpp
+//==============================================================================
+
 #include "StandardArtLeftPlayerBar.h"
 #include <imgui.h>
 
@@ -6,19 +10,20 @@ namespace moosic
 
 void StandardArtLeftPlayerBar::Draw()
 {
-    //----------------------------------------------------------
-    // FINE-TUNE OFFSET: Adjust this to nudge play button X
-    //----------------------------------------------------------
     constexpr float PLAY_CENTER_OFFSET_X = -4.0f;
 
     float availWidth = ImGui::GetContentRegionAvail().x;
 
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     // Album Art - Left Column
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     constexpr float ArtColumnWidth = 150.0f;
     constexpr float Gap = 12.0f;
     float artSize = ArtColumnWidth - 4.0f;
+
+    if (Data().trackJustChanged)
+        m_artLoadAttempted = false;
+    LoadAlbumArtForCurrentTrack();
 
     ImGui::BeginGroup();
     m_albumArtBox.Draw(artSize, 4.0f, true, true);
@@ -29,23 +34,20 @@ void StandardArtLeftPlayerBar::Draw()
     ImGui::SameLine();
     ImGui::SetCursorPosX(ImGui::GetCursorPosX() + Gap);
 
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     // Right Panel
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     ImGui::BeginGroup();
     float rightWidth = availWidth - ArtColumnWidth - Gap - 10.0f;
     float rightStartX = ImGui::GetCursorPosX();
 
-    // Song Info - Scrolling text
-    bool trackChanged = (m_lastTrackId != (m_playbackController ? 
-                         m_playbackController->GetCurrentTrack() ? 
-                         m_playbackController->GetCurrentTrack()->GetId() : 0 : 0));
-    
-    DrawScrollingText(m_songTitle, m_theme.TextPrimary, rightWidth, 
+    bool trackChanged = Data().trackJustChanged;
+
+    DrawScrollingText(Data().title.c_str(), m_theme.TextPrimary, rightWidth,
                       m_titleScrollOffset, m_lastTrackChangeTime, trackChanged);
-    DrawScrollingText(m_artistName, m_theme.TextSecondary, rightWidth, 
+    DrawScrollingText(Data().artist.c_str(), m_theme.TextSecondary, rightWidth,
                       m_artistScrollOffset, m_lastTrackChangeTime, trackChanged);
-    
+
     ImGui::Spacing();
 
     // Measurements
@@ -57,7 +59,7 @@ void StandardArtLeftPlayerBar::Draw()
     float prevW = ImGui::CalcTextSize("<<").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
     float playW = ImGui::CalcTextSize(" || ").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.PrimaryButtonExtraWidth;
     float nextW = ImGui::CalcTextSize(">>").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
-    float modeW = ImGui::CalcTextSize("Repeat").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
+    float modeW = ImGui::CalcTextSize(Data().modeLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
     float volBtnW = ImGui::CalcTextSize("Vol").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
 
     // Playback Slider
@@ -80,9 +82,9 @@ void StandardArtLeftPlayerBar::Draw()
     DrawTotalTime();
     ImGui::Spacing();
 
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     // Controls
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     const auto& visStyle = m_visualizer.GetStyle();
     float visWidth = visStyle.BoxWidth;
     float visHeight = visStyle.BoxHeight;
@@ -94,9 +96,6 @@ void StandardArtLeftPlayerBar::Draw()
     float volumeSectionWidth = volBtnW + ControlGap + VolumeSliderWidth;
     float rowY = ImGui::GetCursorPosY();
 
-     //==================================================================
-    // CASE 1: All on one row - CENTER ALIGNED
-    //==================================================================
     float allOnOneRow = visWidth + SectionGap + controlsGroupWidth + SectionGap + volumeSectionWidth + visOffsetX;
     constexpr float EXTRA_PADDING = 20.0f;
 
@@ -104,15 +103,12 @@ void StandardArtLeftPlayerBar::Draw()
     {
         float baseY = rowY;
         float centerLine = baseY + visHeight * 0.5f;
-
         float btnHeight = ImGui::GetFrameHeight();
 
-        // Visualizer
         ImGui::SetCursorPosX(rightStartX + visOffsetX);
         ImGui::SetCursorPosY(baseY);
         DrawVisualizer();
 
-        // Controls - centered
         float controlsStartX = rightStartX + playCenterX - leftOfPlayCenter;
         float minControlsX = rightStartX + visOffsetX + visWidth + SectionGap;
         if (controlsStartX < minControlsX) controlsStartX = minControlsX;
@@ -135,7 +131,6 @@ void StandardArtLeftPlayerBar::Draw()
         ImGui::SetCursorPosY(controlsY);
         DrawPlayModeButton();
 
-        // Volume - centered
         float volumeStartX = rightStartX + rightWidth - volumeSectionWidth - 8.0f;
         float controlsEndX = controlsStartX + controlsGroupWidth;
         if (volumeStartX < controlsEndX + SectionGap)
@@ -152,9 +147,6 @@ void StandardArtLeftPlayerBar::Draw()
         ImGui::SetNextItemWidth(VolumeSliderWidth);
         DrawVolumeSlider();
     }
-    //==================================================================
-    // CASE 2: Visualizer left, volume under, controls right
-    //==================================================================
     else
     {
         float visColumnWidth = (std::min)(visWidth, rightWidth * 0.35f);
@@ -184,7 +176,6 @@ void StandardArtLeftPlayerBar::Draw()
         ImGui::SameLine(0, ControlGap);
         DrawPlayModeButton();
 
-        // Volume under visualizer
         ImGui::SetCursorPosX(visColumnX);
         ImGui::SetCursorPosY(rowY + visHeight + 4.0f);
 

@@ -1,5 +1,5 @@
 //==============================================================================
-// CompactLayout.cpp
+// UI/Layouts/CompactLayout.cpp
 //==============================================================================
 
 #include "CompactLayout.h"
@@ -28,7 +28,6 @@ void CompactLayout::Draw(SDL_Renderer* renderer)
     m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
-    m_playerBar.UpdatePlaybackState();
     m_playerBar.SetRenderer(renderer);
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();

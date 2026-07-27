@@ -62,7 +62,7 @@ namespace moosic
         //--------------------------------------------------------------------------
         // Style Properties - Main Window Rounding (Top flat, Bottom rounded)
         //--------------------------------------------------------------------------
-        style.WindowRounding =0.0f; // Top corners flat (connects to title bar)
+        style.WindowRounding = 0.0f; // Top corners flat (connects to title bar)
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
         style.GrabRounding = 4.0f;
@@ -91,34 +91,33 @@ namespace moosic
     //==============================================================================
     // Settings Window Connection
     //==============================================================================
+void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
+{
+    if (!contentPanel)
+        return;
 
-    void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
-    {
-        if (!contentPanel)
-            return;
+    auto &settingsWindow = contentPanel->GetSettingsWindow();
 
-        auto &settingsWindow = contentPanel->GetSettingsWindow();
+    // Set the shared settings data model
+    settingsWindow.SetSettingsDataModel(&m_settingsData);
 
-        // Set the shared settings data model
-        settingsWindow.SetSettingsDataModel(&m_settingsData);
-        
-        // Theme manager
-        settingsWindow.SetThemeManager(&m_themeManager);
-        settingsWindow.OnThemeChanged(
-            [this]()
-            {
-                ApplyThemeToLayouts();
-            });
+    // Theme manager
+    settingsWindow.SetThemeManager(&m_themeManager);
+    settingsWindow.OnThemeChanged(
+        [this]()
+        {
+            ApplyThemeToLayouts();
+        });
 
-        // Visualizer mode callback - propagates directly to PlaybackController
-        // IPlayerBar reads this value in UpdatePlaybackState() automatically
-        settingsWindow.OnVisualizerModeChanged(
-            [this](int mode)
-            {
-                m_settingsData.SetVisualizerMode(mode);
-                m_playbackController.SetVisualizerMode(mode);
-            });
-    }
+    // Visualizer mode callback - SET DIRECTLY ON CONTROLLER ONLY
+    settingsWindow.OnVisualizerModeChanged(
+        [this](int mode)
+        {
+            m_playbackController.SetVisualizerMode(mode);
+            // Also update data model for saving
+            m_settingsData.SetVisualizerMode(mode);
+        });
+}
 
     WindowContentPanel *UI::GetCurrentContentPanel()
     {
@@ -157,7 +156,7 @@ namespace moosic
     UI::UI(MusicLibrary &library, PlaybackController &playbackController)
         : m_library(library), m_playbackController(playbackController),
           m_libraryData(library),
-          m_directoryData(library, &m_playlistData),  // <-- CHANGED: pass playlist model
+          m_directoryData(library, &m_playlistData), // <-- CHANGED: pass playlist model
           m_playlistData(library),
           // SettingsDataModel is default-initialized with "Dark" theme, spectrum mode, standard layout
           m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
@@ -199,7 +198,7 @@ namespace moosic
     void UI::SetTheme(const Theme &theme)
     {
         m_themeManager.SetTheme(theme);
-        // When setting a raw Theme object, we update the data model with the 
+        // When setting a raw Theme object, we update the data model with the
         // current theme name from the manager (which tracks it internally)
         m_settingsData.SetThemeName(m_themeManager.GetCurrentThemeName());
         ApplyThemeToLayouts();
@@ -209,7 +208,7 @@ namespace moosic
     {
         if (m_themeManager.SetTheme(themeName))
         {
-            m_settingsData.SetThemeName(themeName);  // Sync to data model
+            m_settingsData.SetThemeName(themeName); // Sync to data model
             ApplyThemeToLayouts();
         }
     }
@@ -267,7 +266,7 @@ namespace moosic
         if (newMode != m_layoutMode)
         {
             m_layoutMode = newMode;
-            m_settingsData.SetLayoutMode(static_cast<int>(newMode));  // Sync to data model
+            m_settingsData.SetLayoutMode(static_cast<int>(newMode)); // Sync to data model
             // Reconnect settings window for the current layout
             ConnectSettingsWindowForCurrentLayout();
         }
@@ -302,40 +301,38 @@ namespace moosic
         }
     }
 
-    void UI::Draw(SDL_Renderer *renderer, InputManager &input)
-    {
-        HandleLayoutSwitch(input);
+void UI::Draw(SDL_Renderer *renderer, InputManager &input)
+{
+    HandleLayoutSwitch(input);
 
-        ImGuiViewport *viewport = ImGui::GetMainViewport();
-        float titleBarHeight = m_titleBar.GetTheme().Height;
+    // THIS MUST STAY - it refreshes PlayerBarData that all player bars read from
+    m_playbackController.Update();
 
-        // Small overlap to eliminate the gap between title bar and content
-        // Caused by window rounding and title bar bottom border
-        const float TITLEBAR_OVERLAP = 0.0f;
+    ImGuiViewport *viewport = ImGui::GetMainViewport();
+    float titleBarHeight = m_titleBar.GetTheme().Height;
 
-        // Save original viewport state
-        ImVec2 originalPos = viewport->Pos;
-        ImVec2 originalSize = viewport->Size;
-        ImVec2 originalWorkPos = viewport->WorkPos;
-        ImVec2 originalWorkSize = viewport->WorkSize;
+    const float TITLEBAR_OVERLAP = 0.0f;
 
-        // Shift the entire drawable area down so layouts can't draw over title bar
-        viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight - TITLEBAR_OVERLAP);
-        viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight + TITLEBAR_OVERLAP);
-        viewport->WorkPos = viewport->Pos;
-        viewport->WorkSize = viewport->Size;
+    ImVec2 originalPos = viewport->Pos;
+    ImVec2 originalSize = viewport->Size;
+    ImVec2 originalWorkPos = viewport->WorkPos;
+    ImVec2 originalWorkSize = viewport->WorkSize;
 
-        // Draw layouts (now forced below title bar area)
-        DrawCurrentLayout(renderer);
+    viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight - TITLEBAR_OVERLAP);
+    viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight + TITLEBAR_OVERLAP);
+    viewport->WorkPos = viewport->Pos;
+    viewport->WorkSize = viewport->Size;
 
-        // Restore full viewport for title bar rendering
-        viewport->Pos = originalPos;
-        viewport->Size = originalSize;
-        viewport->WorkPos = originalWorkPos;
-        viewport->WorkSize = originalWorkSize;
+    DrawCurrentLayout(renderer);
 
-        // Draw title bar LAST - it renders at the original full viewport position on top of everything
-        m_titleBar.Render();
-    }
+    viewport->Pos = originalPos;
+    viewport->Size = originalSize;
+    viewport->WorkPos = originalWorkPos;
+    viewport->WorkSize = originalWorkSize;
 
+    m_titleBar.Render();
+}
+
+
+    
 } // namespace moosic

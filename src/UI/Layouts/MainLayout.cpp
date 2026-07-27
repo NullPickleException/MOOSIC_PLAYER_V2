@@ -1,5 +1,5 @@
 //==============================================================================
-// MainLayout.cpp
+// UI/Layouts/MainLayout.cpp
 //==============================================================================
 
 #include "MainLayout.h"
@@ -25,12 +25,10 @@ namespace moosic
 
     void MainLayout::Draw(SDL_Renderer* renderer)
     {
-        // Sync playback state with data models before drawing
         m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
         m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
 
         m_playerBar.SetRenderer(renderer);
-        m_playerBar.UpdatePlaybackState();
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);

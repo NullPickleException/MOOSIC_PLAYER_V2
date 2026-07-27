@@ -1,5 +1,5 @@
 //==============================================================================
-// MiniPlayerLayout.cpp
+// UI/Layouts/MiniPlayerLayout.cpp
 //==============================================================================
 
 #include "MiniPlayerLayout.h"
@@ -32,7 +32,7 @@ void MiniPlayerLayout::Draw(SDL_Renderer* renderer)
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
     m_miniPlayerBar.SetRenderer(renderer);
-    m_mainPlayerBar.UpdatePlaybackState();
+    m_mainPlayerBar.SetRenderer(renderer);
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

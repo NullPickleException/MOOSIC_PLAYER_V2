@@ -23,32 +23,32 @@ namespace moosic
         //==========================================================================
 
         // 60% - Deep Abyss backgrounds (dark oyster interior)
-        const ImVec4 AbyssDark = ImVec4(0.102f, 0.114f, 0.141f, 1.00f);     // #1A1D24 - 26,29,36
-        const ImVec4 AbyssMid = ImVec4(0.122f, 0.137f, 0.169f, 1.00f);      // #1F232B - 31,35,43
-        const ImVec4 AbyssLight = ImVec4(0.141f, 0.161f, 0.200f, 1.00f);    // #242933 - 36,41,51
-        const ImVec4 AbyssPanel = ImVec4(0.082f, 0.094f, 0.118f, 1.00f);    // Darker panel
-        const ImVec4 AbyssDeep = ImVec4(0.065f, 0.075f, 0.094f, 1.00f);     // Deepest bg
-        
+        const ImVec4 AbyssDark = ImVec4(0.102f, 0.114f, 0.141f, 1.00f);  // #1A1D24 - 26,29,36
+        const ImVec4 AbyssMid = ImVec4(0.122f, 0.137f, 0.169f, 1.00f);   // #1F232B - 31,35,43
+        const ImVec4 AbyssLight = ImVec4(0.141f, 0.161f, 0.200f, 1.00f); // #242933 - 36,41,51
+        const ImVec4 AbyssPanel = ImVec4(0.082f, 0.094f, 0.118f, 1.00f); // Darker panel
+        const ImVec4 AbyssDeep = ImVec4(0.065f, 0.075f, 0.094f, 1.00f);  // Deepest bg
+
         const ImVec4 AbyssGlow = ImVec4(0.122f, 0.137f, 0.169f, 0.20f);
         const ImVec4 AbyssVeryLight = ImVec4(0.122f, 0.137f, 0.169f, 0.5f);
         const ImVec4 AbyssSubtle = ImVec4(0.122f, 0.137f, 0.169f, 0.10f);
 
         // 30% - Pearl White (iridescent cream with subtle warmth)
-        const ImVec4 PearlDarker = ImVec4(0.757f, 0.741f, 0.733f, 1.00f);   // #C1BDBA
-        const ImVec4 PearlDark = ImVec4(0.843f, 0.827f, 0.820f, 1.00f);     // #D7D3D1
-        const ImVec4 Pearl = ImVec4(0.910f, 0.886f, 0.878f, 1.00f);         // #E8E2E0 - 232,226,224
-        const ImVec4 PearlMid = ImVec4(0.941f, 0.922f, 0.914f, 1.00f);      // #F0EBE9 - 240,235,233
-        const ImVec4 PearlLight = ImVec4(0.961f, 0.949f, 0.941f, 1.00f);    // #F5F2F0 - 245,242,240
+        const ImVec4 PearlDarker = ImVec4(0.757f, 0.741f, 0.733f, 1.00f); // #C1BDBA
+        const ImVec4 PearlDark = ImVec4(0.843f, 0.827f, 0.820f, 1.00f);   // #D7D3D1
+        const ImVec4 Pearl = ImVec4(0.910f, 0.886f, 0.878f, 1.00f);       // #E8E2E0 - 232,226,224
+        const ImVec4 PearlMid = ImVec4(0.941f, 0.922f, 0.914f, 1.00f);    // #F0EBE9 - 240,235,233
+        const ImVec4 PearlLight = ImVec4(0.961f, 0.949f, 0.941f, 1.00f);  // #F5F2F0 - 245,242,240
         const ImVec4 PearlVeryLight = ImVec4(0.910f, 0.886f, 0.878f, 0.5f);
 
         // 10% - Rose Gold accent (iridescent shimmer)
-        const ImVec4 RoseGold = ImVec4(0.769f, 0.569f, 0.616f, 1.00f);      // #C4919D - 196,145,157
-        const ImVec4 RoseGoldDark = ImVec4(0.616f, 0.455f, 0.494f, 1.00f);  // Darker
-        const ImVec4 RoseGoldDarker = ImVec4(0.463f, 0.341f, 0.373f, 1.00f);// Even darker
-        const ImVec4 RoseGoldLight = ImVec4(0.847f, 0.682f, 0.722f, 1.00f); // Lighter
+        const ImVec4 RoseGold = ImVec4(0.769f, 0.569f, 0.616f, 1.00f);       // #C4919D - 196,145,157
+        const ImVec4 RoseGoldDark = ImVec4(0.616f, 0.455f, 0.494f, 1.00f);   // Darker
+        const ImVec4 RoseGoldDarker = ImVec4(0.463f, 0.341f, 0.373f, 1.00f); // Even darker
+        const ImVec4 RoseGoldLight = ImVec4(0.847f, 0.682f, 0.722f, 1.00f);  // Lighter
 
         // Search dropdown - lighter tint of AbyssMid (60% family)
-        const ImVec4 SearchDropdownBg = ImVec4(0.161f, 0.180f, 0.216f, 1.00f);  // Tinted lighter
+        const ImVec4 SearchDropdownBg = ImVec4(0.161f, 0.180f, 0.216f, 1.00f); // Tinted lighter
 
         // Text
         const ImVec4 TextBright = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
@@ -148,9 +148,9 @@ namespace moosic
         // ── Row colors ──
         t.TrackTable.RowDefault = AbyssDeep;
         t.TrackTable.RowDefaultAlt = AbyssDark;
-        t.TrackTable.RowHovered = AbyssVeryLight;
-        t.TrackTable.RowClicked = ImVec4(PearlDark.x, PearlDark.y, PearlDark.z, 0.35f);
-        t.TrackTable.RowSelected = Pearl;
+        t.TrackTable.RowHovered = ImVec4(RoseGoldLight.x, RoseGoldLight.y, RoseGoldLight.z, 0.42f);
+        t.TrackTable.RowClicked = RoseGoldDarker;
+        t.TrackTable.RowSelected = RoseGoldDarker;
         t.TrackTable.RowPlaying = RoseGold;
 
         // ── Row layout ──

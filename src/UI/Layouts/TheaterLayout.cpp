@@ -1,5 +1,5 @@
 //==============================================================================
-// TheaterLayout.cpp
+// UI/Layouts/TheaterLayout.cpp
 //==============================================================================
 
 #include "TheaterLayout.h"
@@ -28,7 +28,6 @@ void TheaterLayout::Draw(SDL_Renderer* renderer)
     m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
     
     m_playerBar.SetRenderer(renderer);
-    m_playerBar.UpdatePlaybackState();
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

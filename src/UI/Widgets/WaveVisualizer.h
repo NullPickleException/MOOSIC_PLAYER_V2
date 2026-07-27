@@ -58,13 +58,13 @@ namespace moosic
         float SpectrumSensitivity = 2.5f;
         float HighFrequencyBoost = 5.0f;
         float FrequencyBoostCurve = 2.4f;
-        float DynamicRange = 0.55f;
+        float DynamicRange = 0.7f;
         float AttackSpeed = 0.95f;
         float ReleaseSpeed = 0.35f;
         float PeakDecay = 0.90f;
-        float NoiseFloor = 0.02f;
+        float NoiseFloor = 0.01f;
 
-        float NeighborSmoothing = 0.3f;
+        float NeighborSmoothing = 0.2f;
         bool EnableNeighborBlur = true;
 
         bool EnableSpringAnimation = false;

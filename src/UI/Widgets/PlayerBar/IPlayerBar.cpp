@@ -1,13 +1,12 @@
 //==============================================================================
-// IPlayerBar.cpp
+// UI/Widgets/PlayerBar/IPlayerBar.cpp
 //==============================================================================
 
 #include "IPlayerBar.h"
+#include "../../../Services/PlaybackController.h"
 #include "../../../Services/Metadata/MetadataReader.h"
 #include <imgui.h>
 #include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <cmath>
 
 namespace moosic
@@ -16,20 +15,23 @@ namespace moosic
     //==============================================================================
     // Setup & Configuration
     //==============================================================================
+
     void IPlayerBar::SetRenderer(SDL_Renderer *renderer)
     {
         m_renderer = renderer;
         m_lightbox.ApplyTheme(m_theme.Lightbox);
         m_albumArtBox.ApplyTheme(m_theme.AlbumArtBox);
         m_visualizer.ApplyTheme(m_theme.Visualizer);
-        m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
     void IPlayerBar::SetPlaybackController(PlaybackController *controller)
     {
         m_playbackController = controller;
         if (m_playbackController)
-            UpdatePlaybackState();
+        {
+            m_data = &m_playbackController->GetPlayerBarData();
+            SyncChildWidgets();
+        }
     }
 
     void IPlayerBar::ApplyTheme(const PlayerBarTheme &theme)
@@ -38,69 +40,35 @@ namespace moosic
         m_lightbox.ApplyTheme(theme.Lightbox);
         m_albumArtBox.ApplyTheme(theme.AlbumArtBox);
         m_visualizer.ApplyTheme(theme.Visualizer);
-        m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
     }
 
+    //==============================================================================
+    // Child Widget Sync
+    //==============================================================================
+    void IPlayerBar::SyncChildWidgets()
+    {
+        if (!m_data)
+            return;
+        m_visualizer.SetAudioStream(m_data->audioStream);
+        m_visualizer.SetVolume(m_data->volume);
+        // Force-set mode on initial connection to sync with controller
+        m_visualizer.SetMode(m_data->visualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
+        m_lastVisualizerMode = m_data->visualizerMode;
+    }
     //==============================================================================
     // Album Art Cache Management
     //==============================================================================
 
-    CachedAlbumArt *IPlayerBar::GetCachedArt(std::size_t trackId)
-    {
-        auto it = m_albumArtCache.find(trackId);
-        return (it != m_albumArtCache.end()) ? &it->second : nullptr;
-    }
-
-    void IPlayerBar::CacheArt(std::size_t trackId, void *texture, int width, int height)
-    {
-        if (trackId == 0 || !texture)
-            return;
-        m_albumArtCache[trackId] = {texture, width, height};
-    }
-
     void IPlayerBar::ClearAlbumArtCache()
     {
-        // Destroy ALL cached textures
-        for (auto &[id, cached] : m_albumArtCache)
-        {
-            if (cached.texture)
-                m_imageLoader.DestroyImGuiTexture(cached.texture);
-        }
-        m_albumArtCache.clear();
-
-        // Reset current state (texture pointer is now invalid)
-        m_albumArtTexture = nullptr;
-        m_albumArtWidth = 0;
-        m_albumArtHeight = 0;
-        m_lastAlbumArtTrackId = 0;
+        DestroyAlbumArtTexture();
         m_albumArtBox.ClearTexture();
         m_lightbox.SetTexture(nullptr, 0, 0);
+        m_artLoadAttempted = false;
     }
 
-    //==============================================================================
-    // Album Art Management - SIMPLE: try once per track, stop if fails
-    //==============================================================================
-
-    void IPlayerBar::LoadAlbumArt(const MusicTrack *track)
+    void IPlayerBar::DestroyAlbumArtTexture()
     {
-        if (m_artLoadAttempted)
-            return;
-
-        if (!track || !m_renderer || !m_playbackController)
-        {
-            m_albumArtBox.ClearTexture();
-            m_lightbox.SetTexture(nullptr, 0, 0);
-            m_artLoadAttempted = true;
-            return;
-        }
-
-        std::size_t trackId = track->GetId();
-
-        // Already showing correct art
-        if (m_lastAlbumArtTrackId == trackId && m_albumArtTexture)
-            return;
-
-        // Clear old texture
         if (m_albumArtTexture)
         {
             m_imageLoader.DestroyImGuiTexture(m_albumArtTexture);
@@ -108,24 +76,59 @@ namespace moosic
         }
         m_albumArtWidth = 0;
         m_albumArtHeight = 0;
-        m_albumArtBox.ClearTexture();
-        m_artLoadAttempted = true;
+        m_lastAlbumArtTrackId = 0;
+    }
 
-        //----------------------------------------------------------------------
-        // Check shared cache in PlaybackController first
-        //----------------------------------------------------------------------
-        const CachedAlbumArtData *cachedData = m_playbackController->GetCachedAlbumArt(trackId);
+    //==============================================================================
+    // Album Art Management
+    //==============================================================================
+
+    void IPlayerBar::LoadAlbumArtForCurrentTrack()
+    {
+        if (!m_data || !m_renderer || m_artLoadAttempted)
+            return;
+
+        if (!m_data->hasTrack)
+        {
+            m_albumArtBox.ClearTexture();
+            m_lightbox.SetTexture(nullptr, 0, 0);
+            m_artLoadAttempted = true;
+            return;
+        }
+
+        // Already showing correct art
+        if (m_lastAlbumArtTrackId == m_data->currentTrackId && m_albumArtTexture)
+            return;
+
+        LoadAlbumArtFromData();
+    }
+
+    void IPlayerBar::LoadAlbumArtFromData()
+    {
+        if (!m_data)
+            return;
+
+        DestroyAlbumArtTexture();
+        m_albumArtBox.ClearTexture();
+
+        // Try PlayerBarData cache first
+        const CachedAlbumArtData *cachedData = m_data->GetCurrentArt();
 
         std::vector<unsigned char> artData;
 
         if (cachedData && !cachedData->data.empty())
         {
-            // Use cached raw data
             artData = cachedData->data;
         }
         else
         {
-            // Load from track or file
+            const MusicTrack *track = m_playbackController->GetCurrentTrack();
+            if (!track)
+            {
+                m_artLoadAttempted = true;
+                return;
+            }
+
             const auto &trackArt = track->GetAlbumArtData();
             if (!trackArt.empty())
             {
@@ -139,20 +142,23 @@ namespace moosic
                     artData = refreshed.GetAlbumArtData();
             }
 
-            // Cache in PlaybackController for other player bars
             if (!artData.empty())
-            {
-                m_playbackController->CacheAlbumArt(trackId, artData, 0, 0); // dimensions filled after decode
-            }
+                m_playbackController->CacheAlbumArt(m_data->currentTrackId, artData, 0, 0);
         }
 
         if (artData.empty())
+        {
+            m_artLoadAttempted = true;
             return;
+        }
 
         // Decode
         ImageData image = m_imageLoader.LoadFromMemory(artData.data(), artData.size());
         if (image.data.empty())
+        {
+            m_artLoadAttempted = true;
             return;
+        }
 
         // Resize
         int maxDim = 512;
@@ -165,142 +171,19 @@ namespace moosic
         // Create texture
         void *texture = m_imageLoader.CreateImGuiTexture(m_renderer, image);
         if (!texture)
+        {
+            m_artLoadAttempted = true;
             return;
+        }
 
         m_albumArtTexture = texture;
         m_albumArtWidth = image.width;
         m_albumArtHeight = image.height;
-        m_lastAlbumArtTrackId = trackId;
+        m_lastAlbumArtTrackId = m_data->currentTrackId;
 
         m_albumArtBox.SetTexture(texture, image.width, image.height);
         m_lightbox.SetTexture(texture, image.width, image.height);
-        m_lightbox.SetInfo(m_songTitle, m_artistName);
-    }
-
-    void IPlayerBar::UpdateAlbumArtTexture()
-    {
-        // Only called on track change from UpdatePlaybackState
-        if (!m_playbackController)
-            return;
-        const MusicTrack *track = m_playbackController->GetCurrentTrack();
-        if (!track)
-            return;
-
-        // Reset the attempt flag when track changes
-        if (track->GetId() != m_lastTrackId)
-            m_artLoadAttempted = false;
-
-        if (track->GetId() != m_lastAlbumArtTrackId)
-            LoadAlbumArt(track);
-    }
-
-    //==============================================================================
-    // Playback State Management
-    //==============================================================================
-
-    void IPlayerBar::UpdatePlaybackState()
-    {
-        if (!m_playbackController)
-            return;
-
-        // Check for end-of-track auto-advance
-        m_playbackController->Update();
-
-        const MusicTrack *track = m_playbackController->GetCurrentTrack();
-
-        std::size_t currentTrackId = track ? track->GetId() : 0;
-        bool trackChanged = (currentTrackId != m_lastTrackId);
-
-        // Handle track changes
-        if (trackChanged)
-        {
-            m_artLoadAttempted = false; // ADD THIS - reset for new track
-
-            m_lastTrackId = currentTrackId;
-            m_isSeeking = false;
-            m_playbackProgress = 0.0f;
-            m_elapsedTime = 0.0f;
-
-            // Reset scrolling
-            m_titleScrollOffset = 0.0f;
-            m_artistScrollOffset = 0.0f;
-            m_lastTrackChangeTime = static_cast<float>(ImGui::GetTime());
-
-            if (track)
-            {
-                // Load new track data
-                m_lastAlbumArtTrackId = 0;
-                LoadAlbumArt(track);
-
-                m_songTitle = track->GetTitle().c_str();
-                m_artistName = track->GetArtist().c_str();
-                m_songDuration = static_cast<float>(track->GetDuration());
-
-                m_lightbox.SetInfo(m_songTitle, m_artistName);
-            }
-            else
-            {
-                // Clear everything
-                if (m_albumArtTexture)
-                {
-                    m_imageLoader.DestroyImGuiTexture(m_albumArtTexture);
-                    m_albumArtTexture = nullptr;
-                    m_albumArtWidth = 0;
-                    m_albumArtHeight = 0;
-                    m_lightbox.SetTexture(nullptr, 0, 0);
-                    m_albumArtBox.ClearTexture();
-                }
-                m_lastAlbumArtTrackId = 0;
-                m_songTitle = "No Song Playing";
-                m_artistName = "Unknown Artist";
-                m_songDuration = 0.0f;
-                m_lightbox.SetInfo(m_songTitle, m_artistName);
-            }
-        }
-        else
-        {
-            // Reload album art if missing
-            if (track && track->HasAlbumArt() && !m_albumArtTexture)
-            {
-                LoadAlbumArt(track);
-            }
-        }
-
-        UpdateAlbumArtTexture();
-
-        // Update playback state (skip if seeking)
-        if (!m_isSeeking)
-        {
-            m_isPlaying = m_playbackController->IsPlaying();
-            m_elapsedTime = m_playbackController->GetCurrentPosition();
-            m_songDuration = m_playbackController->GetCurrentDuration();
-            m_volume = m_playbackController->GetVolume();
-
-            if (m_songDuration > 0.0f)
-                m_playbackProgress = m_elapsedTime / m_songDuration;
-            else
-                m_playbackProgress = 0.0f;
-        }
-
-        // Update track info
-        if (track)
-        {
-            m_songTitle = track->GetTitle().c_str();
-            m_artistName = track->GetArtist().c_str();
-            m_lightbox.SetInfo(m_songTitle, m_artistName);
-        }
-
-        // Update visualizer with current stream and mode
-        if (m_playbackController)
-        {
-            HSTREAM stream = m_playbackController->GetAudioStream();
-            m_visualizer.SetAudioStream(stream);
-            m_visualizer.SetVolume(m_volume);
-
-            // Read visualizer mode from PlaybackController and track it
-            m_lastVisualizerMode = m_playbackController->GetVisualizerMode();
-            m_visualizer.SetMode(m_lastVisualizerMode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
-        }
+        m_lightbox.SetInfo(m_data->title.c_str(), m_data->artist.c_str());
     }
 
     //==============================================================================
@@ -360,64 +243,59 @@ namespace moosic
     // Scrolling Text
     //==============================================================================
 
-    void IPlayerBar::DrawScrollingText(const char *text, const ImVec4 &color, float maxWidth,
-                                       float &scrollOffset, float &lastTrackChangeTime, bool trackChanged)
+   void IPlayerBar::DrawScrollingText(const char *text, const ImVec4 &color, float maxWidth,
+                                   float &scrollOffset, float &lastTrackChangeTime, bool trackChanged)
+{
+    if (!text || text[0] == '\0')
+        return;
+
+    float currentTime = static_cast<float>(ImGui::GetTime());
+
+    if (trackChanged)
     {
-        if (!text || text[0] == '\0')
-            return;
-
-        float currentTime = static_cast<float>(ImGui::GetTime());
-
-        // Reset on track change
-        if (trackChanged)
-        {
-            scrollOffset = 0.0f;
-            lastTrackChangeTime = currentTime;
-        }
-
-        ImVec2 textSize = ImGui::CalcTextSize(text);
-
-        // If text fits, just draw it normally
-        if (textSize.x <= maxWidth)
-        {
-            scrollOffset = 0.0f;
-            ImGui::TextColored(color, "%s", text);
-            return;
-        }
-
-        // Calculate scroll
-        float delay = m_theme.ScrollDelay;
-        float speed = m_theme.ScrollSpeed;
-
-        if (currentTime - lastTrackChangeTime > delay)
-        {
-            scrollOffset += speed * ImGui::GetIO().DeltaTime;
-        }
-
-        // Loop the scroll
-        float totalScrollDistance = textSize.x + 40.0f; // 40px gap between loops
-        if (scrollOffset > totalScrollDistance)
-        {
-            scrollOffset -= totalScrollDistance;
-        }
-
-        // Clip to a child region for scrolling
-        ImGui::BeginChild("##scrollclip", ImVec2(maxWidth, textSize.y), false,
-                          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-        ImVec2 cursorPos = ImGui::GetCursorPos();
-        ImGui::SetCursorPosX(cursorPos.x - scrollOffset);
-        ImGui::TextColored(color, "%s", text);
-
-        // Draw the repeating text for seamless loop
-        if (scrollOffset > textSize.x - maxWidth + 40.0f)
-        {
-            ImGui::SameLine(0, 40.0f);
-            ImGui::TextColored(color, "%s", text);
-        }
-
-        ImGui::EndChild();
+        scrollOffset = 0.0f;
+        lastTrackChangeTime = currentTime;
     }
+
+    ImVec2 textSize = ImGui::CalcTextSize(text);
+
+    if (textSize.x <= maxWidth)
+    {
+        scrollOffset = 0.0f;
+        ImGui::TextColored(color, "%s", text);
+        return;
+    }
+
+    float delay = m_theme.ScrollDelay;
+    float speed = m_theme.ScrollSpeed;
+
+    if (currentTime - lastTrackChangeTime > delay)
+        scrollOffset += speed * ImGui::GetIO().DeltaTime;
+
+    float totalScrollDistance = textSize.x + 40.0f;
+    if (scrollOffset > totalScrollDistance)
+        scrollOffset -= totalScrollDistance;
+
+    // Use stable ID based on text pointer - same text = same ID
+    ImGui::PushID(text);
+
+    ImGui::BeginChild("##scroll", ImVec2(maxWidth, textSize.y), false,
+                      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+    ImVec2 cursorPos = ImGui::GetCursorPos();
+    ImGui::SetCursorPosX(cursorPos.x - scrollOffset);
+    ImGui::TextColored(color, "%s", text);
+
+    if (scrollOffset > textSize.x - maxWidth + 40.0f)
+    {
+        ImGui::SameLine(0, 40.0f);
+        ImGui::TextColored(color, "%s", text);
+    }
+
+    ImGui::EndChild();
+    ImGui::PopID();
+}
+
 
     //==============================================================================
     // Modular Drawing Methods
@@ -425,17 +303,21 @@ namespace moosic
 
     void IPlayerBar::DrawAlbumArt()
     {
+        if (!m_data)
+            return;
+
+        if (m_data->trackJustChanged)
+            m_artLoadAttempted = false;
+
+        LoadAlbumArtForCurrentTrack();
+
         m_albumArtBox.Draw(m_theme.AlbumArtSize, m_theme.AlbumArtRounding, true, true);
 
         if (m_albumArtBox.IsClicked() && m_albumArtTexture)
-        {
             OnAlbumArtClicked();
-        }
 
         if (m_albumArtBox.IsHovered() && m_albumArtTexture)
-        {
             ImGui::SetTooltip("Click to enlarge album art");
-        }
     }
 
     void IPlayerBar::DrawSongInfo()
@@ -458,11 +340,9 @@ namespace moosic
 
         ImGui::SetCursorPosX(padding);
         DrawElapsedTime();
-
         ImGui::SameLine();
         ImGui::SetNextItemWidth(sliderWidth);
         DrawPlaybackSlider();
-
         ImGui::SameLine();
         ImGui::SetCursorPosX(windowWidth - totalWidth - padding);
         DrawTotalTime();
@@ -470,29 +350,39 @@ namespace moosic
 
     void IPlayerBar::DrawVisualizer()
     {
+        if (m_data)
+        {
+            m_visualizer.SetAudioStream(m_data->audioStream);
+            m_visualizer.SetVolume(m_data->volume);
+
+            // Query controller directly - bypasses any data model sync issues
+            if (m_playbackController)
+            {
+                int mode = m_playbackController->GetVisualizerMode();
+                m_visualizer.SetMode(mode == 0 ? VisualizerMode::Spectrum : VisualizerMode::Oscilloscope);
+            }
+        }
         m_visualizer.Draw();
     }
 
     void IPlayerBar::DrawControls()
     {
+        if (!m_data)
+            return;
+
         constexpr float Gap = 8.0f;
         constexpr float VolumeSliderWidth = 160.0f;
 
         float prevWidth = ImGui::CalcTextSize("<<").x +
-                          ImGui::GetStyle().FramePadding.x * 2.0f +
-                          m_theme.NormalButtonExtraWidth;
+                          ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
         float nextWidth = ImGui::CalcTextSize(">>").x +
-                          ImGui::GetStyle().FramePadding.x * 2.0f +
-                          m_theme.NormalButtonExtraWidth;
-        float repeatWidth = ImGui::CalcTextSize("Repeat").x +
-                            ImGui::GetStyle().FramePadding.x * 2.0f +
-                            m_theme.NormalButtonExtraWidth;
+                          ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
+        float repeatWidth = ImGui::CalcTextSize(m_data->modeLabel.c_str()).x +
+                            ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
         float playWidth = ImGui::CalcTextSize(" || ").x +
-                          ImGui::GetStyle().FramePadding.x * 2.0f +
-                          m_theme.PrimaryButtonExtraWidth;
+                          ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.PrimaryButtonExtraWidth;
         float volWidth = ImGui::CalcTextSize("Vol").x +
-                         ImGui::GetStyle().FramePadding.x * 2.0f +
-                         m_theme.NormalButtonExtraWidth;
+                         ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
 
         float centralGroupWidth = prevWidth + Gap + playWidth + Gap + nextWidth + Gap + repeatWidth;
         float volumeSectionWidth = volWidth + Gap + VolumeSliderWidth;
@@ -506,7 +396,6 @@ namespace moosic
 
         if (centralStartX < 0.0f)
             centralStartX = 0.0f;
-
         if (centralStartX + centralGroupWidth + Gap + volumeSectionWidth > availWidth)
         {
             centralStartX = availWidth - centralGroupWidth - Gap - volumeSectionWidth;
@@ -542,10 +431,8 @@ namespace moosic
     {
         const char *label = "<<";
         ImVec2 textSize = ImGui::CalcTextSize(label);
-        ImVec2 buttonSize(
-            textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
-            textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
         PushNormalButtonStyle();
         if (ImGui::Button(label, buttonSize))
             OnPreviousButtonPressed();
@@ -554,14 +441,12 @@ namespace moosic
 
     void IPlayerBar::DrawPlayPauseButton()
     {
-        const char *label = m_isPlaying ? " || " : " > ";
-        const char *maxLabel = " || ";
-        ImVec2 textSize = ImGui::CalcTextSize(maxLabel);
-
-        ImVec2 buttonSize(
-            textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.PrimaryButtonExtraWidth,
-            textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-
+        if (!m_data)
+            return;
+        const char *label = m_data->isPlaying ? " || " : " > ";
+        ImVec2 textSize = ImGui::CalcTextSize(" || ");
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.PrimaryButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
         PushPrimaryButtonStyle();
         if (ImGui::Button(label, buttonSize))
             OnPlayPauseButtonPressed();
@@ -572,10 +457,8 @@ namespace moosic
     {
         const char *label = ">>";
         ImVec2 textSize = ImGui::CalcTextSize(label);
-        ImVec2 buttonSize(
-            textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
-            textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
         PushNormalButtonStyle();
         if (ImGui::Button(label, buttonSize))
             OnNextButtonPressed();
@@ -584,14 +467,12 @@ namespace moosic
 
     void IPlayerBar::DrawPlayModeButton()
     {
-        const char *labels[] = {"Normal", "Reverse", "Repeat", "Shuffle"};
-        const char *label = labels[static_cast<int>(m_playbackMode)];
-
+        if (!m_data)
+            return;
+        const char *label = m_data->modeLabel.c_str();
         ImVec2 textSize = ImGui::CalcTextSize(label);
-        ImVec2 buttonSize(
-            textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
-            textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
         PushNormalButtonStyle();
         if (ImGui::Button(label, buttonSize))
             OnPlayModeButtonPressed();
@@ -602,10 +483,8 @@ namespace moosic
     {
         const char *label = "Vol";
         ImVec2 textSize = ImGui::CalcTextSize(label);
-        ImVec2 buttonSize(
-            textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
-            textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
         PushNormalButtonStyle();
         if (ImGui::Button(label, buttonSize))
             OnVolumeIconPressed();
@@ -614,12 +493,12 @@ namespace moosic
 
     void IPlayerBar::DrawVolumeSlider()
     {
+        if (!m_data)
+            return;
         PushSliderStyle();
-        float tempVolume = m_volume;
+        float tempVolume = m_data->volume;
         if (ImGui::SliderFloat("##Volume", &tempVolume, 0.0f, 1.0f))
-        {
             OnVolumeSliderChanged(tempVolume);
-        }
         PopStyle();
     }
 
@@ -629,61 +508,49 @@ namespace moosic
 
     void IPlayerBar::DrawSongTitle()
     {
-        ImGui::TextColored(m_theme.TextPrimary, "%s", m_songTitle);
+        if (!m_data)
+            return;
+        ImGui::TextColored(m_theme.TextPrimary, "%s", m_data->title.c_str());
     }
 
     void IPlayerBar::DrawArtistName()
     {
-        ImGui::TextColored(m_theme.TextSecondary, "%s", m_artistName);
+        if (!m_data)
+            return;
+        ImGui::TextColored(m_theme.TextSecondary, "%s", m_data->artist.c_str());
     }
 
     void IPlayerBar::DrawElapsedTime()
     {
-        int min = static_cast<int>(m_elapsedTime) / 60;
-        int sec = static_cast<int>(m_elapsedTime) % 60;
-        ImGui::TextColored(m_theme.TextPrimary, "%02d:%02d", min, sec);
+        if (!m_data)
+            return;
+        ImGui::TextColored(m_theme.TextPrimary, "%s", m_data->elapsedFormatted.c_str());
     }
 
     void IPlayerBar::DrawTotalTime()
     {
-        int min = static_cast<int>(m_songDuration) / 60;
-        int sec = static_cast<int>(m_songDuration) % 60;
-        ImGui::TextColored(m_theme.TextPrimary, "%02d:%02d", min, sec);
+        if (!m_data)
+            return;
+        ImGui::TextColored(m_theme.TextPrimary, "%s", m_data->totalFormatted.c_str());
     }
 
     void IPlayerBar::DrawPlaybackSlider()
     {
+        if (!m_data)
+            return;
         PushSliderStyle();
-
-        static bool wasSeeking = false;
-
-        if (ImGui::SliderFloat("##Playback", &m_playbackProgress, 0.0f, 1.0f))
+        float progress = m_data->progress;
+        if (ImGui::SliderFloat("##Playback", &progress, 0.0f, 1.0f))
         {
             m_isSeeking = true;
-            wasSeeking = true;
-
-            if (m_songDuration > 0.0f)
-            {
-                m_elapsedTime = m_playbackProgress * m_songDuration;
-            }
-
-            OnPlaybackSliderChanged(m_playbackProgress);
+            m_wasSeeking = true;
+            OnPlaybackSliderChanged(progress);
         }
-
-        if (wasSeeking && !ImGui::IsItemActive())
+        if (m_wasSeeking && !ImGui::IsItemActive())
         {
             m_isSeeking = false;
-            wasSeeking = false;
-
-            if (m_playbackController)
-            {
-                m_elapsedTime = m_playbackController->GetCurrentPosition();
-                m_songDuration = m_playbackController->GetCurrentDuration();
-                if (m_songDuration > 0.0f)
-                    m_playbackProgress = m_elapsedTime / m_songDuration;
-            }
+            m_wasSeeking = false;
         }
-
         PopStyle();
     }
 
@@ -696,10 +563,7 @@ namespace moosic
         if (m_playbackController)
         {
             m_isSeeking = false;
-            m_playbackProgress = 0.0f;
-            m_elapsedTime = 0.0f;
             m_playbackController->Previous();
-            UpdatePlaybackState();
         }
     }
 
@@ -709,7 +573,6 @@ namespace moosic
         {
             m_isSeeking = false;
             m_playbackController->TogglePlayPause();
-            UpdatePlaybackState();
         }
     }
 
@@ -718,39 +581,32 @@ namespace moosic
         if (m_playbackController)
         {
             m_isSeeking = false;
-            m_playbackProgress = 0.0f;
-            m_elapsedTime = 0.0f;
             m_playbackController->Next();
-            UpdatePlaybackState();
         }
     }
 
     void IPlayerBar::OnPlaybackSliderChanged(float value)
     {
-        if (m_playbackController && m_songDuration > 0.0f)
+        if (m_playbackController && m_data && m_data->durationSeconds > 0.0f)
         {
-            float position = value * m_songDuration;
+            float position = value * m_data->durationSeconds;
             m_playbackController->SeekTo(position);
         }
     }
 
     void IPlayerBar::OnVolumeIconPressed()
     {
-        if (m_playbackController)
+        if (m_playbackController && m_data)
         {
-            float newVolume = m_volume > 0.0f ? 0.0f : 0.80f;
+            float newVolume = m_data->volume > 0.0f ? 0.0f : 0.80f;
             m_playbackController->SetVolume(newVolume);
-            UpdatePlaybackState();
         }
     }
 
     void IPlayerBar::OnVolumeSliderChanged(float value)
     {
         if (m_playbackController)
-        {
             m_playbackController->SetVolume(value);
-            UpdatePlaybackState();
-        }
     }
 
     void IPlayerBar::OnPlayModeButtonPressed()
@@ -759,7 +615,6 @@ namespace moosic
         {
             PlaybackMode currentMode = m_playbackController->GetPlaybackMode();
             PlaybackMode newMode;
-
             switch (currentMode)
             {
             case PlaybackMode::Normal:
@@ -776,10 +631,7 @@ namespace moosic
                 newMode = PlaybackMode::Normal;
                 break;
             }
-
             m_playbackController->SetPlaybackMode(newMode);
-            m_playbackMode = newMode;
-            UpdatePlaybackState();
         }
     }
 

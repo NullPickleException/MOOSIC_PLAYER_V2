@@ -1,3 +1,7 @@
+//==============================================================================
+// UI/Widgets/PlayerBar/CompactPlayerBar.cpp
+//==============================================================================
+
 #include "CompactPlayerBar.h"
 #include <imgui.h>
 
@@ -6,30 +10,24 @@ namespace moosic
 
 void CompactPlayerBar::Draw()
 {
-    //----------------------------------------------------------
-    // FINE-TUNE OFFSET: Adjust this to nudge play button X
-    //----------------------------------------------------------
     constexpr float PLAY_CENTER_OFFSET_X = -6.0f;
 
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     // Song Information - Scrolling text
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     float textMaxWidth = ImGui::GetContentRegionAvail().x * 0.9f;
-    
-    bool trackChanged = (m_lastTrackId != (m_playbackController ? 
-                         m_playbackController->GetCurrentTrack() ? 
-                         m_playbackController->GetCurrentTrack()->GetId() : 0 : 0));
-    
-    DrawScrollingText(m_songTitle, m_theme.TextPrimary, textMaxWidth, 
+    bool trackChanged = Data().trackJustChanged;
+
+    DrawScrollingText(Data().title.c_str(), m_theme.TextPrimary, textMaxWidth,
                       m_titleScrollOffset, m_lastTrackChangeTime, trackChanged);
-    DrawScrollingText(m_artistName, m_theme.TextSecondary, textMaxWidth, 
+    DrawScrollingText(Data().artist.c_str(), m_theme.TextSecondary, textMaxWidth,
                       m_artistScrollOffset, m_lastTrackChangeTime, trackChanged);
 
     ImGui::Spacing();
 
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     // Playback Timeline
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
     float windowWidth = ImGui::GetWindowWidth();
     float padding = 15.0f;
 
@@ -37,8 +35,7 @@ void CompactPlayerBar::Draw()
     float totalWidth = ImGui::CalcTextSize("00:00").x;
 
     float sliderWidth = windowWidth - elapsedWidth - totalWidth - (padding * 4.0f);
-    if (sliderWidth < 100.0f)
-        sliderWidth = 100.0f;
+    if (sliderWidth < 100.0f) sliderWidth = 100.0f;
 
     float sliderStartX = padding + elapsedWidth + padding;
     float sliderCenterX = sliderStartX + sliderWidth * 0.5f;
@@ -56,9 +53,9 @@ void CompactPlayerBar::Draw()
 
     ImGui::Spacing();
 
-    //----------------------------------------------------------
-    // Row 3: Controls
-    //----------------------------------------------------------
+    //----------------------------------------------------------------------
+    // Controls
+    //----------------------------------------------------------------------
     constexpr float Gap = 8.0f;
     constexpr float VolumeSliderWidth = 160.0f;
 
@@ -69,7 +66,7 @@ void CompactPlayerBar::Draw()
 
     float prevWidth = ImGui::CalcTextSize("<<").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
     float nextWidth = ImGui::CalcTextSize(">>").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
-    float repeatWidth = ImGui::CalcTextSize("Repeat").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
+    float repeatWidth = ImGui::CalcTextSize(Data().modeLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
     float playWidth = ImGui::CalcTextSize(" || ").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.PrimaryButtonExtraWidth;
     float volBtnWidth = ImGui::CalcTextSize("Vol").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
 
@@ -81,33 +78,26 @@ void CompactPlayerBar::Draw()
 
     float rowY = ImGui::GetCursorPosY();
     float rightMargin = ImGui::GetStyle().WindowPadding.x + 10.0f;
-    float volumeYOffset = 0.0f;
 
-    // Standard's album art width = 2x text line height (square album art matches text height)
+    float controlsStartX = playCenterX - leftOfPlayCenter;
+    float controlsEndX = controlsStartX + controlsGroupWidth;
+
     float albumArtWidth = ImGui::GetTextLineHeightWithSpacing() * 2.0f;
     float availWidth = windowWidth - ImGui::GetStyle().WindowPadding.x * 2.0f - albumArtWidth - ImGui::GetStyle().ItemSpacing.x;
 
-    // Calculate the actual end X of the controls (repeat button right edge)
-    float controlsStartX = playCenterX - leftOfPlayCenter;
-    float controlsEndX = controlsStartX + controlsGroupWidth;
-    float volumeStartX = windowWidth - volumeSectionWidth - rightMargin;
-
-     //==================================================================
-    // CASE 1: All on one row - CENTER ALIGNED
-    //==================================================================
+    //----------------------------------------------------------------------
+    // CASE 1: All on one row
+    //----------------------------------------------------------------------
     if (controlsEndX + Gap + volumeSectionWidth <= windowWidth - rightMargin)
     {
         float baseY = rowY;
         float centerLine = baseY + visHeight * 0.5f;
-
         float btnHeight = ImGui::GetFrameHeight();
 
-        // Visualizer
         ImGui::SetCursorPosX(visOffsetX);
         ImGui::SetCursorPosY(baseY);
         DrawVisualizer();
 
-        // Playback Controls - centered
         float controlsY = centerLine - btnHeight * 0.5f;
 
         ImGui::SetCursorPosX(controlsStartX);
@@ -126,7 +116,6 @@ void CompactPlayerBar::Draw()
         ImGui::SetCursorPosY(controlsY);
         DrawPlayModeButton();
 
-        // Volume Section - centered
         float volX = controlsEndX + Gap;
         if (volX + volumeSectionWidth > windowWidth - ImGui::GetStyle().WindowPadding.x)
             volX = windowWidth - volumeSectionWidth - ImGui::GetStyle().WindowPadding.x;
@@ -142,18 +131,16 @@ void CompactPlayerBar::Draw()
         ImGui::SetNextItemWidth(VolumeSliderWidth);
         DrawVolumeSlider();
     }
-    //==================================================================
-    // CASE 2: Volume wraps to next row
-    //==================================================================
+    //----------------------------------------------------------------------
+    // CASE 2: Volume wraps
+    //----------------------------------------------------------------------
     else if (visWidth + Gap + controlsGroupWidth + visOffsetX <= availWidth)
     {
-        // Row A: Visualizer + Playback Controls
         ImGui::SetCursorPosX(visOffsetX);
         ImGui::SetCursorPosY(rowY);
         DrawVisualizer();
 
         ImGui::SameLine(0, Gap);
-
         ImGui::SetCursorPosX(controlsStartX);
         ImGui::SetCursorPosY(rowY);
 
@@ -165,21 +152,20 @@ void CompactPlayerBar::Draw()
         ImGui::SameLine(0, Gap);
         DrawPlayModeButton();
 
-        // Row B: Volume slider only - anchored to right edge of window
         ImGui::Spacing();
-        ImGui::SetCursorPosX(volumeStartX - 0.0f);
-        ImGui::SetCursorPosY(rowY + volumeYOffset + 25.0f);
+        float volumeStartX = windowWidth - volumeSectionWidth - rightMargin;
+        ImGui::SetCursorPosX(volumeStartX);
+        ImGui::SetCursorPosY(rowY + 25.0f);
         DrawVolumeIcon();
         ImGui::SameLine(0, Gap);
         ImGui::SetNextItemWidth(VolumeSliderWidth);
         DrawVolumeSlider();
     }
-    //==================================================================
-    // CASE 3: Visualizer + Volume wrap
-    //==================================================================
+    //----------------------------------------------------------------------
+    // CASE 3: Visualizer wraps
+    //----------------------------------------------------------------------
     else
     {
-        // Row A: Visualizer (squeezed)
         float visW = (std::min)(visWidth, availWidth * 0.6f);
         float visOff = (availWidth - visW) * 0.5f;
 
@@ -189,11 +175,9 @@ void CompactPlayerBar::Draw()
         DrawVisualizer();
         m_visualizer.SetBoxWidth(visWidth);
 
-        // Row B: Controls and Volume on same row
         float playStartX = playCenterX - playWidth * 0.5f;
         float ctrlStartX = playStartX - prevWidth - Gap;
-        if (ctrlStartX < 0.0f)
-            ctrlStartX = 0.0f;
+        if (ctrlStartX < 0.0f) ctrlStartX = 0.0f;
 
         ImGui::SetCursorPosX(ctrlStartX);
         DrawPreviousButton();
@@ -204,7 +188,7 @@ void CompactPlayerBar::Draw()
         ImGui::SameLine(0, Gap);
         DrawPlayModeButton();
 
-        // Volume - anchored to right edge of window (on same row as controls)
+        float volumeStartX = windowWidth - volumeSectionWidth - rightMargin;
         ImGui::SameLine();
         ImGui::SetCursorPosX(volumeStartX);
         DrawVolumeIcon();
