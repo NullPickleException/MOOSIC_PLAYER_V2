@@ -30,6 +30,13 @@
 #include "Themes/Ocean_Themes/SeafoamTheme.h"
 #include "Themes/Ocean_Themes/PearlTheme.h"
 
+
+#include "Themes/Coffee_Themes/CoffeeTheme.h"
+#include "Themes/Coffee_Themes/CoffeeCreamTheme.h"
+#include "Themes/Coffee_Themes/CoffeeBlackTheme.h"
+#include "Themes/Coffee_Themes/MatchaTheme.h"
+#include "Themes/Coffee_Themes/LatteTheme.h"
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -98,6 +105,19 @@ namespace moosic
             RegisterTheme("Tsunami", CreateTsunamiTheme);
             RegisterTheme("Seafoam", CreateSeafoamTheme);
             RegisterTheme("Pearl", CreatePearlTheme);
+        
+        
+            //===================================
+            // Coffee Themes
+            //===================================
+            RegisterTheme("Coffee", CreateCoffeeTheme);
+            RegisterTheme("Coffe Cream", CreateCoffeeCreamTheme);
+            RegisterTheme("Coffe Black", CreateCoffeeBlackTheme);
+            RegisterTheme("Matcha", CreateMatchaTheme);
+            RegisterTheme("Latte", CreateLatteTheme);
+            
+        
+        
         }
 
         //--------------------------------------------------------------------------

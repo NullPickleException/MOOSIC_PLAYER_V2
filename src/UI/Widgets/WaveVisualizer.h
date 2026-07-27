@@ -55,19 +55,19 @@ namespace moosic
         // Audio Processing
         // ──────────────────────────────────────────────
 
-        float SpectrumSensitivity = 2.5f;
-        float HighFrequencyBoost = 5.0f;
+        float SpectrumSensitivity = 2.7f;
+        float HighFrequencyBoost = 6.6f;
         float FrequencyBoostCurve = 2.4f;
         float DynamicRange = 0.7f;
         float AttackSpeed = 0.95f;
         float ReleaseSpeed = 0.35f;
         float PeakDecay = 0.90f;
-        float NoiseFloor = 0.01f;
+        float NoiseFloor = 0.001f;
 
         float NeighborSmoothing = 0.2f;
         bool EnableNeighborBlur = true;
 
-        bool EnableSpringAnimation = false;
+        bool EnableSpringAnimation = true;
         float SpringStiffness = 0.25f;
         float SpringDamping = 0.8f;
 
@@ -129,7 +129,7 @@ namespace moosic
         // Brightness boost for loud bars
         // ──────────────────────────────────────────────
         
-        float BarBrightnessMin      = 0.35f;   // Minimum brightness multiplier
+        float BarBrightnessMin      = 0.45f;   // Minimum brightness multiplier
         float BarBrightnessMax      = 1.0f;    // Maximum brightness multiplier (at peak)
 
         // ──────────────────────────────────────────────
@@ -143,7 +143,7 @@ namespace moosic
         bool ShowPeaks = false;
 
         // Waveform smoothing (legacy)
-        float Smoothing = 0.8f;
+        float Smoothing = 0.7f;
     };
 
     class WaveVisualizer
@@ -203,6 +203,7 @@ namespace moosic
         std::vector<float> m_smoothSpectrum;
         std::vector<float> m_pcmData;
         std::vector<float> m_springVelocity;
+        
         float m_runningMax = 0.01f;
 
         WaveVisualizerStyle m_style;
