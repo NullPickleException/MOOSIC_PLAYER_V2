@@ -30,6 +30,7 @@ namespace moosic
         void Render();
         void SaveState();
         void LoadState();
+        void SetWindowIcon();              // <-- THIS WAS MISSING
         std::filesystem::path GetExecutableDir();
         bool InitBass();
 

@@ -1,19 +1,14 @@
 //==============================================================================
 // SettingsWindow.cpp
 //==============================================================================
-// Implementation of settings window with theme selection and visualizer mode
-// Now uses SettingsDataModel for centralized state management
-//==============================================================================
 
 #include "SettingsWindow.h"
 #include <imgui.h>
+#include <filesystem>
+#include <iostream>
 
 namespace moosic
 {
-
-//==============================================================================
-// Construction
-//==============================================================================
 
 SettingsWindow::SettingsWindow()
 {
@@ -27,11 +22,23 @@ void SettingsWindow::ApplyTheme(const WindowTheme& theme)
 void SettingsWindow::SetSettingsDataModel(SettingsDataModel* model)
 {
     m_settingsModel = model;
-    
-    // Sync local state from the data model
     if (m_settingsModel)
     {
         m_visualizerMode = m_settingsModel->GetVisualizerMode();
+        
+        // Find the saved logo in the list
+        std::string savedPath = m_settingsModel->GetLogoPath();
+        if (!savedPath.empty())
+        {
+            for (size_t i = 0; i < m_availableLogos.size(); ++i)
+            {
+                if (m_availableLogos[i].path == savedPath)
+                {
+                    m_selectedLogoIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -50,27 +57,84 @@ void SettingsWindow::OnThemeChanged(ThemeChangeCallback callback)
     m_onThemeChanged = callback;
 }
 
-//==============================================================================
-// Visualizer Mode Callback
-//==============================================================================
-
 void SettingsWindow::OnVisualizerModeChanged(VisualizerModeCallback callback)
 {
     m_onVisualizerModeChanged = callback;
 }
 
-//==============================================================================
-// Drawing
-//==============================================================================
+void SettingsWindow::OnLogoChanged(LogoChangeCallback callback)
+{
+    m_onLogoChanged = callback;
+}
+
+// Scan assets/Logo_img folder for .png files
+void SettingsWindow::ScanAvailableLogos()
+{
+    m_availableLogos.clear();
+    m_selectedLogoIndex = 0;
+
+    std::vector<std::string> searchPaths = {
+        "assets/Logo_img",
+        "../assets/Logo_img",
+        "../../assets/Logo_img"
+    };
+
+    for (const auto& searchPath : searchPaths)
+    {
+        if (!std::filesystem::exists(searchPath))
+            continue;
+
+        for (const auto& entry : std::filesystem::directory_iterator(searchPath))
+        {
+            if (!entry.is_regular_file())
+                continue;
+
+            std::string ext = entry.path().extension().string();
+            // Convert to lowercase for comparison
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            
+            if (ext == ".png")
+            {
+                LogoInfo info;
+                info.path = entry.path().string();
+                info.name = entry.path().stem().string();  // filename without extension
+                m_availableLogos.push_back(info);
+            }
+        }
+
+        if (!m_availableLogos.empty())
+        {
+            std::cout << "[SettingsWindow] Found " << m_availableLogos.size() 
+                      << " logos in: " << searchPath << "\n";
+            break;
+        }
+    }
+
+    // If a logo was previously saved, find its index
+    if (m_settingsModel)
+    {
+        std::string savedPath = m_settingsModel->GetLogoPath();
+        if (!savedPath.empty())
+        {
+            for (size_t i = 0; i < m_availableLogos.size(); ++i)
+            {
+                if (m_availableLogos[i].path == savedPath ||
+                    m_availableLogos[i].name == savedPath)
+                {
+                    m_selectedLogoIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+        }
+    }
+}
 
 void SettingsWindow::Draw()
 {
-    // Sync visualizer mode from data model on every frame
     if (m_settingsModel)
     {
         m_visualizerMode = m_settingsModel->GetVisualizerMode();
         
-        // Update selected theme index from theme manager
         if (m_themeManager)
         {
             m_selectedThemeIndex = m_themeManager->GetCurrentThemeIndex();
@@ -80,10 +144,6 @@ void SettingsWindow::Draw()
     
     ImGui::Text("Settings");
     ImGui::Separator();
-
-    //--------------------------------------------------------------------------
-    // Tab Bar
-    //--------------------------------------------------------------------------
 
     if (ImGui::BeginTabBar("SettingsTabs"))
     {
@@ -109,17 +169,12 @@ void SettingsWindow::Draw()
     }
 }
 
-//==============================================================================
-// Appearance Section
-//==============================================================================
-
 void SettingsWindow::DrawAppearanceSection()
 {
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextSecondary, "Theme");
     ImGui::Separator();
     ImGui::Spacing();
-
     DrawThemeSelector();
 
     ImGui::Spacing();
@@ -127,20 +182,85 @@ void SettingsWindow::DrawAppearanceSection()
     ImGui::TextColored(m_theme.TextSecondary, "Visualization");
     ImGui::Separator();
     ImGui::Spacing();
-
     DrawVisualizerModeSelector();
+
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::TextColored(m_theme.TextSecondary, "Logo");
+    ImGui::Separator();
+    ImGui::Spacing();
+    DrawLogoSelector();
 
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextSecondary, "Font");
     ImGui::Separator();
     ImGui::Spacing();
-
     ImGui::TextDisabled("Font settings coming soon...");
 }
 
-//==============================================================================
-// Theme Selector
-//==============================================================================
+void SettingsWindow::DrawLogoSelector()
+{
+    ImGui::TextColored(m_theme.TextPrimary, "Title Bar Logo:");
+
+    if (m_availableLogos.empty())
+    {
+        ImGui::TextDisabled("No logos found in assets/Logo_img/");
+        ImGui::TextDisabled("Place .png files in the Logo_img folder");
+        return;
+    }
+
+    // Get current logo name for display
+    std::string currentLogoName = "Default";
+    if (m_selectedLogoIndex >= 0 && m_selectedLogoIndex < static_cast<int>(m_availableLogos.size()))
+        currentLogoName = m_availableLogos[m_selectedLogoIndex].name;
+
+    // Combo box for logo selection (just like theme selector)
+    if (ImGui::BeginCombo("##LogoSelector", currentLogoName.c_str()))
+    {
+        for (int i = 0; i < static_cast<int>(m_availableLogos.size()); ++i)
+        {
+            bool isSelected = (i == m_selectedLogoIndex);
+            
+            if (ImGui::Selectable(m_availableLogos[i].name.c_str(), isSelected))
+            {
+                ApplySelectedLogo(i);
+            }
+
+            if (isSelected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::Spacing();
+    
+    // Reset to default button
+    if (ImGui::Button("Reset to Default"))
+    {
+        ApplySelectedLogo(-1);  // -1 = default
+    }
+    
+    ImGui::SameLine();
+    ImGui::TextColored(m_theme.TextDisabled, "Default: COW_IMAGE.png");
+}
+
+void SettingsWindow::ApplySelectedLogo(int index)
+{
+    m_selectedLogoIndex = index;
+    
+    std::string logoPath;
+    if (index >= 0 && index < static_cast<int>(m_availableLogos.size()))
+        logoPath = m_availableLogos[index].path;
+    // else empty = use default
+    
+    // Save to settings data model
+    if (m_settingsModel)
+        m_settingsModel->SetLogoPath(logoPath);
+    
+    // Notify callback to reload the logo
+    if (m_onLogoChanged)
+        m_onLogoChanged(logoPath);
+}
 
 void SettingsWindow::DrawThemeSelector()
 {
@@ -151,7 +271,6 @@ void SettingsWindow::DrawThemeSelector()
     }
 
     const auto& themes = m_themeManager->GetAvailableThemes();
-    const auto themeNames = m_themeManager->GetThemeNames();
 
     if (themes.empty())
     {
@@ -159,16 +278,10 @@ void SettingsWindow::DrawThemeSelector()
         return;
     }
 
-    //--------------------------------------------------------------------------
-    // Theme List with Preview
-    //--------------------------------------------------------------------------
-
     ImGui::TextColored(m_theme.TextPrimary, "Select Theme:");
 
-    // Get current theme name for display
     std::string currentThemeName = m_themeManager->GetCurrentThemeName();
     
-    // Combo box for theme selection
     if (ImGui::BeginCombo("##ThemeSelector", currentThemeName.c_str()))
     {
         for (int i = 0; i < static_cast<int>(themes.size()); ++i)
@@ -176,35 +289,23 @@ void SettingsWindow::DrawThemeSelector()
             bool isSelected = (themes[i].Name == currentThemeName);
             
             if (ImGui::Selectable(themes[i].Name.c_str(), isSelected))
-            {
                 ApplySelectedTheme(i);
-            }
 
             if (isSelected)
-            {
                 ImGui::SetItemDefaultFocus();
-            }
         }
         ImGui::EndCombo();
     }
 
     ImGui::Spacing();
-
-    //--------------------------------------------------------------------------
-    // Theme Preview (simple color swatches)
-    //--------------------------------------------------------------------------
-
     ImGui::TextColored(m_theme.TextSecondary, "Preview:");
     ImGui::Spacing();
 
-    // Get the current selected theme for preview
     const Theme& selectedTheme = m_themeManager->GetTheme();
     
-    // Show a simple color preview
     float previewSize = 20.0f;
     float spacing = 4.0f;
     
-    // Preview colors from the theme
     ImVec4 colors[] = {
         selectedTheme.Window.TextPrimary,
         selectedTheme.Window.TextSecondary,
@@ -215,37 +316,21 @@ void SettingsWindow::DrawThemeSelector()
     };
 
     const char* labels[] = {
-        "Text",
-        "Text Sec",
-        "Button",
-        "Button Hover",
-        "Background",
-        "Separator"
+        "Text", "Text Sec", "Button", "Button Hover", "Background", "Separator"
     };
 
     for (int i = 0; i < 6; ++i)
     {
         ImGui::ColorButton(labels[i], colors[i], ImGuiColorEditFlags_NoTooltip, 
                           ImVec2(previewSize, previewSize));
-        
-        if (i < 5)
-        {
-            ImGui::SameLine(0, spacing);
-        }
-        else
-        {
-            ImGui::Spacing();
-        }
+        if (i < 5) ImGui::SameLine(0, spacing);
+        else ImGui::Spacing();
     }
 
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextDisabled, "Current: %s", 
                        m_themeManager->GetCurrentThemeName().c_str());
 }
-
-//==============================================================================
-// Visualizer Mode Selector
-//==============================================================================
 
 void SettingsWindow::DrawVisualizerModeSelector()
 {
@@ -263,23 +348,15 @@ void SettingsWindow::DrawVisualizerModeSelector()
             {
                 m_visualizerMode = i;
                 
-                // Update the shared data model
                 if (m_settingsModel)
-                {
                     m_settingsModel->SetVisualizerMode(i);
-                }
                 
-                // Notify listener (UI class) to propagate to PlaybackController
                 if (m_onVisualizerModeChanged)
-                {
                     m_onVisualizerModeChanged(i);
-                }
             }
 
             if (isSelected)
-            {
                 ImGui::SetItemDefaultFocus();
-            }
         }
         ImGui::EndCombo();
     }
@@ -287,10 +364,6 @@ void SettingsWindow::DrawVisualizerModeSelector()
     ImGui::Spacing();
     ImGui::TextColored(m_theme.TextDisabled, "Current: %s", modes[m_visualizerMode]);
 }
-
-//==============================================================================
-// Apply Theme
-//==============================================================================
 
 void SettingsWindow::ApplySelectedTheme(int index)
 {
@@ -301,25 +374,14 @@ void SettingsWindow::ApplySelectedTheme(int index)
     if (index < 0 || index >= static_cast<int>(themes.size()))
         return;
 
-    // Apply the theme through the manager
     m_themeManager->SetThemeByIndex(index);
     
-    // Update the shared data model with the new theme name
     if (m_settingsModel)
-    {
         m_settingsModel->SetThemeName(themes[index].Name);
-    }
 
-    // Notify listeners - UI class will call ApplyThemeToLayouts()
     if (m_onThemeChanged)
-    {
         m_onThemeChanged();
-    }
 }
-
-//==============================================================================
-// Other Sections
-//==============================================================================
 
 void SettingsWindow::DrawGeneralSection()
 {
@@ -327,7 +389,6 @@ void SettingsWindow::DrawGeneralSection()
     ImGui::TextColored(m_theme.TextSecondary, "General Settings");
     ImGui::Separator();
     ImGui::Spacing();
-
     ImGui::TextDisabled("General settings coming soon...");
 }
 
@@ -337,7 +398,6 @@ void SettingsWindow::DrawAudioSection()
     ImGui::TextColored(m_theme.TextSecondary, "Audio Settings");
     ImGui::Separator();
     ImGui::Spacing();
-
     ImGui::TextDisabled("Audio settings coming soon...");
 }
 

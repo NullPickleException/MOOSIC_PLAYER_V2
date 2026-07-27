@@ -46,9 +46,10 @@ namespace moosic
         ThemeManager &GetThemeManager();
 
         WindowContentPanel *GetCurrentContentPanel();
-        
-        SettingsDataModel& GetSettingsDataModel() { return m_settingsData; }
-        const SettingsDataModel& GetSettingsDataModel() const { return m_settingsData; }
+
+        SettingsDataModel &GetSettingsDataModel() { return m_settingsData; }
+        const SettingsDataModel &GetSettingsDataModel() const { return m_settingsData; }
+        void LoadSavedLogo(const std::string &path);
 
     private:
         enum class LayoutMode
@@ -71,8 +72,8 @@ namespace moosic
     private:
         // Shared data models - ORDER MATTERS for initialization
         LibraryDataModel m_libraryData;
-        PlaylistDataModel m_playlistData;      // MUST be before m_directoryData
-        DirectoryDataModel m_directoryData;     // Takes pointer to m_playlistData
+        PlaylistDataModel m_playlistData;   // MUST be before m_directoryData
+        DirectoryDataModel m_directoryData; // Takes pointer to m_playlistData
         SettingsDataModel m_settingsData;
 
         ThemeManager m_themeManager;

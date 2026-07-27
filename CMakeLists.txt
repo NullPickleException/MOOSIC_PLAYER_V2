@@ -121,10 +121,15 @@ set(STB_DEPRECATED_DIR ${STB_DIR}/deprecated)
 set(NLOHMANN_JSON_DIR ${CMAKE_SOURCE_DIR}/thirdparty/nlohmann_json)
 
 # =============================================================================
+# Assets Directory
+# =============================================================================
+
+set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/assets)
+
+# =============================================================================
 # Native File Dialog Extended
 # =============================================================================
 
-# NFD Extended needs SDL2 include path for nfd_sdl2.h backend
 set(NFD_INCLUDE_DIRECTORIES ${SDL2_ROOT}/include)
 
 add_subdirectory(thirdparty/nativefiledialog-extended)
@@ -139,6 +144,20 @@ add_executable(
     ${IMGUI_SOURCES}
 )
 
+# =============================================================================
+# Window Icon - Windows Resource File
+# =============================================================================
+if(WIN32)
+    set(APP_ICON_PATH "${ASSETS_DIR}/Icon_img/COW_IMAGE.ico")
+    if(EXISTS "${APP_ICON_PATH}")
+        set(RESOURCE_FILE ${CMAKE_BINARY_DIR}/app_icon.rc)
+        file(WRITE ${RESOURCE_FILE} "IDI_ICON1 ICON \"${APP_ICON_PATH}\"\n")
+        target_sources(MOOSIC_PLAYER PRIVATE ${RESOURCE_FILE})
+        message(STATUS "  App Icon          : ${APP_ICON_PATH}")
+    else()
+        message(WARNING "  App Icon not found: ${APP_ICON_PATH}")
+    endif()
+endif()
 # =============================================================================
 # Include Directories
 # =============================================================================
@@ -158,6 +177,19 @@ target_include_directories(
         ${STB_DIR}
         ${STB_DEPRECATED_DIR}
         ${NLOHMANN_JSON_DIR}/include
+)
+
+# =============================================================================
+# Assets - Copy to build directory
+# =============================================================================
+
+add_custom_command(
+    TARGET MOOSIC_PLAYER POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:MOOSIC_PLAYER>/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${ASSETS_DIR}"
+        "$<TARGET_FILE_DIR:MOOSIC_PLAYER>/assets"
+    COMMENT "Copying assets to build directory..."
 )
 
 # =============================================================================
@@ -200,7 +232,6 @@ endif()
 # =============================================================================
 
 if(WIN32)
-    # Windows: c/x64/ for 64-bit libs, c/ for 32-bit libs
     if(BASS_ARCH STREQUAL "x64")
         set(BASS_LIB_SUBDIR "c/x64")
     else()
@@ -313,5 +344,6 @@ message(STATUS "  SDL2              : ${SDL2_ROOT}")
 message(STATUS "  BASS              : ${BASS_ROOT}")
 message(STATUS "  ImGui             : ${IMGUI_DIR}")
 message(STATUS "  nlohmann_json     : ${NLOHMANN_JSON_DIR}")
+message(STATUS "  Assets            : ${ASSETS_DIR}")
 message(STATUS "========================================")
 message(STATUS "")

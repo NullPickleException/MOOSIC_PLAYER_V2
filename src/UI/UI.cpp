@@ -23,9 +23,6 @@ namespace moosic
         const auto &w = theme.Window;
         const auto &cp = theme.ContentPanel;
 
-        //--------------------------------------------------------------------------
-        // Window Colors
-        //--------------------------------------------------------------------------
         style.Colors[ImGuiCol_WindowBg] = w.WindowBg;
         style.Colors[ImGuiCol_Border] = cp.BorderColor;
         style.Colors[ImGuiCol_TitleBg] = w.TitleBar;
@@ -52,17 +49,13 @@ namespace moosic
         style.Colors[ImGuiCol_SliderGrab] = w.ProgressBar;
         style.Colors[ImGuiCol_SliderGrabActive] = w.ButtonActive;
 
-        // Tab Colors
         style.Colors[ImGuiCol_Tab] = cp.TabInactive;
         style.Colors[ImGuiCol_TabHovered] = cp.TabHovered;
         style.Colors[ImGuiCol_TabActive] = cp.TabActive;
         style.Colors[ImGuiCol_TabUnfocused] = cp.TabInactive;
         style.Colors[ImGuiCol_TabUnfocusedActive] = cp.TabActive;
 
-        //--------------------------------------------------------------------------
-        // Style Properties - Main Window Rounding (Top flat, Bottom rounded)
-        //--------------------------------------------------------------------------
-        style.WindowRounding = 0.0f; // Top corners flat (connects to title bar)
+        style.WindowRounding = 0.0f;
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
         style.GrabRounding = 4.0f;
@@ -70,14 +63,12 @@ namespace moosic
         style.TabRounding = cp.TabRounding;
         style.ScrollbarRounding = 4.0f;
 
-        // Main window borders
         style.WindowBorderSize = cp.BorderThickness;
         style.ChildBorderSize = 0.0f;
         style.PopupBorderSize = 1.0f;
         style.FrameBorderSize = 0.0f;
         style.TabBorderSize = 0.0f;
 
-        // Padding & Spacing
         style.WindowPadding = ImVec2(8.0f, 8.0f);
         style.FramePadding = ImVec2(6.0f, 4.0f);
         style.ItemSpacing = ImVec2(6.0f, 4.0f);
@@ -88,36 +79,56 @@ namespace moosic
         style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
     }
 
-    //==============================================================================
-    // Settings Window Connection
-    //==============================================================================
-void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
-{
-    if (!contentPanel)
-        return;
+    void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
+    {
+        if (!contentPanel)
+            return;
 
-    auto &settingsWindow = contentPanel->GetSettingsWindow();
+        auto &settingsWindow = contentPanel->GetSettingsWindow();
 
-    // Set the shared settings data model
-    settingsWindow.SetSettingsDataModel(&m_settingsData);
+        settingsWindow.SetSettingsDataModel(&m_settingsData);
+        settingsWindow.SetThemeManager(&m_themeManager);
 
-    // Theme manager
-    settingsWindow.SetThemeManager(&m_themeManager);
-    settingsWindow.OnThemeChanged(
-        [this]()
+        // Scan for available logos
+        settingsWindow.ScanAvailableLogos();
+
+        settingsWindow.OnThemeChanged([this]()
+                                      { ApplyThemeToLayouts(); });
+
+        settingsWindow.OnVisualizerModeChanged([this](int mode)
+                                               {
+        m_playbackController.SetVisualizerMode(mode);
+        m_settingsData.SetVisualizerMode(mode); });
+
+        // Logo change callback
+        settingsWindow.OnLogoChanged([this](const std::string &path)
+                                     {
+        if (path.empty())
         {
-            ApplyThemeToLayouts();
-        });
-
-    // Visualizer mode callback - SET DIRECTLY ON CONTROLLER ONLY
-    settingsWindow.OnVisualizerModeChanged(
-        [this](int mode)
+            // Reload default logo
+            std::vector<std::string> defaultPaths = {
+                "assets/Logo_img/COW_IMAGE.png",
+                "../assets/Logo_img/COW_IMAGE.png",
+                "../../assets/Logo_img/COW_IMAGE.png"
+            };
+            for (const auto& p : defaultPaths)
+            {
+                if (m_titleBar.LoadLogo(p))
+                    break;
+            }
+        }
+        else
         {
-            m_playbackController.SetVisualizerMode(mode);
-            // Also update data model for saving
-            m_settingsData.SetVisualizerMode(mode);
-        });
-}
+            m_titleBar.LoadLogo(path);
+        } });
+
+        // Load saved logo on startup
+        std::string savedLogo = m_settingsData.GetLogoPath();
+        if (!savedLogo.empty())
+        {
+            m_titleBar.LoadLogo(savedLogo);
+        }
+    }
 
     WindowContentPanel *UI::GetCurrentContentPanel()
     {
@@ -149,16 +160,11 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
         }
     }
 
-    //==============================================================================
-    // Constructor
-    //==============================================================================
-
     UI::UI(MusicLibrary &library, PlaybackController &playbackController)
         : m_library(library), m_playbackController(playbackController),
           m_libraryData(library),
-          m_directoryData(library, &m_playlistData), // <-- CHANGED: pass playlist model
+          m_directoryData(library, &m_playlistData),
           m_playlistData(library),
-          // SettingsDataModel is default-initialized with "Dark" theme, spectrum mode, standard layout
           m_standardLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
           m_sidebarLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
           m_compactLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
@@ -166,13 +172,7 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
           m_theaterLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController),
           m_standardArtLeftLayout(m_libraryData, m_directoryData, m_playlistData, library, playbackController)
     {
-        // All layouts share the SAME data models!
-        // State persists across layout switches automatically.
     }
-
-    //==============================================================================
-    // Initialization
-    //==============================================================================
 
     void UI::Initialize(SDL_Window *window)
     {
@@ -181,25 +181,16 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
 
         m_initialized = true;
 
-        // Initialize title bar
         m_titleBar.Initialize(window);
 
-        // Connect settings window for the current layout
         ConnectSettingsWindowForCurrentLayout();
 
-        // Apply the initial theme
         ApplyThemeToLayouts();
     }
-
-    //==============================================================================
-    // Theme
-    //==============================================================================
 
     void UI::SetTheme(const Theme &theme)
     {
         m_themeManager.SetTheme(theme);
-        // When setting a raw Theme object, we update the data model with the
-        // current theme name from the manager (which tracks it internally)
         m_settingsData.SetThemeName(m_themeManager.GetCurrentThemeName());
         ApplyThemeToLayouts();
     }
@@ -208,7 +199,7 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
     {
         if (m_themeManager.SetTheme(themeName))
         {
-            m_settingsData.SetThemeName(themeName); // Sync to data model
+            m_settingsData.SetThemeName(themeName);
             ApplyThemeToLayouts();
         }
     }
@@ -242,10 +233,6 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
         m_standardArtLeftLayout.ApplyTheme(theme);
     }
 
-    //==============================================================================
-    // Layout Switching
-    //==============================================================================
-
     void UI::HandleLayoutSwitch(InputManager &input)
     {
         LayoutMode newMode = m_layoutMode;
@@ -266,15 +253,10 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
         if (newMode != m_layoutMode)
         {
             m_layoutMode = newMode;
-            m_settingsData.SetLayoutMode(static_cast<int>(newMode)); // Sync to data model
-            // Reconnect settings window for the current layout
+            m_settingsData.SetLayoutMode(static_cast<int>(newMode));
             ConnectSettingsWindowForCurrentLayout();
         }
     }
-
-    //==============================================================================
-    // Drawing
-    //==============================================================================
 
     void UI::DrawCurrentLayout(SDL_Renderer *renderer)
     {
@@ -301,38 +283,43 @@ void UI::ConnectSettingsWindow(WindowContentPanel *contentPanel)
         }
     }
 
-void UI::Draw(SDL_Renderer *renderer, InputManager &input)
-{
-    HandleLayoutSwitch(input);
+    void UI::LoadSavedLogo(const std::string &path)
+    {
+        if (!path.empty())
+        {
+            m_titleBar.LoadLogo(path);
+        }
+    }
 
-    // THIS MUST STAY - it refreshes PlayerBarData that all player bars read from
-    m_playbackController.Update();
+    void UI::Draw(SDL_Renderer *renderer, InputManager &input)
+    {
+        HandleLayoutSwitch(input);
 
-    ImGuiViewport *viewport = ImGui::GetMainViewport();
-    float titleBarHeight = m_titleBar.GetTheme().Height;
+        m_playbackController.Update();
 
-    const float TITLEBAR_OVERLAP = 0.0f;
+        ImGuiViewport *viewport = ImGui::GetMainViewport();
+        float titleBarHeight = m_titleBar.GetTheme().Height;
 
-    ImVec2 originalPos = viewport->Pos;
-    ImVec2 originalSize = viewport->Size;
-    ImVec2 originalWorkPos = viewport->WorkPos;
-    ImVec2 originalWorkSize = viewport->WorkSize;
+        const float TITLEBAR_OVERLAP = 0.0f;
 
-    viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight - TITLEBAR_OVERLAP);
-    viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight + TITLEBAR_OVERLAP);
-    viewport->WorkPos = viewport->Pos;
-    viewport->WorkSize = viewport->Size;
+        ImVec2 originalPos = viewport->Pos;
+        ImVec2 originalSize = viewport->Size;
+        ImVec2 originalWorkPos = viewport->WorkPos;
+        ImVec2 originalWorkSize = viewport->WorkSize;
 
-    DrawCurrentLayout(renderer);
+        viewport->Pos = ImVec2(originalPos.x, originalPos.y + titleBarHeight - TITLEBAR_OVERLAP);
+        viewport->Size = ImVec2(originalSize.x, originalSize.y - titleBarHeight + TITLEBAR_OVERLAP);
+        viewport->WorkPos = viewport->Pos;
+        viewport->WorkSize = viewport->Size;
 
-    viewport->Pos = originalPos;
-    viewport->Size = originalSize;
-    viewport->WorkPos = originalWorkPos;
-    viewport->WorkSize = originalWorkSize;
+        DrawCurrentLayout(renderer);
 
-    m_titleBar.Render();
-}
+        viewport->Pos = originalPos;
+        viewport->Size = originalSize;
+        viewport->WorkPos = originalWorkPos;
+        viewport->WorkSize = originalWorkSize;
 
+        m_titleBar.Render();
+    }
 
-    
 } // namespace moosic

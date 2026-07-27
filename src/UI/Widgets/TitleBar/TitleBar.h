@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <string>
 #include <functional>
+#include <vector>
 
 namespace moosic
 {
@@ -24,9 +25,9 @@ namespace moosic
         ImVec4 BottomBorderColor       = ImVec4(1.0f, 1.0f, 1.0f, 0.12f);
         float BottomBorderThickness    = 1.0f;
 
-        // ── Window Border (outer frame of entire title bar window) ──
+        // ── Window Border ──
         bool  ShowWindowBorder         = true;
-        ImVec4 WindowBorderColor       = ImVec4(0.459f, 0.671f, 0.851f, 0.60f);  // Light blue
+        ImVec4 WindowBorderColor       = ImVec4(0.459f, 0.671f, 0.851f, 0.60f);
         float WindowBorderThickness    = 1.0f;
         float WindowBorderRounding     = 0.0f;
 
@@ -42,7 +43,7 @@ namespace moosic
         std::string TitleText          = "MOOSIC PLAYER";
 
         // ── Logo ──
-        bool ShowLogo                  = false;
+        bool ShowLogo                  = true;
         float LogoSize                 = 24.0f;
         float LogoPaddingLeft          = 10.0f;
         float LogoPaddingRight         = 8.0f;

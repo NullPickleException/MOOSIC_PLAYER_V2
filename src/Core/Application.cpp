@@ -4,11 +4,13 @@
 
 #include "Application.h"
 #include "UI/Windows/WindowContentPanel.h"
+#include "Services/ImageLoader.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_sdlrenderer2.h>
 #include <iostream>
+#include <filesystem>
 
 // BASS headers
 #include "Services/BassHeaders.h"
@@ -119,6 +121,9 @@ namespace moosic
 
         SDL_SetWindowMinimumSize(m_window, 590, 440);
 
+        // Set window icon at runtime
+        SetWindowIcon();
+
         int width, height;
         SDL_GetWindowSize(m_window, &width, &height);
 
@@ -163,6 +168,50 @@ namespace moosic
 
         std::cout << "Window initialized: " << width << "x" << height << "\n";
         return true;
+    }
+
+    void Application::SetWindowIcon()
+    {
+        // Try multiple paths for the icon
+        std::vector<std::string> iconPaths = {
+            "assets/Icon_img/COW_IMAGE.png",
+            "../assets/Icon_img/COW_IMAGE.png",
+            "../../assets/Icon_img/COW_IMAGE.png"};
+
+        for (const auto &path : iconPaths)
+        {
+            if (!std::filesystem::exists(path))
+                continue;
+
+            ImageLoader loader;
+            ImageData imageData = loader.LoadFromFile(path);
+
+            if (!imageData.data.empty() && imageData.width > 0 && imageData.height > 0)
+            {
+                ImageData rgbaData = loader.ToRGBA(imageData);
+
+                SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
+                    rgbaData.data.data(),
+                    rgbaData.width,
+                    rgbaData.height,
+                    32,
+                    rgbaData.width * 4,
+                    0x000000FF,
+                    0x0000FF00,
+                    0x00FF0000,
+                    0xFF000000);
+
+                if (surface)
+                {
+                    SDL_SetWindowIcon(m_window, surface);
+                    SDL_FreeSurface(surface);
+                    std::cout << "[Application] Window icon set from: " << path << "\n";
+                    return;
+                }
+            }
+        }
+
+        std::cout << "[Application] Window icon not found in any path\n";
     }
 
     void Application::Shutdown()
@@ -217,15 +266,13 @@ namespace moosic
 
     bool Application::InitBass()
     {
-        // Initialize BASS with default sound device
         if (!BASS_Init(-1, 44100, 0, nullptr, nullptr))
         {
-            std::cerr << "[Application] BASS_Init failed. Error: " 
+            std::cerr << "[Application] BASS_Init failed. Error: "
                       << BASS_ErrorGetCode() << "\n";
             return false;
         }
 
-        // Load format plugins
 #if defined(_WIN32)
         BASS_PluginLoad("bass_aac.dll", 0);
         BASS_PluginLoad("bassflac.dll", 0);
@@ -236,10 +283,6 @@ namespace moosic
         BASS_PluginLoad("libbassflac.so", 0);
         BASS_PluginLoad("libbassopus.so", 0);
 #elif defined(__APPLE__)
-        // macOS: CoreAudio handles AAC/MP3/ALAC natively
-        // These plugins are optional if you have the dylibs
-        // BASS_PluginLoad("libbassflac.dylib", 0);
-        // BASS_PluginLoad("libbassopus.dylib", 0);
 #endif
 
         m_bassInitialized = true;
@@ -248,7 +291,7 @@ namespace moosic
     }
 
     //==========================================================================
-    // Save/Load - Thin wrappers, all work delegated to SavingSystem
+    // Save/Load
     //==========================================================================
 
     void Application::SaveState()
@@ -278,13 +321,19 @@ namespace moosic
         {
             contentPanel->GetLibraryData().Refresh();
 
-            // Apply loaded settings
             const auto &settings = m_ui.GetSettingsDataModel();
             m_ui.SetTheme(settings.GetThemeName());
             m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
+
+            // Reload saved logo
+            std::string savedLogo = settings.GetLogoPath();
+            if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
+            {
+                m_ui.LoadSavedLogo(savedLogo);
+            }
         }
 
         m_playbackController.Pause();
     }
 
-} // namespace moosic   
+} // namespace moosic

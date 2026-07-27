@@ -1,9 +1,6 @@
 //==============================================================================
 // SettingsWindow.h
 //==============================================================================
-// Settings window with theme selection, visualizer mode, and other preferences
-// Now uses SettingsDataModel for centralized state management
-//==============================================================================
 
 #pragma once
 
@@ -17,10 +14,6 @@
 namespace moosic
 {
 
-//==============================================================================
-// SettingsWindow
-//==============================================================================
-
 class SettingsWindow : public IWindow
 {
 public:
@@ -29,49 +22,33 @@ public:
     void Draw() override;
     void ApplyTheme(const WindowTheme& theme) override;
 
-    //--------------------------------------------------------------------------
-    // Settings Data Model (shared state)
-    //--------------------------------------------------------------------------
-
     void SetSettingsDataModel(SettingsDataModel* model);
     SettingsDataModel* GetSettingsDataModel() const { return m_settingsModel; }
 
-    //--------------------------------------------------------------------------
-    // Theme Manager
-    //--------------------------------------------------------------------------
-
     void SetThemeManager(ThemeManager* manager);
-
-    //--------------------------------------------------------------------------
-    // Theme Change Callback - No parameter needed, ThemeManager owns the theme
-    //--------------------------------------------------------------------------
 
     using ThemeChangeCallback = std::function<void()>;
     void OnThemeChanged(ThemeChangeCallback callback);
 
-    //--------------------------------------------------------------------------
-    // Visualizer Mode Callback - Called when user changes visualization type
-    //--------------------------------------------------------------------------
-
     using VisualizerModeCallback = std::function<void(int mode)>;
     void OnVisualizerModeChanged(VisualizerModeCallback callback);
 
-private:
-    //--------------------------------------------------------------------------
-    // Drawing Sections
-    //--------------------------------------------------------------------------
+    using LogoChangeCallback = std::function<void(const std::string& path)>;
+    void OnLogoChanged(LogoChangeCallback callback);
 
+    // Call this once to scan available logos
+    void ScanAvailableLogos();
+
+private:
     void DrawAppearanceSection();
     void DrawThemeSelector();
     void DrawVisualizerModeSelector();
+    void DrawLogoSelector();
     void DrawGeneralSection();
     void DrawAudioSection();
 
-    //--------------------------------------------------------------------------
-    // Theme Management
-    //--------------------------------------------------------------------------
-
     void ApplySelectedTheme(int index);
+    void ApplySelectedLogo(int index);
 
 private:
     WindowTheme m_theme;
@@ -80,9 +57,18 @@ private:
     int m_selectedThemeIndex = 0;
     ThemeChangeCallback m_onThemeChanged;
     
-    // Local UI state for visualizer mode (synced with SettingsDataModel)
-    int m_visualizerMode = 0; // 0=Spectrum, 1=Oscilloscope
+    int m_visualizerMode = 0;
     VisualizerModeCallback m_onVisualizerModeChanged;
+
+    // Logo state
+    struct LogoInfo
+    {
+        std::string name;       // Display name (filename without extension)
+        std::string path;       // Full path
+    };
+    std::vector<LogoInfo> m_availableLogos;
+    int m_selectedLogoIndex = 0;
+    LogoChangeCallback m_onLogoChanged;
 };
 
 } // namespace moosic
