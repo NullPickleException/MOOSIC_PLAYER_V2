@@ -97,20 +97,29 @@ namespace moosic
             items.push_back({"", false, true, nullptr});
             
             // ── Actions ──
-            items.push_back({"Open Folder", true, false, [this]() {
-                if (!m_contextTrack) return;
-                std::filesystem::path filePath = m_contextTrack->GetPath();
+            // ── Open Folder ──
+items.push_back({"Open Folder", true, false, [this]() {
+    if (!m_contextTrack) return;
+    try {
+        std::filesystem::path filePath = m_contextTrack->GetPath();
+        if (filePath.empty()) return;
+
 #ifdef _WIN32
-                std::string cmd = "/select,\"" + filePath.string() + "\"";
-                ShellExecuteA(NULL, "open", "explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
+        // Use wide string on Windows to handle Unicode paths
+        std::wstring wpath = filePath.wstring();
+        std::wstring cmd = L"/select,\"" + wpath + L"\"";
+        ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
 #elif defined(__APPLE__)
-                std::string cmd = "open -R \"" + filePath.string() + "\"";
-                system(cmd.c_str());
+        std::string cmd = "open -R \"" + filePath.string() + "\"";
+        system(cmd.c_str());
 #else
-                std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
-                system(cmd.c_str());
+        std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
+        system(cmd.c_str());
 #endif
-            }});
+    } catch (...) {
+        // Silently fail - file path has invalid characters
+    }
+}});
             
             items.push_back({"Edit Track Info", true, false, [this]() {
                 // TODO: Implement track metadata editing dialog

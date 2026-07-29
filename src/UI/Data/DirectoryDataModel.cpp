@@ -9,6 +9,7 @@
 #include <nfd.h>
 #include <future>
 #include <iostream>
+#include <unordered_map>
 
 namespace moosic
 {
@@ -154,7 +155,7 @@ void DirectoryDataModel::Update()
 }
 
 //==============================================================================
-// Import (Private)
+// Import (Private) - SMART 2-PHASE APPROACH
 //==============================================================================
 
 void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
@@ -191,6 +192,7 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
             std::mutex tracksMutex;
             std::atomic<int> processed{0};
             std::vector<MusicTrack> tracks;
+            std::vector<size_t> pendingBASS;
             tracks.reserve(total);
 
             size_t chunkSize = (total + numThreads - 1) / numThreads;
@@ -202,29 +204,50 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
                 size_t end = std::min(start + chunkSize, files.size());
 
                 futures.push_back(std::async(std::launch::async, 
-                    [this, &files, start, end, &processed, &tracksMutex, &tracks]()
+                    [this, &files, start, end, &processed, &tracksMutex, &tracks, &pendingBASS]()
                     {
+                        std::vector<size_t> localPending;
+                        
                         for (size_t i = start; i < end; ++i)
                         {
+                            MusicTrack track;
+                            
                             try
                             {
-                                auto track = m_reader.ReadMetadataForSingleTrack(files[i]);
-                                
-                                {
-                                    std::lock_guard<std::mutex> lock(tracksMutex);
-                                    tracks.push_back(std::move(track));
-                                }
+                                track = m_reader.ReadMetadataForSingleTrack(files[i]);
+                                track.SetDuration(0);
                             }
-                            catch (...) {}
+                            catch (...)
+                            {
+                                // CREATE FALLBACK - don't lose the file!
+                                track.SetPath(files[i]);
+                                try { track.SetTitle(files[i].stem().u8string()); } 
+                                catch (...) { 
+                                    try { track.SetTitle(files[i].stem().string()); } 
+                                    catch (...) { track.SetTitle("Unknown Track"); }
+                                }
+                                track.SetArtist("Unknown Artist");
+                                track.SetAlbum("Unknown Album");
+                                track.SetGenre("Unknown");
+                                track.SetDuration(0);
+                            }
+                            
+                            {
+                                std::lock_guard<std::mutex> lock(tracksMutex);
+                                size_t trackIndex = tracks.size();
+                                tracks.push_back(std::move(track));
+                                localPending.push_back(trackIndex);
+                            }
 
                             int count = processed.fetch_add(1, std::memory_order_relaxed) + 1;
                             m_processedFiles.store(count, std::memory_order_release);
-                            
-                            // Read tracks.size() under the lock for correctness
-                            {
-                                std::lock_guard<std::mutex> lock(tracksMutex);
-                                m_successfulFiles.store(static_cast<int>(tracks.size()), std::memory_order_release);
-                            }
+                            m_successfulFiles.store(static_cast<int>(tracks.size()), std::memory_order_release);
+                        }
+                        
+                        if (!localPending.empty())
+                        {
+                            std::lock_guard<std::mutex> lock(tracksMutex);
+                            pendingBASS.insert(pendingBASS.end(), localPending.begin(), localPending.end());
                         }
                     }
                 ));
@@ -233,6 +256,29 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
             for (auto& f : futures)
                 if (f.valid()) f.get();
 
+            // PHASE 2: BASS duration
+            if (!pendingBASS.empty())
+            {
+                m_processedFiles.store(0, std::memory_order_release);
+                
+                // DO BASS SEQUENTIALLY to avoid threading issues
+                for (size_t i = 0; i < pendingBASS.size(); ++i)
+                {
+                    size_t trackIndex = pendingBASS[i];
+                    if (trackIndex < tracks.size())
+                    {
+                        try
+                        {
+                            unsigned int duration = m_reader.GetDurationWithBASS(tracks[trackIndex].GetPath());
+                            if (duration > 0)
+                                tracks[trackIndex].SetDuration(duration);
+                        }
+                        catch (...) {}
+                    }
+                    m_processedFiles.store(static_cast<int>(i + 1), std::memory_order_release);
+                }
+            }
+
             m_importedTracks = std::move(tracks);
         }
 
@@ -240,6 +286,7 @@ void DirectoryDataModel::StartImport(const std::filesystem::path& folder)
         m_isImporting.store(false, std::memory_order_release);
     });
 }
+
 
 void DirectoryDataModel::CommitImport()
 {

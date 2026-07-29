@@ -45,24 +45,24 @@ namespace moosic
 
         MusicTrack ReadMetadataForSingleTrack(const std::filesystem::path &filePath) const;
 
+        //--------------------------------------------------------------------------
+        // Duration API (for 2-phase import - called separately)
+        //--------------------------------------------------------------------------
+
+        unsigned int GetDurationWithBASS(const std::filesystem::path &filePath) const;
+
     private:
         //--------------------------------------------------------------------------
         // Format-Specific Parsers (delegated to individual parser classes)
         //--------------------------------------------------------------------------
 
-        bool ParseMP3Metadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseFLACMetadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseMP4Metadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseOGGMetadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseWAVMetadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseAIFFMetadata(const std::string &filePath, MusicTrack &track) const;
-        bool ParseWVMetadata(const std::string &filePath, MusicTrack &track) const;
-
-        //--------------------------------------------------------------------------
-        // BASS Duration (unchanged - always used for duration)
-        //--------------------------------------------------------------------------
-
-        unsigned int GetDurationWithBASS(const std::filesystem::path &filePath) const;
+        bool ParseMP3Metadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseFLACMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseMP4Metadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseOGGMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseWAVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseAIFFMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseWVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
 
         //--------------------------------------------------------------------------
         // Helpers

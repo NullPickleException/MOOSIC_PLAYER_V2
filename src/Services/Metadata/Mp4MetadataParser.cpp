@@ -13,9 +13,9 @@ namespace moosic
     // Main Parse API
     //==============================================================================
 
-    bool Mp4MetadataParser::Parse(const std::string &filePath, MusicTrack &track) const
-    {
-        auto data = ReadFileBytes(filePath);
+    bool Mp4MetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
+{
+    auto data = ReadFileBytes(filePath);
         if (data.size() < 8)
             return false;
 
@@ -255,24 +255,23 @@ namespace moosic
     // File I/O
     //==============================================================================
 
-    std::vector<uint8_t> Mp4MetadataParser::ReadFileBytes(const std::string &filePath) const
-    {
-        std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-        if (!file.is_open())
-            return {};
-
-        std::streamsize size = file.tellg();
-        if (size <= 0 || size > 100 * 1024 * 1024)
-            return {};
-
-        file.seekg(0, std::ios::beg);
-        std::vector<uint8_t> buffer(static_cast<size_t>(size));
-
-        if (!file.read(reinterpret_cast<char *>(buffer.data()), size))
-            return {};
-
-        return buffer;
-    }
+    std::vector<uint8_t> Mp4MetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
+{
+    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) return {};
+    
+    std::streamsize size = file.tellg();
+    if (size <= 0 || size > 100 * 1024 * 1024) return {};
+    
+    file.seekg(0, std::ios::beg);
+    std::vector<uint8_t> buffer(static_cast<size_t>(size));
+    
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
+        return {};
+    
+    return buffer;
+}
 
     //==============================================================================
     // String Utilities

@@ -16,7 +16,7 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool Mp3MetadataParser::Parse(const std::string& filePath, MusicTrack& track) const
+bool Mp3MetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
 {
     auto data = ReadFileBytes(filePath);
     if (data.size() < 3) return false;
@@ -404,13 +404,14 @@ std::string Mp3MetadataParser::ReadNullTerminatedString(const std::vector<uint8_
 // File I/O
 //==============================================================================
 
-std::vector<uint8_t> Mp3MetadataParser::ReadFileBytes(const std::string& filePath) const
+std::vector<uint8_t> Mp3MetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
 {
+    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) return {};
     
     std::streamsize size = file.tellg();
-    if (size <= 0 || size > 100 * 1024 * 1024) return {};  // Max 100MB
+    if (size <= 0 || size > 100 * 1024 * 1024) return {};
     
     file.seekg(0, std::ios::beg);
     std::vector<uint8_t> buffer(static_cast<size_t>(size));

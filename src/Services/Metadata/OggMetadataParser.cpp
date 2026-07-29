@@ -13,7 +13,7 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool OggMetadataParser::Parse(const std::string& filePath, MusicTrack& track) const
+bool OggMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
 {
     auto data = ReadFileBytes(filePath);
     if (data.size() < 28) return false;
@@ -140,23 +140,23 @@ std::string OggMetadataParser::ReadString(const std::vector<uint8_t>& data, size
 // File I/O
 //==============================================================================
 
-std::vector<uint8_t> OggMetadataParser::ReadFileBytes(const std::string& filePath) const
+std::vector<uint8_t> OggMetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
 {
+    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) return {};
-
+    
     std::streamsize size = file.tellg();
     if (size <= 0 || size > 100 * 1024 * 1024) return {};
-
+    
     file.seekg(0, std::ios::beg);
     std::vector<uint8_t> buffer(static_cast<size_t>(size));
-
+    
     if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
         return {};
-
+    
     return buffer;
 }
-
 //==============================================================================
 // String Utilities
 //==============================================================================

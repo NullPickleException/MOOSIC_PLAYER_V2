@@ -35,7 +35,7 @@ public:
     // Parses MP3 file and fills track metadata
     // Returns true if any metadata was successfully extracted
     
-    bool Parse(const std::string& filePath, MusicTrack& track) const;
+  bool Parse(const std::filesystem::path& filePath, MusicTrack& track) const;
 
 private:
     //--------------------------------------------------------------------------
@@ -73,7 +73,7 @@ private:
     // File I/O
     //--------------------------------------------------------------------------
     
-    std::vector<uint8_t> ReadFileBytes(const std::string& filePath) const;
+    std::vector<uint8_t> ReadFileBytes(const std::filesystem::path& filePath) const;
 
     //--------------------------------------------------------------------------
     // String Utilities

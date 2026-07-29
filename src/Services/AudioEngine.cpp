@@ -34,24 +34,33 @@ bool AudioEngine::Open(const MusicTrack& track)
 
     CloseStream();
 
-    std::string path = track.GetPath().string();
     std::string ext = track.GetExtension();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
     HSTREAM stream = 0;
 
+#ifdef _WIN32
+    // Use wide string for Unicode paths on Windows
+    std::wstring wpath = track.GetPath().wstring();
+    const void* filePath = wpath.c_str();
+    DWORD unicodeFlag = BASS_UNICODE;
+#else
+    std::string path = track.GetPath().string();
+    const void* filePath = path.c_str();
+    DWORD unicodeFlag = 0;
+#endif
+
     // Try appropriate decoder based on extension
     if (ext == "m4a" || ext == "mp4" || ext == "m4b")
     {
-        stream = BASS_AAC_StreamCreateFile(FALSE, path.c_str(), 0, 0, 
-                                           BASS_STREAM_AUTOFREE);
+        stream = BASS_AAC_StreamCreateFile(FALSE, filePath, 0, 0, 
+                                           BASS_STREAM_AUTOFREE | unicodeFlag);
     }
 
     if (!stream)
     {
-        // Generic stream creation
-        stream = BASS_StreamCreateFile(FALSE, path.c_str(), 0, 0, 
-                                       BASS_STREAM_AUTOFREE | BASS_STREAM_PRESCAN);
+        stream = BASS_StreamCreateFile(FALSE, filePath, 0, 0, 
+                                       BASS_STREAM_AUTOFREE | BASS_STREAM_PRESCAN | unicodeFlag);
     }
 
     if (!stream)

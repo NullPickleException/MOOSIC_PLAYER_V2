@@ -21,7 +21,7 @@ namespace moosic
             ".flac",
             ".wav",
             ".ogg",
-            ".m4a", ".mp4", ".m4b",
+            ".m4a", /*".mp4",*/ ".m4b",
             ".wma",
             ".opus",
             ".aac"};
@@ -31,13 +31,14 @@ namespace moosic
         {
             std::string ext = extension;
             std::transform(ext.begin(), ext.end(), ext.begin(),
-                           [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                           [](unsigned char c)
+                           { return static_cast<char>(std::tolower(c)); });
 
             // Quick check for common extensions first
-            if (ext == ".mp3" || ext == ".m4a" || ext == ".flac" || 
-                ext == ".wav" || ext == ".ogg" || ext == ".mp4")
+            if (ext == ".mp3" || ext == ".m4a" || ext == ".flac" ||
+                ext == ".wav" || ext == ".ogg" /* || ext == ".mp4" */)
                 return true;
-            
+
             if (ext == ".mp2" || ext == ".mp1" || ext == ".m4b" ||
                 ext == ".wma" || ext == ".opus" || ext == ".aac")
                 return true;
@@ -58,7 +59,7 @@ namespace moosic
         std::string currentPath;
     };
 
-    using ScanProgressCallback = std::function<void(const ScanProgress&)>;
+    using ScanProgressCallback = std::function<void(const ScanProgress &)>;
 
     //==============================================================================
     // Directory Scanner - FAST version with multi-threading
@@ -73,7 +74,7 @@ namespace moosic
         std::vector<std::filesystem::path> Scan(const std::filesystem::path &directory);
 
         // Asynchronous scan (non-blocking) with progress
-        void ScanAsync(const std::filesystem::path &directory, 
+        void ScanAsync(const std::filesystem::path &directory,
                        ScanProgressCallback progressCallback,
                        std::function<void(std::vector<std::filesystem::path>)> completionCallback);
 
@@ -83,12 +84,12 @@ namespace moosic
     private:
         bool IsAudioFile(const std::filesystem::path &filePath) const;
         std::string GetLowercaseExtension(const std::filesystem::path &filePath) const;
-        void ScanDirectoryInternal(const std::filesystem::path &directory, 
+        void ScanDirectoryInternal(const std::filesystem::path &directory,
                                    std::vector<std::filesystem::path> &outFiles,
                                    std::atomic<int> &fileCount);
 
     private:
         std::atomic<bool> m_cancelled{false};
     };
-    
+
 } // namespace moosic

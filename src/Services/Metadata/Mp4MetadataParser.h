@@ -23,7 +23,7 @@ public:
     Mp4MetadataParser() = default;
     ~Mp4MetadataParser() = default;
 
-    bool Parse(const std::string& filePath, MusicTrack& track) const;
+   bool Parse(const std::filesystem::path& filePath, MusicTrack& track) const;
 
 private:
     // Atom parsing
@@ -40,7 +40,7 @@ private:
     std::string ReadString(const std::vector<uint8_t>& data, size_t offset, size_t length) const;
     
     // File I/O
-    std::vector<uint8_t> ReadFileBytes(const std::string& filePath) const;
+   std::vector<uint8_t> ReadFileBytes(const std::filesystem::path& filePath) const;
     
     // String utilities
     std::string CleanString(const std::string& input) const;
