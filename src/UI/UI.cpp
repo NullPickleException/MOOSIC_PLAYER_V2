@@ -7,6 +7,10 @@
 #include "UI.h"
 #include "Windows/WindowContentPanel.h"
 
+#include <imgui_impl_sdlrenderer2.h>
+
+#include <iostream>
+
 namespace moosic
 {
 
@@ -128,6 +132,21 @@ namespace moosic
         {
             m_titleBar.LoadLogo(savedLogo);
         }
+
+        //----------------------------------------------------------------------
+        // Font scanning & callback
+        //----------------------------------------------------------------------
+
+        settingsWindow.ScanAvailableFonts();
+
+        settingsWindow.OnFontChanged([this](const std::string &path, float size)
+                                     { LoadFont(path, size); });
+
+        std::string savedFont = m_settingsData.GetFontPath();
+        float savedFontSize = m_settingsData.GetFontSize();
+        if (savedFontSize < 12.0f)
+            savedFontSize = 16.0f;
+        LoadFont(savedFont, savedFontSize);
     }
 
     WindowContentPanel *UI::GetCurrentContentPanel()
@@ -321,5 +340,58 @@ namespace moosic
 
         m_titleBar.Render();
     }
+
+    //==============================================================================
+    // Font Loading
+    //==============================================================================
+
+    void UI::LoadFont(const std::string &fontPath, float fontSize)
+    {
+        m_pendingFontPath = fontPath;
+        m_pendingFontSize = fontSize;
+        m_fontNeedsReload = true;
+    }
+void UI::ApplyPendingFont()
+{
+    if (!m_fontNeedsReload)
+        return;
+
+    m_fontNeedsReload = false;
+
+    ImGuiStyle savedStyle = ImGui::GetStyle();
+
+    ImGuiIO &io = ImGui::GetIO();
+    io.Fonts->Clear();
+
+    // Font config for crisp rendering
+    ImFontConfig config;
+    config.OversampleH = 1;  // No horizontal oversampling
+    config.OversampleV = 1;  // No vertical oversampling
+    config.PixelSnapH = true;
+    config.FontDataOwnedByAtlas = false;
+
+    if (m_pendingFontPath.empty())
+    {
+        io.Fonts->AddFontDefault(&config);
+    }
+    else
+    {
+        ImFont *font = io.Fonts->AddFontFromFileTTF(m_pendingFontPath.c_str(), m_pendingFontSize, &config);
+        if (!font)
+        {
+            std::cout << "[UI] Failed to load font, using default\n";
+            io.Fonts->AddFontDefault(&config);
+        }
+    }
+
+    io.Fonts->Build();
+    ImGui_ImplSDLRenderer2_DestroyDeviceObjects();
+    ImGui_ImplSDLRenderer2_CreateDeviceObjects();
+
+    ImGui::GetStyle() = savedStyle;
+
+    std::cout << "[UI] Font loaded: " << (m_pendingFontPath.empty() ? "Default" : m_pendingFontPath)
+              << " (" << m_pendingFontSize << "px)\n";
+}
 
 } // namespace moosic

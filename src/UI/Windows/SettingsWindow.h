@@ -36,19 +36,24 @@ public:
     using LogoChangeCallback = std::function<void(const std::string& path)>;
     void OnLogoChanged(LogoChangeCallback callback);
 
-    // Call this once to scan available logos
+    using FontChangeCallback = std::function<void(const std::string& path, float size)>;
+    void OnFontChanged(FontChangeCallback callback);
+
     void ScanAvailableLogos();
+    void ScanAvailableFonts();
 
 private:
     void DrawAppearanceSection();
     void DrawThemeSelector();
     void DrawVisualizerModeSelector();
     void DrawLogoSelector();
+    void DrawFontSelector();
     void DrawGeneralSection();
     void DrawAudioSection();
 
     void ApplySelectedTheme(int index);
     void ApplySelectedLogo(int index);
+    void ApplySelectedFont(int index);
 
 private:
     WindowTheme m_theme;
@@ -61,14 +66,17 @@ private:
     VisualizerModeCallback m_onVisualizerModeChanged;
 
     // Logo state
-    struct LogoInfo
-    {
-        std::string name;       // Display name (filename without extension)
-        std::string path;       // Full path
-    };
+    struct LogoInfo { std::string name; std::string path; };
     std::vector<LogoInfo> m_availableLogos;
     int m_selectedLogoIndex = 0;
     LogoChangeCallback m_onLogoChanged;
+
+    // Font state
+    struct FontInfo { std::string name; std::string path; std::string folder; };
+    std::vector<FontInfo> m_availableFonts;
+    int m_selectedFontIndex = 0;
+    float m_fontSize = 16.0f;
+    FontChangeCallback m_onFontChanged;
 };
 
 } // namespace moosic

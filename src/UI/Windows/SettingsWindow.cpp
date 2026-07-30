@@ -192,10 +192,11 @@ void SettingsWindow::DrawAppearanceSection()
     DrawLogoSelector();
 
     ImGui::Spacing();
+    ImGui::Spacing();
     ImGui::TextColored(m_theme.TextSecondary, "Font");
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextDisabled("Font settings coming soon...");
+    DrawFontSelector();
 }
 
 void SettingsWindow::DrawLogoSelector()
@@ -399,6 +400,173 @@ void SettingsWindow::DrawAudioSection()
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextDisabled("Audio settings coming soon...");
+}
+
+
+
+// Scan assets/Fonts folder for subdirectories containing .ttf files
+void SettingsWindow::ScanAvailableFonts()
+{
+    m_availableFonts.clear();
+    m_selectedFontIndex = 0;
+
+    std::vector<std::string> searchPaths = {
+        "assets/Fonts",
+        "../assets/Fonts",
+        "../../assets/Fonts"
+    };
+
+    for (const auto& searchPath : searchPaths)
+    {
+        if (!std::filesystem::exists(searchPath))
+            continue;
+
+        for (const auto& entry : std::filesystem::directory_iterator(searchPath))
+        {
+            if (!entry.is_directory())
+                continue;
+
+            std::string folderName = entry.path().filename().string();
+            
+            // Skip macOS junk
+            if (folderName == "__MACOSX")
+                continue;
+
+            // Scan ALL .ttf/.otf files inside this folder
+            for (const auto& fontFile : std::filesystem::directory_iterator(entry.path()))
+            {
+                if (!fontFile.is_regular_file()) continue;
+                
+                std::string ext = fontFile.path().extension().string();
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                
+                if (ext == ".ttf" || ext == ".otf")
+                {
+                    FontInfo info;
+                    // Name = "PixelCode Bold", "PixelCode Light", etc.
+                    info.name = folderName + " " + fontFile.path().stem().string();
+                    info.path = fontFile.path().string();
+                    info.folder = entry.path().string();
+                    m_availableFonts.push_back(info);
+                }
+            }
+        }
+
+        if (!m_availableFonts.empty())
+        {
+            std::cout << "[SettingsWindow] Found " << m_availableFonts.size() 
+                      << " fonts in: " << searchPath << "\n";
+            break;
+        }
+    }
+
+    // Restore saved font selection
+    if (m_settingsModel)
+    {
+        std::string savedPath = m_settingsModel->GetFontPath();
+        m_fontSize = m_settingsModel->GetFontSize();
+        if (m_fontSize < 12.0f) m_fontSize = 16.0f;
+        
+        if (!savedPath.empty())
+        {
+            for (size_t i = 0; i < m_availableFonts.size(); ++i)
+            {
+                if (m_availableFonts[i].path == savedPath)
+                {
+                    m_selectedFontIndex = static_cast<int>(i);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void SettingsWindow::OnFontChanged(FontChangeCallback callback)
+{
+    m_onFontChanged = callback;
+}
+
+void SettingsWindow::DrawFontSelector()
+{
+    ImGui::TextColored(m_theme.TextPrimary, "Font:");
+
+    if (m_availableFonts.empty())
+    {
+        ImGui::TextDisabled("No fonts found in assets/Fonts/");
+        ImGui::TextDisabled("Place .ttf files in subdirectories");
+        return;
+    }
+
+    // Current display name
+    std::string currentName = "Default";
+    if (m_selectedFontIndex >= 0 && m_selectedFontIndex < static_cast<int>(m_availableFonts.size()))
+        currentName = m_availableFonts[m_selectedFontIndex].name;
+
+    if (ImGui::BeginCombo("##FontSelector", currentName.c_str()))
+    {
+        // Default option
+        bool isDefault = (m_selectedFontIndex == -1);
+        if (ImGui::Selectable("Default", isDefault))
+            ApplySelectedFont(-1);
+        if (isDefault) ImGui::SetItemDefaultFocus();
+
+        for (int i = 0; i < static_cast<int>(m_availableFonts.size()); ++i)
+        {
+            bool isSelected = (i == m_selectedFontIndex);
+            if (ImGui::Selectable(m_availableFonts[i].name.c_str(), isSelected))
+                ApplySelectedFont(i);
+            if (isSelected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    // Font size slider - only show if a font is selected
+    if (m_selectedFontIndex >= 0)
+    {
+        ImGui::Spacing();
+        ImGui::TextColored(m_theme.TextPrimary, "Font Size:");
+        if (ImGui::SliderFloat("##FontSize", &m_fontSize, 12.0f, 32.0f, "%.0f"))
+        {
+            if (m_settingsModel)
+                m_settingsModel->SetFontSize(m_fontSize);
+            if (m_onFontChanged)
+            {
+                std::string path;
+                if (m_selectedFontIndex >= 0 && m_selectedFontIndex < static_cast<int>(m_availableFonts.size()))
+                    path = m_availableFonts[m_selectedFontIndex].path;
+                m_onFontChanged(path, m_fontSize);
+            }
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::TextColored(m_theme.TextDisabled, "Current: %s%s", 
+                       currentName.c_str(),
+                       m_selectedFontIndex >= 0 ? (" (" + std::to_string(static_cast<int>(m_fontSize)) + "px)").c_str() : "");
+}
+
+void SettingsWindow::ApplySelectedFont(int index)
+{
+    m_selectedFontIndex = index;
+    
+    std::string fontPath;
+    std::string fontName = "Default";
+    
+    if (index >= 0 && index < static_cast<int>(m_availableFonts.size()))
+    {
+        fontPath = m_availableFonts[index].path;
+        fontName = m_availableFonts[index].name;
+    }
+    
+    if (m_settingsModel)
+    {
+        m_settingsModel->SetFontPath(fontPath);
+        m_settingsModel->SetFontName(fontName);
+    }
+    
+    // Always notify - even for Default (empty path = default)
+    if (m_onFontChanged)
+        m_onFontChanged(fontPath, m_fontSize);
 }
 
 } // namespace moosic

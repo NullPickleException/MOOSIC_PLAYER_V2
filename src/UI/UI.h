@@ -51,6 +51,8 @@ namespace moosic
         const SettingsDataModel &GetSettingsDataModel() const { return m_settingsData; }
         void LoadSavedLogo(const std::string &path);
 
+        void ApplyPendingFont();
+
     private:
         enum class LayoutMode
         {
@@ -68,6 +70,8 @@ namespace moosic
         void ApplyImGuiStyle(const Theme &theme);
         void ConnectSettingsWindow(WindowContentPanel *contentPanel);
         void ConnectSettingsWindowForCurrentLayout();
+
+        void LoadFont(const std::string &fontPath, float fontSize);
 
     private:
         // Shared data models - ORDER MATTERS for initialization
@@ -89,6 +93,11 @@ namespace moosic
 
         PlaybackController &m_playbackController;
         MusicLibrary &m_library;
+
+        // Font reload state
+        bool m_fontNeedsReload = false;
+        std::string m_pendingFontPath;
+        float m_pendingFontSize = 16.0f;
 
         bool m_initialized = false;
     };

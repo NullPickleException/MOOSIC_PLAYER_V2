@@ -251,6 +251,10 @@ namespace moosic
 
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
+
+        // Apply any pending font changes BEFORE NewFrame
+        m_ui.ApplyPendingFont();
+
         ImGui::NewFrame();
 
         m_ui.Draw(m_renderer, m_input);

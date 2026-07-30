@@ -221,6 +221,10 @@ namespace moosic
             j["settings"]["layoutMode"] = settings.GetLayoutMode();
             j["settings"]["logoPath"] = settings.GetLogoPath();
 
+            j["settings"]["fontPath"] = settings.GetFontPath();
+            j["settings"]["fontName"] = settings.GetFontName();
+            j["settings"]["fontSize"] = settings.GetFontSize();
+
             //----------------------------------------------------------------------
             // Atomic save
             //----------------------------------------------------------------------
@@ -396,7 +400,10 @@ namespace moosic
                 settings.SetThemeName(j["settings"].value("themeName", "Dark"));
                 settings.SetVisualizerMode(j["settings"].value("visualizerMode", 0));
                 settings.SetLayoutMode(j["settings"].value("layoutMode", 0));
-                settings.SetLogoPath(j["settings"].value("logoPath", "")); // ADD
+                settings.SetLogoPath(j["settings"].value("logoPath", ""));
+                settings.SetFontPath(j["settings"].value("fontPath", ""));
+                settings.SetFontName(j["settings"].value("fontName", "Default"));
+                settings.SetFontSize(j["settings"].value("fontSize", 16.0f));
             }
 
             if (j.contains("settings"))

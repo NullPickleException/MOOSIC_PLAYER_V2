@@ -1,8 +1,6 @@
 //==============================================================================
 // UI/Data/SettingsDataModel.h
 //==============================================================================
-// Central data store for application settings (theme, visualizer, etc.)
-//==============================================================================
 
 #pragma once
 
@@ -21,34 +19,42 @@ namespace moosic
         // Theme
         //--------------------------------------------------------------------------
 
-        void SetThemeName(const std::string &name)
-        {
-            m_themeName = name;
-            NotifyChanged();
-        }
+        void SetThemeName(const std::string &name) { m_themeName = name; NotifyChanged(); }
         const std::string &GetThemeName() const { return m_themeName; }
 
         //--------------------------------------------------------------------------
         // Visualizer Mode
         //--------------------------------------------------------------------------
 
-        void SetVisualizerMode(int mode)
-        {
-            m_visualizerMode = mode;
-            NotifyChanged();
-        }
+        void SetVisualizerMode(int mode) { m_visualizerMode = mode; NotifyChanged(); }
         int GetVisualizerMode() const { return m_visualizerMode; }
 
         //--------------------------------------------------------------------------
         // Layout
         //--------------------------------------------------------------------------
 
-        void SetLayoutMode(int mode)
-        {
-            m_layoutMode = mode;
-            NotifyChanged();
-        }
+        void SetLayoutMode(int mode) { m_layoutMode = mode; NotifyChanged(); }
         int GetLayoutMode() const { return m_layoutMode; }
+
+        //--------------------------------------------------------------------------
+        // Logo Path
+        //--------------------------------------------------------------------------
+
+        void SetLogoPath(const std::string &path) { m_logoPath = path; NotifyChanged(); }
+        const std::string &GetLogoPath() const { return m_logoPath; }
+
+        //--------------------------------------------------------------------------
+        // Font Settings
+        //--------------------------------------------------------------------------
+
+        void SetFontPath(const std::string &path) { m_fontPath = path; NotifyChanged(); }
+        const std::string &GetFontPath() const { return m_fontPath; }
+
+        void SetFontName(const std::string &name) { m_fontName = name; NotifyChanged(); }
+        const std::string &GetFontName() const { return m_fontName; }
+
+        void SetFontSize(float size) { m_fontSize = size; NotifyChanged(); }
+        float GetFontSize() const { return m_fontSize; }
 
         //--------------------------------------------------------------------------
         // Change Notification
@@ -57,31 +63,23 @@ namespace moosic
         using DataChangedCallback = std::function<void()>;
         void SetOnDataChanged(DataChangedCallback callback) { m_onDataChanged = std::move(callback); }
 
-        //--------------------------------------------------------------------------
-        // Logo Path
-        //--------------------------------------------------------------------------
-
-        void SetLogoPath(const std::string &path)
-        {
-            m_logoPath = path;
-            NotifyChanged();
-        }
-        const std::string &GetLogoPath() const { return m_logoPath; }
-
     private:
         void NotifyChanged()
         {
-            if (m_onDataChanged)
-                m_onDataChanged();
+            if (m_onDataChanged) m_onDataChanged();
         }
 
         std::string m_themeName = "Dark";
-        int m_visualizerMode = 0; // 0=Spectrum, 1=Oscilloscope
-        int m_layoutMode = 0;     // 0=Standard
+        int m_visualizerMode = 0;
+        int m_layoutMode = 0;
+        std::string m_logoPath;
+
+        // Font settings
+        std::string m_fontPath;       // Empty = use ImGui default
+        std::string m_fontName = "Default";
+        float m_fontSize = 16.0f;
 
         DataChangedCallback m_onDataChanged;
-
-        std::string m_logoPath;
     };
 
 } // namespace moosic
