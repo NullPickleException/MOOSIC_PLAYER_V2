@@ -10,6 +10,21 @@ namespace moosic
 
 void StandardArtLeftPlayerBar::Draw()
 {
+    //----------------------------------------------------------------------
+    // Player Bar Background (edge-to-edge)
+    //----------------------------------------------------------------------
+    {
+        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos.x -= ImGui::GetStyle().WindowPadding.x;
+        float bgWidth = ImGui::GetWindowWidth();
+        float bgHeight = ImGui::GetTextLineHeightWithSpacing() * 3.0f
+                       + ImGui::GetFrameHeightWithSpacing() * 2.0f
+                       + 65.0f;
+        DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+    
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
+
     constexpr float PLAY_CENTER_OFFSET_X = -4.0f;
 
     float availWidth = ImGui::GetContentRegionAvail().x;
@@ -179,12 +194,12 @@ void StandardArtLeftPlayerBar::Draw()
         ImGui::SetCursorPosX(visColumnX);
         ImGui::SetCursorPosY(rowY + visHeight + 4.0f);
 
-        float volSliderWidth = visColumnWidth - volBtnW - ControlGap;
-        if (volSliderWidth < 60.0f) volSliderWidth = 60.0f;
+        float volSliderWidth2 = visColumnWidth - volBtnW - ControlGap;
+        if (volSliderWidth2 < 60.0f) volSliderWidth2 = 60.0f;
 
         DrawVolumeIcon();
         ImGui::SameLine(0, ControlGap);
-        ImGui::SetNextItemWidth(volSliderWidth);
+        ImGui::SetNextItemWidth(volSliderWidth2);
         DrawVolumeSlider();
     }
 

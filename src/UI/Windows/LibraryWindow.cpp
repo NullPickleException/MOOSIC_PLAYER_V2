@@ -97,7 +97,6 @@ namespace moosic
             items.push_back({"", false, true, nullptr});
             
             // ── Actions ──
-            // ── Open Folder ──
             items.push_back({"Open Folder", true, false, [this]() {
                 if (!m_contextTrack) return;
                 try {
@@ -105,7 +104,6 @@ namespace moosic
                     if (filePath.empty()) return;
 
 #ifdef _WIN32
-                    // Use wide string on Windows to handle Unicode paths
                     std::wstring wpath = filePath.wstring();
                     std::wstring cmd = L"/select,\"" + wpath + L"\"";
                     ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
@@ -181,7 +179,7 @@ namespace moosic
         {
             if (m_toolbarOptions.ShowBrandHeader)
                 ImGui::SameLine();
-            ImGui::Text("(%zu Tracks)", m_data.GetTrackCount());
+            ImGui::TextColored(m_theme.TextSecondary, "(%zu Tracks)", m_data.GetTrackCount());
         }
 
         ImGui::Separator();
@@ -215,11 +213,20 @@ namespace moosic
         {
             if (m_toolbarOptions.ShowSearchBar)
                 ImGui::SameLine();
+            
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+            
             if (ImGui::Button("Clear"))
             {
                 m_searchBuffer[0] = '\0';
                 m_data.SetSearchFilter("");
             }
+            
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
         }
 
         if (m_toolbarOptions.ShowRefreshButton)
@@ -228,8 +235,17 @@ namespace moosic
             bool hasClear = m_toolbarOptions.ShowClearButton && !m_useDropdownSearch;
             if (hasSearch || hasClear)
                 ImGui::SameLine();
+            
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+            
             if (ImGui::Button("Refresh"))
                 m_data.Refresh();
+            
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
         }
 
         ImGui::Spacing();
@@ -252,6 +268,10 @@ namespace moosic
 
     void LibraryWindow::DrawInlineSearch()
     {
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+        ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
+        ImGui::PushStyleColor(ImGuiCol_TextDisabled, m_theme.TextDisabled);
+        
         ImGui::SetNextItemWidth(m_toolbarOptions.SearchBarWidth);
         if (ImGui::InputTextWithHint("##Search",
                                      m_toolbarOptions.SearchHint.c_str(),
@@ -259,6 +279,8 @@ namespace moosic
         {
             m_data.SetSearchFilter(m_searchBuffer);
         }
+        
+        ImGui::PopStyleColor(3);
     }
 
     //==========================================================================
@@ -287,6 +309,7 @@ namespace moosic
         ImGui::PopStyleColor(2);
         ImGui::PopStyleVar();
     }
+    
     //==========================================================================
     // Track Click Handler
     //==========================================================================
@@ -348,7 +371,7 @@ namespace moosic
                     TrackSearchResult r;
                     r.title = title;
                     r.artist = artist;
-                    r.displayText = title + "  —  " + artist;
+                    r.displayText = title + "  -  " + artist;
                     r.trackIndex = static_cast<int>(i);
                     results.push_back(r);
                 }

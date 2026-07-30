@@ -11,7 +11,23 @@ namespace moosic
 
 void StandardPlayerBar::Draw()
 {
-    constexpr float PLAY_CENTER_OFFSET_X = -6.0f;
+      constexpr float PLAY_CENTER_OFFSET_X = -6.0f;
+
+    //----------------------------------------------------------------------
+    // Player Bar Background (edge-to-edge, drawn behind everything)
+    //----------------------------------------------------------------------
+    {
+        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos.x -= ImGui::GetStyle().WindowPadding.x;
+        float bgWidth = ImGui::GetWindowWidth();
+        float bgHeight = ImGui::GetTextLineHeightWithSpacing() * 3.0f 
+                       + ImGui::GetFrameHeightWithSpacing() * 2.0f 
+                       + 65.0f;
+        DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+
+    // Small top padding so content doesn't overlap the bevel border
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
 
     //----------------------------------------------------------------------
     // Row 1: Album Art + Song Information
@@ -19,6 +35,7 @@ void StandardPlayerBar::Draw()
     ImGui::BeginGroup();
     DrawAlbumArt();
     ImGui::EndGroup();
+
 
     ImGui::SameLine();
 
@@ -74,7 +91,7 @@ void StandardPlayerBar::Draw()
     const auto& visStyle = m_visualizer.GetStyle();
     float visWidth = visStyle.BoxWidth;
     float visHeight = visStyle.BoxHeight;
-    float visOffsetX = 6.0f;
+    float visOffsetX = 12.0f;  // Slightly more left padding for visualizer
 
     float prevWidth = ImGui::CalcTextSize("<<").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;
     float nextWidth = ImGui::CalcTextSize(">>").x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth;

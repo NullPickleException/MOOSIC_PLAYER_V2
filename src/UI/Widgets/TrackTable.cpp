@@ -148,6 +148,39 @@ void TrackTable::DrawHeader()
 
     ImGui::TableHeadersRow();
 
+    // Draw header gradient overlay if enabled
+    if (m_style.UseHeaderGradient)
+    {
+        ImVec2 headerMin = ImGui::GetItemRectMin();
+        ImVec2 headerMax = ImGui::GetItemRectMax();
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->AddRectFilledMultiColor(
+            headerMin, headerMax,
+            ImGui::GetColorU32(m_style.HeaderGradientTop),
+            ImGui::GetColorU32(m_style.HeaderGradientTop),
+            ImGui::GetColorU32(m_style.HeaderGradientBottom),
+            ImGui::GetColorU32(m_style.HeaderGradientBottom));
+    }
+
+    // Draw header gloss if enabled
+    if (m_style.UseGlossyHeader && m_style.HeaderGlossIntensity > 0.0f)
+    {
+        ImVec2 headerMin = ImGui::GetItemRectMin();
+        ImVec2 headerMax = ImGui::GetItemRectMax();
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        float glossH = (headerMax.y - headerMin.y) * 0.45f;
+        ImVec4 glossCol = m_style.HeaderGlossColor;
+        glossCol.w *= m_style.HeaderGlossIntensity;
+        ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+        dl->AddRectFilledMultiColor(
+            ImVec2(headerMin.x, headerMin.y + 1.0f),
+            ImVec2(headerMax.x, headerMin.y + glossH),
+            ImGui::GetColorU32(glossCol),
+            ImGui::GetColorU32(glossCol),
+            ImGui::GetColorU32(fadeOut),
+            ImGui::GetColorU32(fadeOut));
+    }
+
     ImGui::PopStyleColor(5);
 }
 
@@ -286,6 +319,25 @@ void TrackTable::DrawRows(const std::vector<const MusicTrack*>& tracks)
 
         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(rowColor));
 
+        // Glossy selection on hovered/selected rows
+        if (m_style.UseGlossySelection && m_style.SelectionGlossIntensity > 0.0f && (isHovered || isSelected))
+        {
+            ImVec2 rowMin = ImGui::GetItemRectMin();
+            ImVec2 rowMax = ImGui::GetItemRectMax();
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            float glossH = (rowMax.y - rowMin.y) * 0.40f;
+            float glossAlpha = isSelected ? m_style.SelectionGlossIntensity * 0.6f : m_style.SelectionGlossIntensity * 0.3f;
+            ImVec4 glossCol = ImVec4(1.0f, 1.0f, 1.0f, glossAlpha);
+            ImVec4 fadeOut = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+            dl->AddRectFilledMultiColor(
+                ImVec2(rowMin.x + 2.0f, rowMin.y + 1.0f),
+                ImVec2(rowMax.x - 2.0f, rowMin.y + glossH),
+                ImGui::GetColorU32(glossCol),
+                ImGui::GetColorU32(glossCol),
+                ImGui::GetColorU32(fadeOut),
+                ImGui::GetColorU32(fadeOut));
+        }
+
         if (m_style.ShowRowSeparators && m_config.Borders)
         {
             ImVec2 rowMin = ImVec2(
@@ -355,10 +407,19 @@ void TrackTable::PushStyle()
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, m_style.ScrollbarGrab);
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, m_style.ScrollbarGrabHovered);
     ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, m_style.ScrollbarGrabActive);
+
+    // Apply rounded scrollbar if enabled
+    if (m_style.UseRoundedScrollbar)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, m_style.ScrollbarRounding);
+        ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, m_style.ScrollbarWidth);
+    }
 }
 
 void TrackTable::PopStyle()
 {
+    if (m_style.UseRoundedScrollbar)
+        ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(9);
 }
 

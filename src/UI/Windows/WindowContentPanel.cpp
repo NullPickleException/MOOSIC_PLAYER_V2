@@ -28,44 +28,115 @@ namespace moosic
     }
 
     //==============================================================================
-    // Drawing
+    // Classic 2000s Rendering Helpers
     //==============================================================================
 
+    static void DrawTabBevelEdges(ImDrawList* dl, const ImVec2& min, const ImVec2& max, 
+                                   float rounding, float thickness,
+                                   const ImVec4& lightColor, const ImVec4& darkColor,
+                                   const ImVec4& borderColor)
+    {
+        if (thickness <= 0.0f) return;
+
+        float t = thickness;
+        float r = rounding;
+
+        ImU32 lightCol  = ImGui::GetColorU32(lightColor);
+        ImU32 darkCol   = ImGui::GetColorU32(darkColor);
+        ImU32 borderCol = ImGui::GetColorU32(borderColor);
+
+        dl->PushClipRect(min, max, true);
+
+        // Outer border
+        dl->AddRect(min, max, borderCol, r, ImDrawFlags_RoundCornersAll, 1.0f);
+
+        // Light highlight – concentric rounded rects fading inward
+        for (float i = 0.0f; i < t; i += 0.5f)
+        {
+            float alpha = 1.0f - (i / t);
+            ImU32 col = ImGui::GetColorU32(ImVec4(
+                lightColor.x, lightColor.y, lightColor.z, lightColor.w * alpha));
+
+            dl->AddRect(
+                ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
+                ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
+                col, r, ImDrawFlags_RoundCornersAll, 1.0f);
+        }
+
+        // Dark shadow – concentric rounded rects fading inward
+        for (float i = 0.0f; i < t; i += 0.5f)
+        {
+            float alpha = 1.0f - (i / t);
+            ImU32 col = ImGui::GetColorU32(ImVec4(
+                darkColor.x, darkColor.y, darkColor.z, darkColor.w * alpha));
+
+            dl->AddRect(
+                ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
+                ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
+                col, r, ImDrawFlags_RoundCornersAll, 1.0f);
+        }
+
+        dl->PopClipRect();
+    }
+
+    //==============================================================================
+    // Drawing
+    //==============================================================================
     void WindowContentPanel::Draw()
     {
-        // Calculate padding based on border thickness so content never overlaps the border
         float pad = (m_theme.BorderThickness > 0.0f) ? m_theme.BorderThickness + 8.0f : 4.0f;
 
-        // Draw the themed border around the content panel
         if (m_theme.BorderThickness > 0.0f)
         {
             ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             ImVec2 availSize = ImGui::GetContentRegionAvail();
 
             ImDrawList *dl = ImGui::GetWindowDrawList();
-            dl->AddRect(
-                cursorPos,
-                ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
-                ImGui::GetColorU32(m_theme.BorderColor),
-                4.0f,
-                ImDrawFlags_RoundCornersAll,
-                m_theme.BorderThickness);
+
+            if (m_theme.UseGradientTabs)
+            {
+                dl->AddRectFilledMultiColor(
+                    cursorPos,
+                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                    ImGui::GetColorU32(m_theme.TabGradientTop),
+                    ImGui::GetColorU32(m_theme.TabGradientTop),
+                    ImGui::GetColorU32(m_theme.TabGradientBottom),
+                    ImGui::GetColorU32(m_theme.TabGradientBottom));
+            }
+
+            if (m_theme.UseTabBevel)
+            {
+                DrawTabBevelEdges(dl, cursorPos,
+                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                    4.0f, m_theme.TabBevelThickness,
+                    m_theme.TabBevelLight, m_theme.TabBevelDark,
+                    m_theme.TabBevelBorderColor);
+            }
+            else
+            {
+                dl->AddRect(
+                    cursorPos,
+                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                    ImGui::GetColorU32(m_theme.BorderColor),
+                    4.0f,
+                    ImDrawFlags_RoundCornersAll,
+                    m_theme.BorderThickness);
+            }
         }
 
-        // Push cursor inward on all sides so content scales inside the border
         ImGui::SetCursorPos(ImVec2(
             ImGui::GetCursorPosX() + pad,
             ImGui::GetCursorPosY() + pad));
 
-        // Create a child region that respects the right/bottom padding too
-        // This ensures child windows don't extend past the border
         ImVec2 innerSize = ImVec2(
             ImGui::GetContentRegionAvail().x - pad,
             ImGui::GetContentRegionAvail().y - pad);
 
         ImGui::BeginChild("##ContentPanelInner", innerSize, false);
 
-        // Tab bar with all inner windows
+        // REMOVED: UseGlossyTabs PushStyleColor/PopStyleColor block
+        // Tab colors are handled globally by ApplyImGuiStyle()
+
         if (ImGui::BeginTabBar("ContentTabs"))
         {
             if (ImGui::BeginTabItem("Library"))
@@ -88,7 +159,6 @@ namespace moosic
 
             if (ImGui::BeginTabItem("Settings"))
             {
-                // Settings gets its own scrollable child region
                 ImGui::BeginChild("##SettingsScrollRegion", ImVec2(0, 0), false,
                                   ImGuiWindowFlags_AlwaysVerticalScrollbar);
                 m_settingsWindow.Draw();
@@ -101,5 +171,4 @@ namespace moosic
 
         ImGui::EndChild();
     }
-
 } // namespace moosic

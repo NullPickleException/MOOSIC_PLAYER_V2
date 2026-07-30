@@ -104,16 +104,47 @@ namespace moosic
         const auto &st = m_theme;
 
         float o = st.shadowOffset;
+
+        // Shadow
         dl->AddRectFilled(
             ImVec2(dropMin.x + o, dropMin.y + o),
             ImVec2(dropMax.x + o, dropMax.y + o),
             ImGui::ColorConvertFloat4ToU32(st.shadowColor),
             st.dropdownRounding);
 
-        dl->AddRectFilled(dropMin, dropMax,
-                          ImGui::ColorConvertFloat4ToU32(st.backgroundColor),
-                          st.dropdownRounding);
+        // Background (gradient or flat)
+        if (st.UseSearchGradient)
+        {
+            dl->AddRectFilledMultiColor(
+                dropMin, dropMax,
+                ImGui::GetColorU32(st.SearchGradientTop),
+                ImGui::GetColorU32(st.SearchGradientTop),
+                ImGui::GetColorU32(st.SearchGradientBottom),
+                ImGui::GetColorU32(st.SearchGradientBottom));
+        }
+        else
+        {
+            dl->AddRectFilled(dropMin, dropMax,
+                              ImGui::ColorConvertFloat4ToU32(st.backgroundColor),
+                              st.dropdownRounding);
+        }
 
+        // Glossy dropdown overlay
+        if (st.UseGlossyDropdown && st.DropdownGlossIntensity > 0.0f)
+        {
+            float glossHeight = (dropMax.y - dropMin.y) * 0.35f;
+            ImVec4 glossColor = ImVec4(1.0f, 1.0f, 1.0f, st.DropdownGlossIntensity * 0.4f);
+            ImVec4 fadeOut = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+            dl->AddRectFilledMultiColor(
+                ImVec2(dropMin.x, dropMin.y),
+                ImVec2(dropMax.x, dropMin.y + glossHeight),
+                ImGui::GetColorU32(glossColor),
+                ImGui::GetColorU32(glossColor),
+                ImGui::GetColorU32(fadeOut),
+                ImGui::GetColorU32(fadeOut));
+        }
+
+        // Border
         if (st.borderThickness > 0.0f)
         {
             dl->AddRect(dropMin, dropMax,
@@ -327,6 +358,10 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_Text, st.inputTextColor);
         ImGui::PushStyleColor(ImGuiCol_TextDisabled, st.inputHintColor);
 
+        // Apply rounded input if enabled
+        if (st.UseRoundedInput)
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, st.InputRounding);
+
         ImGui::SetNextItemWidth(m_width);
 
         bool edited =
@@ -337,13 +372,48 @@ namespace moosic
                 sizeof(m_query),
                 ImGuiInputTextFlags_AutoSelectAll);
 
+        if (st.UseRoundedInput)
+            ImGui::PopStyleVar();
+
         ImGui::PopStyleColor(4);
+
+        // Draw search gradient on the input background if enabled
+        // if (st.UseSearchGradient)
+        // {
+        //     ImVec2 inMin = ImGui::GetItemRectMin();
+        //     ImVec2 inMax = ImGui::GetItemRectMax();
+        //     ImDrawList *dl = ImGui::GetWindowDrawList();
+        //     dl->AddRectFilledMultiColor(
+        //         inMin, inMax,
+        //         ImGui::GetColorU32(st.SearchGradientTop),
+        //         ImGui::GetColorU32(st.SearchGradientTop),
+        //         ImGui::GetColorU32(st.SearchGradientBottom),
+        //         ImGui::GetColorU32(st.SearchGradientBottom));
+        // }
+
+        // // Draw search gloss on the input if enabled
+        // if (st.UseSearchGloss && st.SearchGlossIntensity > 0.0f)
+        // {
+        //     ImVec2 inMin = ImGui::GetItemRectMin();
+        //     ImVec2 inMax = ImGui::GetItemRectMax();
+        //     ImDrawList *dl = ImGui::GetWindowDrawList();
+        //     float glossH = (inMax.y - inMin.y) * 0.40f;
+        //     ImVec4 glossCol = st.SearchGlossColor;
+        //     glossCol.w *= st.SearchGlossIntensity;
+        //     ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+        //     dl->AddRectFilledMultiColor(
+        //         ImVec2(inMin.x + 2.0f, inMin.y + 1.0f),
+        //         ImVec2(inMax.x - 2.0f, inMin.y + glossH),
+        //         ImGui::GetColorU32(glossCol),
+        //         ImGui::GetColorU32(glossCol),
+        //         ImGui::GetColorU32(fadeOut),
+        //         ImGui::GetColorU32(fadeOut));
+        // }
 
         bool inputActive = ImGui::IsItemActive();
         bool inputHovered = ImGui::IsItemHovered();
 
         //----------------------------------------------------------------------
-        // IMPORTANT
         // Store SCREEN coordinates instead of child coordinates
         //----------------------------------------------------------------------
 
@@ -454,5 +524,5 @@ namespace moosic
             CloseDropdown();
         }
     }
-    
+
 } // namespace moosic

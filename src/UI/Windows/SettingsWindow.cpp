@@ -26,7 +26,6 @@ void SettingsWindow::SetSettingsDataModel(SettingsDataModel* model)
     {
         m_visualizerMode = m_settingsModel->GetVisualizerMode();
         
-        // Find the saved logo in the list
         std::string savedPath = m_settingsModel->GetLogoPath();
         if (!savedPath.empty())
         {
@@ -67,7 +66,6 @@ void SettingsWindow::OnLogoChanged(LogoChangeCallback callback)
     m_onLogoChanged = callback;
 }
 
-// Scan assets/Logo_img folder for .png files
 void SettingsWindow::ScanAvailableLogos()
 {
     m_availableLogos.clear();
@@ -90,14 +88,13 @@ void SettingsWindow::ScanAvailableLogos()
                 continue;
 
             std::string ext = entry.path().extension().string();
-            // Convert to lowercase for comparison
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
             
             if (ext == ".png")
             {
                 LogoInfo info;
                 info.path = entry.path().string();
-                info.name = entry.path().stem().string();  // filename without extension
+                info.name = entry.path().stem().string();
                 m_availableLogos.push_back(info);
             }
         }
@@ -110,7 +107,6 @@ void SettingsWindow::ScanAvailableLogos()
         }
     }
 
-    // If a logo was previously saved, find its index
     if (m_settingsModel)
     {
         std::string savedPath = m_settingsModel->GetLogoPath();
@@ -142,7 +138,7 @@ void SettingsWindow::Draw()
         }
     }
     
-    ImGui::Text("Settings");
+    ImGui::TextColored(m_theme.BrandText, "Settings");
     ImGui::Separator();
 
     if (ImGui::BeginTabBar("SettingsTabs"))
@@ -172,28 +168,28 @@ void SettingsWindow::Draw()
 void SettingsWindow::DrawAppearanceSection()
 {
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "Theme");
+    ImGui::TextColored(m_theme.BrandText, "Theme");
     ImGui::Separator();
     ImGui::Spacing();
     DrawThemeSelector();
 
     ImGui::Spacing();
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "Visualization");
+    ImGui::TextColored(m_theme.BrandText, "Visualization");
     ImGui::Separator();
     ImGui::Spacing();
     DrawVisualizerModeSelector();
 
     ImGui::Spacing();
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "Logo");
+    ImGui::TextColored(m_theme.BrandText, "Logo");
     ImGui::Separator();
     ImGui::Spacing();
     DrawLogoSelector();
 
     ImGui::Spacing();
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "Font");
+    ImGui::TextColored(m_theme.BrandText, "Font");
     ImGui::Separator();
     ImGui::Spacing();
     DrawFontSelector();
@@ -205,17 +201,15 @@ void SettingsWindow::DrawLogoSelector()
 
     if (m_availableLogos.empty())
     {
-        ImGui::TextDisabled("No logos found in assets/Logo_img/");
-        ImGui::TextDisabled("Place .png files in the Logo_img folder");
+        ImGui::TextColored(m_theme.TextDisabled, "No logos found in assets/Logo_img/");
+        ImGui::TextColored(m_theme.TextDisabled, "Place .png files in the Logo_img folder");
         return;
     }
 
-    // Get current logo name for display
     std::string currentLogoName = "Default";
     if (m_selectedLogoIndex >= 0 && m_selectedLogoIndex < static_cast<int>(m_availableLogos.size()))
         currentLogoName = m_availableLogos[m_selectedLogoIndex].name;
 
-    // Combo box for logo selection (just like theme selector)
     if (ImGui::BeginCombo("##LogoSelector", currentLogoName.c_str()))
     {
         for (int i = 0; i < static_cast<int>(m_availableLogos.size()); ++i)
@@ -235,11 +229,18 @@ void SettingsWindow::DrawLogoSelector()
 
     ImGui::Spacing();
     
-    // Reset to default button
+    ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+    
     if (ImGui::Button("Reset to Default"))
     {
-        ApplySelectedLogo(-1);  // -1 = default
+        ApplySelectedLogo(-1);
     }
+    
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(3);
     
     ImGui::SameLine();
     ImGui::TextColored(m_theme.TextDisabled, "Default: COW_IMAGE.png");
@@ -252,13 +253,10 @@ void SettingsWindow::ApplySelectedLogo(int index)
     std::string logoPath;
     if (index >= 0 && index < static_cast<int>(m_availableLogos.size()))
         logoPath = m_availableLogos[index].path;
-    // else empty = use default
     
-    // Save to settings data model
     if (m_settingsModel)
         m_settingsModel->SetLogoPath(logoPath);
     
-    // Notify callback to reload the logo
     if (m_onLogoChanged)
         m_onLogoChanged(logoPath);
 }
@@ -267,7 +265,7 @@ void SettingsWindow::DrawThemeSelector()
 {
     if (!m_themeManager)
     {
-        ImGui::TextDisabled("Theme manager not available");
+        ImGui::TextColored(m_theme.TextDisabled, "Theme manager not available");
         return;
     }
 
@@ -275,7 +273,7 @@ void SettingsWindow::DrawThemeSelector()
 
     if (themes.empty())
     {
-        ImGui::TextDisabled("No themes available");
+        ImGui::TextColored(m_theme.TextDisabled, "No themes available");
         return;
     }
 
@@ -387,24 +385,21 @@ void SettingsWindow::ApplySelectedTheme(int index)
 void SettingsWindow::DrawGeneralSection()
 {
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "General Settings");
+    ImGui::TextColored(m_theme.BrandText, "General Settings");
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextDisabled("General settings coming soon...");
+    ImGui::TextColored(m_theme.TextDisabled, "General settings coming soon...");
 }
 
 void SettingsWindow::DrawAudioSection()
 {
     ImGui::Spacing();
-    ImGui::TextColored(m_theme.TextSecondary, "Audio Settings");
+    ImGui::TextColored(m_theme.BrandText, "Audio Settings");
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextDisabled("Audio settings coming soon...");
+    ImGui::TextColored(m_theme.TextDisabled, "Audio settings coming soon...");
 }
 
-
-
-// Scan assets/Fonts folder for subdirectories containing .ttf files
 void SettingsWindow::ScanAvailableFonts()
 {
     m_availableFonts.clear();
@@ -428,11 +423,9 @@ void SettingsWindow::ScanAvailableFonts()
 
             std::string folderName = entry.path().filename().string();
             
-            // Skip macOS junk
             if (folderName == "__MACOSX")
                 continue;
 
-            // Scan ALL .ttf/.otf files inside this folder
             for (const auto& fontFile : std::filesystem::directory_iterator(entry.path()))
             {
                 if (!fontFile.is_regular_file()) continue;
@@ -443,7 +436,6 @@ void SettingsWindow::ScanAvailableFonts()
                 if (ext == ".ttf" || ext == ".otf")
                 {
                     FontInfo info;
-                    // Name = "PixelCode Bold", "PixelCode Light", etc.
                     info.name = folderName + " " + fontFile.path().stem().string();
                     info.path = fontFile.path().string();
                     info.folder = entry.path().string();
@@ -460,7 +452,6 @@ void SettingsWindow::ScanAvailableFonts()
         }
     }
 
-    // Restore saved font selection
     if (m_settingsModel)
     {
         std::string savedPath = m_settingsModel->GetFontPath();
@@ -492,19 +483,17 @@ void SettingsWindow::DrawFontSelector()
 
     if (m_availableFonts.empty())
     {
-        ImGui::TextDisabled("No fonts found in assets/Fonts/");
-        ImGui::TextDisabled("Place .ttf files in subdirectories");
+        ImGui::TextColored(m_theme.TextDisabled, "No fonts found in assets/Fonts/");
+        ImGui::TextColored(m_theme.TextDisabled, "Place .ttf files in subdirectories");
         return;
     }
 
-    // Current display name
     std::string currentName = "Default";
     if (m_selectedFontIndex >= 0 && m_selectedFontIndex < static_cast<int>(m_availableFonts.size()))
         currentName = m_availableFonts[m_selectedFontIndex].name;
 
     if (ImGui::BeginCombo("##FontSelector", currentName.c_str()))
     {
-        // Default option
         bool isDefault = (m_selectedFontIndex == -1);
         if (ImGui::Selectable("Default", isDefault))
             ApplySelectedFont(-1);
@@ -520,7 +509,6 @@ void SettingsWindow::DrawFontSelector()
         ImGui::EndCombo();
     }
 
-    // Font size slider - only show if a font is selected
     if (m_selectedFontIndex >= 0)
     {
         ImGui::Spacing();
@@ -564,7 +552,6 @@ void SettingsWindow::ApplySelectedFont(int index)
         m_settingsModel->SetFontName(fontName);
     }
     
-    // Always notify - even for Default (empty path = default)
     if (m_onFontChanged)
         m_onFontChanged(fontPath, m_fontSize);
 }

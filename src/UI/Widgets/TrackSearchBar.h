@@ -1,8 +1,6 @@
 //==============================================================================
 // UI/Widgets/TrackSearchBar.h
 //==============================================================================
-// Dropdown search bar with highlighted matching text and scrollable results
-//==============================================================================
 
 #pragma once
 
@@ -14,16 +12,9 @@
 namespace moosic
 {
 
-    //==============================================================================
-    // TrackSearchBarTheme
-    //==============================================================================
-
     struct TrackSearchBarTheme
     {
-        //--------------------------------------------------------------------------
         // Dropdown Colors
-        //--------------------------------------------------------------------------
-
         ImVec4 shadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.35f);
         ImVec4 backgroundColor = ImVec4(0.15f, 0.16f, 0.17f, 1.0f);
         ImVec4 borderColor = ImVec4(0.25f, 0.25f, 0.27f, 1.0f);
@@ -32,19 +23,13 @@ namespace moosic
         ImVec4 rowHoverColor = ImVec4(0.22f, 0.23f, 0.25f, 1.0f);
         ImVec4 separatorColor = ImVec4(0.20f, 0.25f, 0.29f, 1.0f);
 
-        //--------------------------------------------------------------------------
         // Input Colors
-        //--------------------------------------------------------------------------
-
         ImVec4 inputBgColor = ImVec4(0.12f, 0.13f, 0.14f, 1.0f);
         ImVec4 inputBorderColor = ImVec4(0.25f, 0.25f, 0.27f, 1.0f);
         ImVec4 inputTextColor = ImVec4(0.95f, 0.95f, 0.95f, 1.0f);
         ImVec4 inputHintColor = ImVec4(0.42f, 0.42f, 0.42f, 1.0f);
 
-        //--------------------------------------------------------------------------
         // Sizing
-        //--------------------------------------------------------------------------
-
         float shadowOffset = 3.0f;
         float borderThickness = 1.0f;
         float rowHeight = 22.0f;
@@ -53,7 +38,26 @@ namespace moosic
         float rowSeparatorPadding = 6.0f;
         float maxVisibleRows = 8.0f;
         float scrollSpeed = 3.0f;
+
+        //--------------------------------------------------------------------------
+        // Classic 2000s Search Bar Effects
+        //--------------------------------------------------------------------------
+        
+        bool UseSearchGloss = false;
+        float SearchGlossIntensity = 0.0f;
+        ImVec4 SearchGlossColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        
+        bool UseSearchGradient = false;
+        ImVec4 SearchGradientTop = ImVec4(0.12f, 0.13f, 0.14f, 1.0f);
+        ImVec4 SearchGradientBottom = ImVec4(0.12f, 0.13f, 0.14f, 1.0f);
+        
+        bool UseGlossyDropdown = false;
+        float DropdownGlossIntensity = 0.0f;
+        
+        bool UseRoundedInput = false;
+        float InputRounding = 4.0f;
     };
+
 
     //==============================================================================
     // TrackSearchResult

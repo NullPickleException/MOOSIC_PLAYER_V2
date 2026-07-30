@@ -61,14 +61,12 @@ namespace moosic
             
             std::vector<MenuItem> items;
             
-            // ── Play ──
             items.push_back({"Play", true, false, [this]() {
                 OnTrackClicked(m_contextTrack, m_contextRow);
             }});
             
             items.push_back({"", false, true, nullptr});
             
-            // ── Remove ──
             items.push_back({"Remove from Playlist", true, false, [this]() {
                 auto activeIdx = m_data.GetActivePlaylistIndex();
                 if (activeIdx.has_value())
@@ -77,7 +75,6 @@ namespace moosic
             
             items.push_back({"", false, true, nullptr});
             
-            // ── Reorder ──
             items.push_back({"Move Up", m_contextRow > 0, false, [this]() {
                 auto activeIdx = m_data.GetActivePlaylistIndex();
                 if (activeIdx.has_value())
@@ -92,28 +89,25 @@ namespace moosic
             
             items.push_back({"", false, true, nullptr});
             
-            // ── Actions ──
-items.push_back({"Open Folder", true, false, [this]() {
-    if (!m_contextTrack) return;
-    try {
-        std::filesystem::path filePath = m_contextTrack->GetPath();
-        if (filePath.empty()) return;
+            items.push_back({"Open Folder", true, false, [this]() {
+                if (!m_contextTrack) return;
+                try {
+                    std::filesystem::path filePath = m_contextTrack->GetPath();
+                    if (filePath.empty()) return;
 
 #ifdef _WIN32
-        std::wstring wpath = filePath.wstring();
-        std::wstring cmd = L"/select,\"" + wpath + L"\"";
-        ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
+                    std::wstring wpath = filePath.wstring();
+                    std::wstring cmd = L"/select,\"" + wpath + L"\"";
+                    ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
 #elif defined(__APPLE__)
-        std::string cmd = "open -R \"" + filePath.string() + "\"";
-        system(cmd.c_str());
+                    std::string cmd = "open -R \"" + filePath.string() + "\"";
+                    system(cmd.c_str());
 #else
-        std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
-        system(cmd.c_str());
+                    std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
+                    system(cmd.c_str());
 #endif
-    } catch (...) {
-        // Silently fail
-    }
-}});
+                } catch (...) {}
+            }});
             
             items.push_back({"Edit Track Info", true, false, []() {
                 // TODO: Implement track metadata editing dialog
@@ -179,9 +173,9 @@ items.push_back({"Open Folder", true, false, [this]() {
         ImGui::SameLine();
 
         // ── Splitter ──
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.25f, 0.27f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.40f, 0.40f, 0.42f, 1.0f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.50f, 0.50f, 0.52f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Button, m_theme.SeparatorColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
         ImGui::Button("##PlaylistSplitter", ImVec2(4.0f, -1));
         ImGui::PopStyleColor(3);
 
@@ -213,24 +207,37 @@ items.push_back({"Open Folder", true, false, [this]() {
 
     void PlaylistWindow::DrawPlaylistSidebar()
     {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, m_theme.ChildBg);
         ImGui::BeginChild("##PlaylistSidebar", ImVec2(m_sidebarWidth, 0), true);
+        ImGui::PopStyleColor();
 
         // ── Header ──
         ImGui::TextColored(m_theme.BrandText, "PLAYLISTS");
         ImGui::Separator();
 
+        ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+        
         if (ImGui::Button("+ New Playlist", ImVec2(-1, 0)))
         {
             m_newPlaylistNameBuffer[0] = '\0';
             m_showCreatePlaylistPopup = true;
         }
+        
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(3);
 
         ImGui::Spacing();
 
         // ── Search ──
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+        ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
         ImGui::SetNextItemWidth(-1);
         ImGui::InputTextWithHint("##PlaylistSearch", "Search...",
                                  m_playlistSearchBuffer, sizeof(m_playlistSearchBuffer));
+        ImGui::PopStyleColor(2);
 
         ImGui::Separator();
         ImGui::Spacing();
@@ -270,7 +277,6 @@ items.push_back({"Open Folder", true, false, [this]() {
                 m_data.SetActivePlaylist(i);
             }
 
-            // ── Right-click opens context menu ──
             if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
             {
                 std::vector<MenuItem> items;
@@ -307,7 +313,7 @@ items.push_back({"Open Folder", true, false, [this]() {
             }
 
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 30);
-            ImGui::TextDisabled("%zu", playlist.trackIds.size());
+            ImGui::TextColored(m_theme.TextDisabled, "%zu", playlist.trackIds.size());
 
             if (isActive)
                 ImGui::PopStyleColor();
@@ -318,10 +324,9 @@ items.push_back({"Open Folder", true, false, [this]() {
         if (playlists.empty())
         {
             ImGui::Spacing();
-            ImGui::TextDisabled("  No playlists yet");
+            ImGui::TextColored(m_theme.TextDisabled, "  No playlists yet");
         }
 
-        // ── Draw playlist context menu if open ──
         m_playlistContextMenu.Draw("##PlaylistContextMenu");
 
         ImGui::EndChild();
@@ -333,14 +338,16 @@ items.push_back({"Open Folder", true, false, [this]() {
 
     void PlaylistWindow::DrawPlaylistContent()
     {
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, m_theme.ChildBg);
         ImGui::BeginChild("##PlaylistContent", ImVec2(0, 0), true);
+        ImGui::PopStyleColor();
 
         auto activeIndex = m_data.GetActivePlaylistIndex();
 
         if (!activeIndex.has_value())
         {
             ImGui::SetCursorPosY(ImGui::GetContentRegionAvail().y * 0.4f);
-            ImGui::TextDisabled("  Select a playlist from the sidebar");
+            ImGui::TextColored(m_theme.TextDisabled, "  Select a playlist from the sidebar");
             ImGui::EndChild();
             return;
         }
@@ -355,10 +362,16 @@ items.push_back({"Open Folder", true, false, [this]() {
         // ── Header ──
         ImGui::TextColored(m_theme.BrandText, "%s", playlist->name.c_str());
         ImGui::SameLine();
-        ImGui::TextDisabled("(%zu tracks)", m_data.GetFilteredTrackCount());
+        ImGui::TextColored(m_theme.TextSecondary, "(%zu tracks)", m_data.GetFilteredTrackCount());
 
         float buttonWidth = 110.0f;
         ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonWidth);
+        
+        ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+        
         if (ImGui::Button("+ Add Tracks", ImVec2(buttonWidth, 0)))
         {
             m_selectedPlaylistForAdd = static_cast<int>(activeIndex.value());
@@ -368,25 +381,36 @@ items.push_back({"Open Folder", true, false, [this]() {
             m_selectedAddTrack = nullptr;
             m_showAddTrackPopup = true;
         }
+        
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(3);
 
         ImGui::Separator();
 
         // ── Search ──
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+        ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
         ImGui::SetNextItemWidth(200.0f);
         if (ImGui::InputTextWithHint("##PlaylistTrackSearch", "Search tracks...",
                                      m_trackSearchBuffer, sizeof(m_trackSearchBuffer)))
         {
             m_data.SetSearchFilter(m_trackSearchBuffer);
         }
+        ImGui::PopStyleColor(2);
 
         if (m_trackSearchBuffer[0] != '\0')
         {
             ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
             if (ImGui::SmallButton("X"))
             {
                 m_trackSearchBuffer[0] = '\0';
                 m_data.SetSearchFilter("");
             }
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(2);
         }
 
         ImGui::Separator();
@@ -397,7 +421,6 @@ items.push_back({"Open Folder", true, false, [this]() {
         m_trackTable.SetPlayingRow(m_data.GetPlayingIndex(), m_data.GetPlayingTrack());
         m_trackTable.Draw(m_data.GetFilteredTracks());
 
-        // ── Context Menu ──
         m_trackContextMenu.Draw("##TrackContextMenu");
 
         ImGui::EndChild();
@@ -421,15 +444,18 @@ items.push_back({"Open Folder", true, false, [this]() {
 
         if (ImGui::BeginPopupModal("AddTrackToPlaylist", nullptr, ImGuiWindowFlags_NoResize))
         {
-            ImGui::Text("Add Tracks to Playlist");
+            ImGui::TextColored(m_theme.BrandText, "Add Tracks to Playlist");
             ImGui::Separator();
 
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+            ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
             ImGui::SetNextItemWidth(-1);
             if (ImGui::InputTextWithHint("##AddTrackSearch", "Search title, artist or album...",
                                          m_addTrackSearchBuffer, sizeof(m_addTrackSearchBuffer)))
             {
                 m_data.SetAddTrackSearchFilter(m_addTrackSearchBuffer);
             }
+            ImGui::PopStyleColor(2);
 
             ImGui::Spacing();
 
@@ -440,9 +466,9 @@ items.push_back({"Open Folder", true, false, [this]() {
                 ImGui::Separator();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
                 if (m_addTrackSearchBuffer[0] != '\0')
-                    ImGui::TextDisabled("  No tracks found matching \"%s\"", m_addTrackSearchBuffer);
+                    ImGui::TextColored(m_theme.TextDisabled, "  No tracks found matching \"%s\"", m_addTrackSearchBuffer);
                 else
-                    ImGui::TextDisabled("  No tracks in library. Add music files first.");
+                    ImGui::TextColored(m_theme.TextDisabled, "  No tracks in library. Add music files first.");
             }
             else
             {
@@ -458,11 +484,11 @@ items.push_back({"Open Folder", true, false, [this]() {
             ImGui::Separator();
 
             if (m_selectedAddTrack)
-                ImGui::Text("Selected: %s - %s",
+                ImGui::TextColored(m_theme.TextPrimary, "Selected: %s - %s",
                             m_selectedAddTrack->GetTitle().c_str(),
                             m_selectedAddTrack->GetArtist().c_str());
             else
-                ImGui::TextDisabled("Select a track to add");
+                ImGui::TextColored(m_theme.TextDisabled, "Select a track to add");
 
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 200.0f);
 
@@ -470,6 +496,11 @@ items.push_back({"Open Folder", true, false, [this]() {
             if (!canAdd)
                 ImGui::BeginDisabled();
 
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+            
             if (ImGui::Button("Add Selected", ImVec2(100, 0)))
             {
                 m_data.AddTrackToPlaylist(
@@ -479,9 +510,6 @@ items.push_back({"Open Folder", true, false, [this]() {
                 m_selectedAddTrack = nullptr;
             }
 
-            if (!canAdd)
-                ImGui::EndDisabled();
-
             ImGui::SameLine();
 
             if (ImGui::Button("Close", ImVec2(80, 0)))
@@ -490,6 +518,12 @@ items.push_back({"Open Folder", true, false, [this]() {
                 m_selectedAddTrack = nullptr;
                 ImGui::CloseCurrentPopup();
             }
+            
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
+
+            if (!canAdd)
+                ImGui::EndDisabled();
 
             ImGui::EndPopup();
         }
@@ -513,10 +547,12 @@ items.push_back({"Open Folder", true, false, [this]() {
 
         if (ImGui::BeginPopupModal("CreatePlaylist", nullptr, ImGuiWindowFlags_NoResize))
         {
-            ImGui::Text("Create New Playlist");
+            ImGui::TextColored(m_theme.BrandText, "Create New Playlist");
             ImGui::Separator();
             ImGui::Spacing();
 
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+            ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
             ImGui::SetNextItemWidth(-1);
             if (ImGui::IsWindowAppearing())
                 ImGui::SetKeyboardFocusHere();
@@ -525,12 +561,18 @@ items.push_back({"Open Folder", true, false, [this]() {
                                                   m_newPlaylistNameBuffer,
                                                   sizeof(m_newPlaylistNameBuffer),
                                                   ImGuiInputTextFlags_EnterReturnsTrue);
+            ImGui::PopStyleColor(2);
 
             ImGui::Spacing();
 
             bool canCreate = m_newPlaylistNameBuffer[0] != '\0';
             if (!canCreate)
                 ImGui::BeginDisabled();
+
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
 
             if (ImGui::Button("Create", ImVec2(120, 0)) || (enter && canCreate))
             {
@@ -539,15 +581,18 @@ items.push_back({"Open Folder", true, false, [this]() {
                 ImGui::CloseCurrentPopup();
             }
 
-            if (!canCreate)
-                ImGui::EndDisabled();
-
             ImGui::SameLine();
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
             {
                 m_newPlaylistNameBuffer[0] = '\0';
                 ImGui::CloseCurrentPopup();
             }
+
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
+
+            if (!canCreate)
+                ImGui::EndDisabled();
 
             ImGui::EndPopup();
         }
@@ -571,10 +616,12 @@ items.push_back({"Open Folder", true, false, [this]() {
 
         if (ImGui::BeginPopupModal("RenamePlaylist", nullptr, ImGuiWindowFlags_NoResize))
         {
-            ImGui::Text("Rename Playlist");
+            ImGui::TextColored(m_theme.BrandText, "Rename Playlist");
             ImGui::Separator();
             ImGui::Spacing();
 
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
+            ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
             ImGui::SetNextItemWidth(-1);
             if (ImGui::IsWindowAppearing())
                 ImGui::SetKeyboardFocusHere();
@@ -582,12 +629,18 @@ items.push_back({"Open Folder", true, false, [this]() {
             bool enter = ImGui::InputText("##RenamePlaylistName", m_renamePlaylistBuffer,
                                           sizeof(m_renamePlaylistBuffer),
                                           ImGuiInputTextFlags_EnterReturnsTrue);
+            ImGui::PopStyleColor(2);
 
             ImGui::Spacing();
 
             bool canRename = m_renamePlaylistBuffer[0] != '\0' && m_renamePlaylistIndex >= 0;
             if (!canRename)
                 ImGui::BeginDisabled();
+
+            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
 
             if (ImGui::Button("Rename", ImVec2(120, 0)) || (enter && canRename))
             {
@@ -597,9 +650,6 @@ items.push_back({"Open Folder", true, false, [this]() {
                 ImGui::CloseCurrentPopup();
             }
 
-            if (!canRename)
-                ImGui::EndDisabled();
-
             ImGui::SameLine();
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
             {
@@ -607,6 +657,12 @@ items.push_back({"Open Folder", true, false, [this]() {
                 m_renamePlaylistIndex = -1;
                 ImGui::CloseCurrentPopup();
             }
+
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
+
+            if (!canRename)
+                ImGui::EndDisabled();
 
             ImGui::EndPopup();
         }

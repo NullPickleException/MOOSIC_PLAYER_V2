@@ -11,8 +11,19 @@ namespace moosic
 
 void SidePlayerBar::Draw()
 {
+    //----------------------------------------------------------------------
+    // Player Bar Background (fits the entire sidebar region edge-to-edge)
+    //----------------------------------------------------------------------
+    {
+        ImVec2 bgPos = ImGui::GetWindowPos();
+        ImVec2 bgSize = ImGui::GetWindowSize();
+        DrawPlayerBarBackground(bgPos, bgSize);
+    }
+    
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
+
     float sidebarWidth = ImGui::GetContentRegionAvail().x;
-    float padding = 4.0f;
+    float padding = 10.0f;
     float contentWidth = sidebarWidth - (padding * 2.0f);
     float artSize = contentWidth;
     float centerX = padding;
@@ -29,7 +40,7 @@ void SidePlayerBar::Draw()
     ImGui::Spacing();
 
     //----------------------------------------------------------------------
-    // Album Art - Centered
+    // Album Art - Centered with padding from background edges
     //----------------------------------------------------------------------
     if (Data().trackJustChanged)
         m_artLoadAttempted = false;
@@ -83,16 +94,19 @@ void SidePlayerBar::Draw()
     ImGui::SetCursorPosX(centerX);
     PushNormalButtonStyle();
     if (ImGui::Button("|<", ImVec2(btnWidth, 0))) OnPreviousButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, btnSpacing);
     PushPrimaryButtonStyle();
     if (ImGui::Button(Data().isPlaying ? "||" : ">", ImVec2(btnWidth, 0))) OnPlayPauseButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, btnSpacing);
     PushNormalButtonStyle();
     if (ImGui::Button(">|", ImVec2(btnWidth, 0))) OnNextButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::Spacing();
@@ -104,6 +118,7 @@ void SidePlayerBar::Draw()
     PushNormalButtonStyle();
     if (ImGui::Button(Data().modeLabel.c_str(), ImVec2(contentWidth, 0)))
         OnPlayModeButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::Spacing();
@@ -124,7 +139,7 @@ void SidePlayerBar::Draw()
     float tempVolume = Data().volume;
     if (ImGui::SliderFloat("##SideVol", &tempVolume, 0.0f, 1.0f, "%.2f"))
         OnVolumeSliderChanged(tempVolume);
-    PopStyle();
+    PopSliderStyle();
 
     ImGui::Spacing();
     ImGui::SetCursorPosX(centerX);
@@ -151,7 +166,7 @@ void SidePlayerBar::Draw()
         m_isSeeking = false;
         wasSeekingSide = false;
     }
-    PopStyle();
+    PopSliderStyle();
 
     ImGui::SetCursorPosX(centerX);
     DrawElapsedTime();

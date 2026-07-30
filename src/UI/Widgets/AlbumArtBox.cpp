@@ -128,8 +128,6 @@ void AlbumArtBox::DrawShadow(const ImVec2& pos, const ImVec2& size, float roundi
 void AlbumArtBox::DrawBackground(const ImVec2& pos, const ImVec2& size, float rounding)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-    // Use hovered background color when hovered
     ImVec4 bgColor = m_isHovered ? m_theme.BackgroundColorHovered : m_theme.BackgroundColor;
 
     drawList->AddRectFilled(
@@ -139,6 +137,39 @@ void AlbumArtBox::DrawBackground(const ImVec2& pos, const ImVec2& size, float ro
         rounding,
         ImDrawFlags_RoundCornersAll
     );
+
+    // Glossy overlay on background
+    if (m_theme.UseGlossyOverlay && m_theme.GlossyIntensity > 0.0f)
+    {
+        float glossHeight = size.y * 0.40f;
+        ImVec4 glossCol = m_theme.GlossyHighlightColor;
+        glossCol.w *= m_theme.GlossyIntensity;
+        ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+        
+        drawList->AddRectFilledMultiColor(
+            ImVec2(pos.x + 2.0f, pos.y + 2.0f),
+            ImVec2(pos.x + size.x - 2.0f, pos.y + glossHeight),
+            ImGui::GetColorU32(glossCol),
+            ImGui::GetColorU32(glossCol),
+            ImGui::GetColorU32(fadeOut),
+            ImGui::GetColorU32(fadeOut));
+    }
+
+    // Inner shadow
+    if (m_theme.UseInnerShadow && m_theme.InnerShadowSize > 0.0f)
+    {
+        float is = m_theme.InnerShadowSize;
+        ImVec4 shadowCol = m_theme.InnerShadowColor;
+        for (float i = 0; i < is; i += 0.5f)
+        {
+            float alpha = shadowCol.w * (1.0f - i / is);
+            ImU32 col = ImGui::GetColorU32(ImVec4(shadowCol.x, shadowCol.y, shadowCol.z, alpha));
+            drawList->AddRect(
+                ImVec2(pos.x + i, pos.y + i),
+                ImVec2(pos.x + size.x - i, pos.y + size.y - i),
+                col, rounding, ImDrawFlags_RoundCornersAll, 1.0f);
+        }
+    }
 }
 
 void AlbumArtBox::DrawBorder(const ImVec2& pos, const ImVec2& size, float rounding)
@@ -173,7 +204,6 @@ void AlbumArtBox::DrawBorder(const ImVec2& pos, const ImVec2& size, float roundi
 void AlbumArtBox::DrawHoverOverlay(const ImVec2& pos, const ImVec2& size, float rounding)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-
     ImVec4 overlayColor = m_isMouseDown ? m_theme.ClickOverlayColor : m_theme.HoverOverlayColor;
 
     drawList->AddRectFilled(
@@ -183,6 +213,22 @@ void AlbumArtBox::DrawHoverOverlay(const ImVec2& pos, const ImVec2& size, float 
         rounding,
         ImDrawFlags_RoundCornersAll
     );
+
+    // Reflection effect at bottom
+    if (m_theme.UseReflection && m_theme.ReflectionOpacity > 0.0f && m_texture)
+    {
+        float reflectHeight = size.y * m_theme.ReflectionHeight;
+        ImVec4 reflectCol = ImVec4(1.0f, 1.0f, 1.0f, m_theme.ReflectionOpacity);
+        ImVec4 fadeOut = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        
+        drawList->AddRectFilledMultiColor(
+            ImVec2(pos.x, pos.y + size.y - reflectHeight),
+            ImVec2(pos.x + size.x, pos.y + size.y),
+            ImGui::GetColorU32(fadeOut),
+            ImGui::GetColorU32(fadeOut),
+            ImGui::GetColorU32(reflectCol),
+            ImGui::GetColorU32(reflectCol));
+    }
 }
 
 void AlbumArtBox::DrawPlayButton(const ImVec2& pos, const ImVec2& size)

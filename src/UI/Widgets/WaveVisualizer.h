@@ -1,8 +1,6 @@
 //==============================================================================
 // WaveVisualizer.h
 //==============================================================================
-// A waveform/spectrum visualizer for audio playback using BASS FFT
-//==============================================================================
 
 #pragma once
 
@@ -51,10 +49,7 @@ namespace moosic
         float WaveformLineWidth = 2.0f;
         bool EnableWaveformFill = false;
 
-        // ──────────────────────────────────────────────
         // Audio Processing
-        // ──────────────────────────────────────────────
-
         float SpectrumSensitivity = 2.7f;
         float HighFrequencyBoost = 6.6f;
         float FrequencyBoostCurve = 2.4f;
@@ -78,10 +73,7 @@ namespace moosic
         bool VolumeAffectsScale = false;
         bool ClampToBounds = true;
 
-        // ──────────────────────────────────────────────
-        // Base Colors (used as fallback / simple mode)
-        // ──────────────────────────────────────────────
-
+        // Base Colors
         ImVec4 BackgroundColor      = ImVec4(0.04f, 0.04f, 0.06f, 1.0f);
         ImVec4 WaveformColor        = ImVec4(0.15f, 0.45f, 0.85f, 1.0f);
         ImVec4 WaveformFillColor    = ImVec4(0.08f, 0.25f, 0.50f, 0.15f);
@@ -89,62 +81,57 @@ namespace moosic
         ImVec4 BorderColor          = ImVec4(0.10f, 0.10f, 0.14f, 1.0f);
         ImVec4 PlaceholderColor     = ImVec4(0.30f, 0.30f, 0.35f, 0.6f);
 
-        // ──────────────────────────────────────────────
-        // Spectrum Color Ramp — "peak-aware" coloring
-        // ──────────────────────────────────────────────
-        // Bars transition from ColorLow (quiet) → ColorMid (medium) → ColorHigh (loud)
-        // based on their current energy value (0.0 to 1.0)
-        // ──────────────────────────────────────────────
+        // Spectrum Color Ramp
+        bool UseColorRamp           = true;
+        ImVec4 SpectrumColorLow     = ImVec4(0.12f, 0.40f, 0.80f, 1.0f);
+        ImVec4 SpectrumColorMid     = ImVec4(0.20f, 0.55f, 0.95f, 1.0f);
+        ImVec4 SpectrumColorHigh    = ImVec4(0.35f, 0.70f, 1.00f, 1.0f);
+        ImVec4 SpectrumColorPeak    = ImVec4(1.00f, 1.00f, 1.00f, 1.0f);
 
-        bool UseColorRamp           = true;     // Enable peak-based coloring
-        ImVec4 SpectrumColorLow     = ImVec4(0.12f, 0.40f, 0.80f, 1.0f);   // Quiet bars (blue)
-        ImVec4 SpectrumColorMid     = ImVec4(0.20f, 0.55f, 0.95f, 1.0f);   // Medium bars
-        ImVec4 SpectrumColorHigh    = ImVec4(0.35f, 0.70f, 1.00f, 1.0f);   // Loud bars (bright)
-        ImVec4 SpectrumColorPeak    = ImVec4(1.00f, 1.00f, 1.00f, 1.0f);   // Peak dot color
-
-        // Color ramp blend thresholds (0.0 - 1.0 range of bar energy)
-        float ColorRampLowThreshold  = 0.0f;    // Below this = ColorLow
-        float ColorRampMidThreshold  = 0.5f;    // Blend to ColorMid starts here
-        float ColorRampHighThreshold = 0.85f;   // Blend to ColorHigh starts here
-
-        // ──────────────────────────────────────────────
-        // Frequency-based tinting (optional)
-        // ──────────────────────────────────────────────
-        // Low frequencies can be tinted one color, high frequencies another
-        // ──────────────────────────────────────────────
+        float ColorRampLowThreshold  = 0.0f;
+        float ColorRampMidThreshold  = 0.5f;
+        float ColorRampHighThreshold = 0.85f;
 
         bool UseFrequencyTint       = false;
-        ImVec4 LowFreqTint          = ImVec4(1.0f, 0.6f, 0.3f, 1.0f);    // Warm tint for bass
-        ImVec4 HighFreqTint         = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);    // Cool tint for treble
-        float FrequencyTintBlend    = 0.4f;   // How much the tint affects the color (0 = none, 1 = full)
-
-        // ──────────────────────────────────────────────
-        // Legacy flat colors (used when UseColorRamp is false)
-        // ──────────────────────────────────────────────
+        ImVec4 LowFreqTint          = ImVec4(1.0f, 0.6f, 0.3f, 1.0f);
+        ImVec4 HighFreqTint         = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);
+        float FrequencyTintBlend    = 0.4f;
 
         ImVec4 SpectrumColor        = ImVec4(0.12f, 0.40f, 0.80f, 1.0f);
-        ImVec4 SpectrumColorHighEnd = ImVec4(0.25f, 0.60f, 1.0f, 1.0f);  // Right-side bars (legacy)
-
-        // ──────────────────────────────────────────────
-        // Brightness boost for loud bars
-        // ──────────────────────────────────────────────
+        ImVec4 SpectrumColorHighEnd = ImVec4(0.25f, 0.60f, 1.0f, 1.0f);
         
-        float BarBrightnessMin      = 0.45f;   // Minimum brightness multiplier
-        float BarBrightnessMax      = 1.0f;    // Maximum brightness multiplier (at peak)
+        float BarBrightnessMin      = 0.45f;
+        float BarBrightnessMax      = 1.0f;
 
-        // ──────────────────────────────────────────────
         // Grid & Misc
-        // ──────────────────────────────────────────────
-
         VisualizerMode Mode = VisualizerMode::Spectrum;
         bool ShowGrid = false;
         int GridLinesHorizontal = 2;
         int GridLinesVertical = 4;
         bool ShowPeaks = false;
 
-        // Waveform smoothing (legacy)
         float Smoothing = 0.7f;
+
+        //--------------------------------------------------------------------------
+        // Classic 2000s Visualizer Effects
+        //--------------------------------------------------------------------------
+        
+        bool UseGlossyBars = false;
+        float BarGlossIntensity = 0.0f;
+        ImVec4 BarGlossColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        
+        bool UseVisualizerGradient = false;
+        ImVec4 VisualizerGradientTop = ImVec4(0.04f, 0.04f, 0.06f, 1.0f);
+        ImVec4 VisualizerGradientBottom = ImVec4(0.04f, 0.04f, 0.06f, 1.0f);
+        
+        bool UseGlassEffect = false;
+        float GlassOpacity = 0.0f;
+        
+        bool UseGlossyWaveform = false;
+        float WaveformGlossIntensity = 0.0f;
     };
+
+    // ... rest of WaveVisualizer class remains the same
 
     class WaveVisualizer
     {

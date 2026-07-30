@@ -22,6 +22,19 @@ void MiniPlayerBar::Draw()
         return;
     }
 
+    //----------------------------------------------------------------------
+    // Player Bar Background
+    //----------------------------------------------------------------------
+    {
+        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos.x -= ImGui::GetStyle().WindowPadding.x;
+        float bgWidth = ImGui::GetWindowWidth();
+        float bgHeight = ImGui::GetContentRegionAvail().y;
+        DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+    
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
+
     float winWidth = ImGui::GetContentRegionAvail().x;
     constexpr float Gap = 4.0f;
 
@@ -47,10 +60,8 @@ void MiniPlayerBar::Draw()
         OnPlaybackSliderChanged(progress);
     }
     if (!ImGui::IsItemActive() && m_isSeeking)
-    {
         m_isSeeking = false;
-    }
-    PopStyle();
+    PopSliderStyle();
 
     ImGui::Spacing();
 
@@ -59,32 +70,32 @@ void MiniPlayerBar::Draw()
     //--------------------------------------------------------------------------
     float btnWidth = (winWidth - Gap * 4) / 4.0f;
 
-    // Previous
     PushNormalButtonStyle();
     if (ImGui::Button("|<", ImVec2(btnWidth, 0))) OnPreviousButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Play/Pause
     PushPrimaryButtonStyle();
     if (ImGui::Button(Data().isPlaying ? "||" : ">", ImVec2(btnWidth, 0))) OnPlayPauseButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Next
     PushNormalButtonStyle();
     if (ImGui::Button(">|", ImVec2(btnWidth, 0))) OnNextButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Mode
     const char* modeLabels[] = {"Norm", "Rev", "Rep", "Shuf"};
     PushNormalButtonStyle();
     if (ImGui::Button(modeLabels[static_cast<int>(Data().playbackMode)], ImVec2(btnWidth, 0)))
         OnPlayModeButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::Spacing();
@@ -97,7 +108,7 @@ void MiniPlayerBar::Draw()
     float tempVolume = Data().volume;
     if (ImGui::SliderFloat("##MiniVol", &tempVolume, 0.0f, 1.0f, "Vol: %.2f"))
         OnVolumeSliderChanged(tempVolume);
-    PopStyle();
+    PopSliderStyle();
 
     ImGui::End();
 }

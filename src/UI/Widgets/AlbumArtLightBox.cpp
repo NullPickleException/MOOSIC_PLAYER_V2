@@ -107,7 +107,40 @@ namespace moosic
 
         if (ImGui::Begin("##Lightbox", nullptr, flags))
         {
-            // Close button in top-right corner - FIXED POSITION
+            // Draw gradient background if enabled
+            if (lb.UseLightboxGradient)
+            {
+                ImVec2 wp = ImGui::GetWindowPos();
+                ImVec2 ws = ImGui::GetWindowSize();
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                dl->AddRectFilledMultiColor(
+                    wp, ImVec2(wp.x + ws.x, wp.y + ws.y),
+                    ImGui::GetColorU32(lb.LightboxGradientTop),
+                    ImGui::GetColorU32(lb.LightboxGradientTop),
+                    ImGui::GetColorU32(lb.LightboxGradientBottom),
+                    ImGui::GetColorU32(lb.LightboxGradientBottom));
+            }
+
+            // Draw lightbox gloss overlay if enabled
+            if (lb.UseLightboxGloss && lb.LightboxGlossIntensity > 0.0f)
+            {
+                ImVec2 wp = ImGui::GetWindowPos();
+                ImVec2 ws = ImGui::GetWindowSize();
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                float glossH = ws.y * 0.30f;
+                ImVec4 glossCol = lb.LightboxGlossColor;
+                glossCol.w *= lb.LightboxGlossIntensity;
+                ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+                dl->AddRectFilledMultiColor(
+                    ImVec2(wp.x + 2.0f, wp.y + 2.0f),
+                    ImVec2(wp.x + ws.x - 2.0f, wp.y + glossH),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(fadeOut),
+                    ImGui::GetColorU32(fadeOut));
+            }
+
+            // Close button in top-right corner
             ImVec2 closePos(popupSize.x - lb.CloseButtonSize - 12.0f, 10.0f);
             ImGui::SetCursorPos(closePos);
             
@@ -119,6 +152,24 @@ namespace moosic
             
             if (ImGui::Button("×", ImVec2(lb.CloseButtonSize, lb.CloseButtonSize)))
                 m_visible = false;
+
+            // Close button gloss if enabled
+            if (lb.UseGlossyCloseButton && lb.CloseButtonGlossIntensity > 0.0f)
+            {
+                ImVec2 btnMin = ImGui::GetItemRectMin();
+                ImVec2 btnMax = ImGui::GetItemRectMax();
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                float glossH = (btnMax.y - btnMin.y) * 0.35f;
+                ImVec4 glossCol = ImVec4(1.0f, 1.0f, 1.0f, lb.CloseButtonGlossIntensity * 0.5f);
+                ImVec4 fadeOut = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+                dl->AddRectFilledMultiColor(
+                    ImVec2(btnMin.x + 2.0f, btnMin.y + 1.0f),
+                    ImVec2(btnMax.x - 2.0f, btnMin.y + glossH),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(fadeOut),
+                    ImGui::GetColorU32(fadeOut));
+            }
             
             ImGui::PopStyleColor(3);
 

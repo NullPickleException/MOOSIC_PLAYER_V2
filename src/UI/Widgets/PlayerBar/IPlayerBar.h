@@ -22,231 +22,303 @@
 namespace moosic
 {
 
-class PlaybackController;
+    class PlaybackController;
 
-//==============================================================================
-// PlayerBarTheme
-//==============================================================================
-struct PlayerBarTheme
-{
-    //--------------------------------------------------------------------------
-    // Text
-    //--------------------------------------------------------------------------
-    ImVec4 TextPrimary = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    ImVec4 TextSecondary = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
+    //==============================================================================
+    // PlayerBarTheme
+    //==============================================================================
+    struct PlayerBarTheme
+    {
+        //--------------------------------------------------------------------------
+        // Text
+        //--------------------------------------------------------------------------
+        ImVec4 TextPrimary = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+        ImVec4 TextSecondary = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
 
-    //--------------------------------------------------------------------------
-    // Buttons
-    //--------------------------------------------------------------------------
-    ImVec4 ButtonNormal = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
-    ImVec4 ButtonHovered = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
-    ImVec4 ButtonActive = ImVec4(0.46f, 0.46f, 0.46f, 1.00f);
+        //--------------------------------------------------------------------------
+        // Buttons
+        //--------------------------------------------------------------------------
+        ImVec4 ButtonNormal = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+        ImVec4 ButtonHovered = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
+        ImVec4 ButtonActive = ImVec4(0.46f, 0.46f, 0.46f, 1.00f);
 
-    ImVec4 ButtonPrimary = ButtonNormal;
-    ImVec4 ButtonPrimaryHovered = ButtonHovered;
-    ImVec4 ButtonPrimaryActive = ButtonActive;
+        ImVec4 ButtonPrimary = ButtonNormal;
+        ImVec4 ButtonPrimaryHovered = ButtonHovered;
+        ImVec4 ButtonPrimaryActive = ButtonActive;
 
-    //--------------------------------------------------------------------------
-    // Sliders
-    //--------------------------------------------------------------------------
-    ImVec4 SliderTrack = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
-    ImVec4 SliderGrab = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
-    ImVec4 SliderGrabActive = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
+        //--------------------------------------------------------------------------
+        // Sliders
+        //--------------------------------------------------------------------------
+        ImVec4 SliderTrack = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
+        ImVec4 SliderGrab = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
+        ImVec4 SliderGrabActive = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
 
-    //--------------------------------------------------------------------------
-    // Sizing
-    //--------------------------------------------------------------------------
-    float ButtonRounding = 5.0f;
-    float SliderRounding = 3.0f;
-    float AlbumArtRounding = 0.0f;
+        //--------------------------------------------------------------------------
+        // Classic 2000s Slider Effects (default: off)
+        //--------------------------------------------------------------------------
+        bool UseSliderTrackGradient = false;
+        ImVec4 SliderTrackGradientTop = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
+        ImVec4 SliderTrackGradientBottom = ImVec4(0.18f, 0.18f, 0.20f, 1.00f);
 
-    float AlbumArtSize = 56.0f;
+        bool UseSliderGrabGloss = false;
+        float SliderGrabGlossIntensity = 0.0f;
+        ImVec4 SliderGrabGlossHighlight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
-    float NormalButtonExtraWidth = 6.0f;
-    float PrimaryButtonExtraWidth = 5.0f;
-    float ButtonHeightExtra = 0.0f;
+        bool UseSliderGrabBevel = false;
+        float SliderGrabBevelThickness = 0.0f;
+        ImVec4 SliderGrabBevelLight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        ImVec4 SliderGrabBevelDark = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        ImVec4 SliderGrabBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 
-    //--------------------------------------------------------------------------
-    // Scrolling text
-    //--------------------------------------------------------------------------
-    float ScrollSpeed = 30.0f;
-    float ScrollDelay = 1.5f;
+        //--------------------------------------------------------------------------
+        // Sizing
+        //--------------------------------------------------------------------------
+        float ButtonRounding = 5.0f;
+        float SliderRounding = 3.0f;
+        float AlbumArtRounding = 0.0f;
 
-    //--------------------------------------------------------------------------
-    // Child Widget Themes
-    //--------------------------------------------------------------------------
-    LightboxTheme Lightbox;
-    AlbumArtBoxTheme AlbumArtBox;
-    WaveVisualizerStyle Visualizer;
-};
+        float AlbumArtSize = 56.0f;
 
-//==============================================================================
-// IPlayerBar - Base Interface
-//==============================================================================
+        float NormalButtonExtraWidth = 6.0f;
+        float PrimaryButtonExtraWidth = 5.0f;
+        float ButtonHeightExtra = 0.0f;
 
-class IPlayerBar
-{
-public:
-    virtual ~IPlayerBar() = default;
+        //--------------------------------------------------------------------------
+        // Scrolling text
+        //--------------------------------------------------------------------------
+        float ScrollSpeed = 30.0f;
+        float ScrollDelay = 1.5f;
 
-    //--------------------------------------------------------------------------
-    // Core Interface
-    //--------------------------------------------------------------------------
+        //--------------------------------------------------------------------------
+        // Child Widget Themes
+        //--------------------------------------------------------------------------
+        LightboxTheme Lightbox;
+        AlbumArtBoxTheme AlbumArtBox;
+        WaveVisualizerStyle Visualizer;
 
-    virtual void Draw() = 0;
+        //--------------------------------------------------------------------------
+        // Classic 2000s Progress Bar Effects (default: off)
+        //--------------------------------------------------------------------------
+        ImVec4 ProgressTrackColor = ImVec4(0.24f, 0.24f, 0.24f, 1.0f);
+        ImVec4 ProgressFillColor = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
+        ImVec4 ProgressFillTop = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
+        ImVec4 ProgressFillBottom = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
+        bool UseProgressGradient = false;
+        bool ShowProgressGloss = false;
+        float ProgressGlossOpacity = 0.0f;
+        float ProgressHeight = 8.0f;
+        float ProgressRounding = 4.0f;
 
-    // Theme application
-    void ApplyTheme(const PlayerBarTheme& theme);
+        //--------------------------------------------------------------------------
+        // Classic 2000s Button Effects (default: off)
+        //--------------------------------------------------------------------------
+        bool UseButtonGloss = false;
+        float ButtonGlossIntensity = 0.0f;
+        ImVec4 ButtonGlossHighlight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
-    // External dependencies
-    void SetPlaybackController(PlaybackController* controller);
-    void SetRenderer(SDL_Renderer* renderer);
+        bool UseButtonBevel = false;
+        float ButtonBevelThickness = 0.0f;
+        ImVec4 ButtonBevelLight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        ImVec4 ButtonBevelDark = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        ImVec4 ButtonBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 
-    //--------------------------------------------------------------------------
-    // Album Art Cache - Clears all cached textures (call on library refresh)
-    //--------------------------------------------------------------------------
-    void ClearAlbumArtCache();
+        //--------------------------------------------------------------------------
+        // Classic 2000s Player Bar Background (default: off)
+        //--------------------------------------------------------------------------
+        bool UsePlayerBarGradient = false;
+        ImVec4 PlayerBarGradientTop = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
+        ImVec4 PlayerBarGradientBottom = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
+        float PlayerBarGradientRounding = 0.0f;
+        float PlayerBarOpacity = 1.0f;
 
-protected:
-    //--------------------------------------------------------------------------
-    // Data Access (bars read from data, never write to it)
-    //--------------------------------------------------------------------------
+        bool UsePlayerBarBevel = false;
+        float PlayerBarBevelThickness = 0.0f;
+        ImVec4 PlayerBarBevelLight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        ImVec4 PlayerBarBevelDark = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        ImVec4 PlayerBarBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+    };
 
-    const PlayerBarData& Data() const { return *m_data; }
-    PlaybackController* Controller() const { return m_playbackController; }
+    //==============================================================================
+    // IPlayerBar - Base Interface
+    //==============================================================================
 
-    //--------------------------------------------------------------------------
-    // Style Helpers
-    //--------------------------------------------------------------------------
+    class IPlayerBar
+    {
+    public:
+        virtual ~IPlayerBar() = default;
 
-    void PushNormalButtonStyle();
-    void PushPrimaryButtonStyle();
-    void PushSliderStyle();
-    void PushAlbumArtStyle();
-    void PopStyle();
-    void PopStyleVarOnly();
+        //--------------------------------------------------------------------------
+        // Core Interface
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Drawing Methods - Modular (subclasses override Draw() to arrange)
-    //--------------------------------------------------------------------------
+        virtual void Draw() = 0;
 
-    void DrawAlbumArt();
-    void DrawSongInfo();
-    void DrawPlaybackTimeline();
-    void DrawControls();
-    void DrawVisualizer();
+        // Theme application
+        void ApplyTheme(const PlayerBarTheme &theme);
 
-    // Individual control drawers
-    void DrawPreviousButton();
-    void DrawPlayPauseButton();
-    void DrawNextButton();
-    void DrawPlayModeButton();
-    void DrawVolumeIcon();
-    void DrawVolumeSlider();
+        // External dependencies
+        void SetPlaybackController(PlaybackController *controller);
+        void SetRenderer(SDL_Renderer *renderer);
 
-    //--------------------------------------------------------------------------
-    // Drawing - Song Info Helpers
-    //--------------------------------------------------------------------------
+        //--------------------------------------------------------------------------
+        // Album Art Cache - Clears all cached textures (call on library refresh)
+        //--------------------------------------------------------------------------
+        void ClearAlbumArtCache();
 
-    void DrawSongTitle();
-    void DrawArtistName();
-    void DrawScrollingText(const char* text, const ImVec4& color, float maxWidth,
-                           float& scrollOffset, float& lastTrackChangeTime, bool trackChanged);
-    void DrawElapsedTime();
-    void DrawTotalTime();
-    void DrawPlaybackSlider();
+    protected:
+        //--------------------------------------------------------------------------
+        // Data Access (bars read from data, never write to it)
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Event Handlers (subclasses can override)
-    //--------------------------------------------------------------------------
+        const PlayerBarData &Data() const { return *m_data; }
+        PlaybackController *Controller() const { return m_playbackController; }
 
-    virtual void OnPreviousButtonPressed();
-    virtual void OnPlayPauseButtonPressed();
-    virtual void OnNextButtonPressed();
-    virtual void OnPlaybackSliderChanged(float value);
-    virtual void OnVolumeIconPressed();
-    virtual void OnVolumeSliderChanged(float value);
-    virtual void OnPlayModeButtonPressed();
-    virtual void OnAlbumArtClicked();
+        //--------------------------------------------------------------------------
+        // Style Helpers
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Album Art Helpers
-    //--------------------------------------------------------------------------
+        void PushNormalButtonStyle();
+        void PushPrimaryButtonStyle();
+        void PushSliderStyle();
+        void PushAlbumArtStyle();
+        void PopStyle();
+        void PopStyleVarOnly();
+        void PopSliderStyle();
+        
+        //--------------------------------------------------------------------------
+        // Classic 2000s Rendering Helpers
+        //--------------------------------------------------------------------------
 
-    void LoadAlbumArtForCurrentTrack();
-    bool HasAlbumArtTexture() const { return m_albumArtTexture != nullptr; }
+        void DrawGlossOverlay(const ImVec2 &min, const ImVec2 &max, float rounding);
+        void DrawBevelEdges(const ImVec2 &min, const ImVec2 &max, float rounding);
+        void DrawButtonGradientBg(const ImVec2 &min, const ImVec2 &max, float rounding,
+                                  const ImVec4 &colorTop, const ImVec4 &colorBottom);
+        void DrawClassicButtonDecorations(const ImVec2 &min, const ImVec2 &max);
+        void DrawPlayerBarBackground(const ImVec2 &pos, const ImVec2 &size);
+        void DrawSliderGradientBg(const ImVec2 &min, const ImVec2 &max, float rounding);
+        void DrawClassicSliderDecorations(const ImVec2 &min, const ImVec2 &max);
 
-    //--------------------------------------------------------------------------
-    // Theme (read by drawing methods)
-    //--------------------------------------------------------------------------
+        //--------------------------------------------------------------------------
+        // Drawing Methods - Modular (subclasses override Draw() to arrange)
+        //--------------------------------------------------------------------------
 
-    PlayerBarTheme m_theme;
+        void DrawAlbumArt();
+        void DrawSongInfo();
+        void DrawPlaybackTimeline();
+        void DrawControls();
+        void DrawVisualizer();
 
-    //--------------------------------------------------------------------------
-    // Seeking State (only UI mutable state that's not in PlayerBarData)
-    //--------------------------------------------------------------------------
+        // Individual control drawers
+        void DrawPreviousButton();
+        void DrawPlayPauseButton();
+        void DrawNextButton();
+        void DrawPlayModeButton();
+        void DrawVolumeIcon();
+        void DrawVolumeSlider();
 
-    bool m_isSeeking = false;
+        //--------------------------------------------------------------------------
+        // Drawing - Song Info Helpers
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Child Widgets (protected so subclasses can access for custom layouts)
-    //--------------------------------------------------------------------------
+        void DrawSongTitle();
+        void DrawArtistName();
+        void DrawScrollingText(const char *text, const ImVec4 &color, float maxWidth,
+                               float &scrollOffset, float &lastTrackChangeTime, bool trackChanged);
+        void DrawElapsedTime();
+        void DrawTotalTime();
+        void DrawPlaybackSlider();
 
-    AlbumArtLightbox m_lightbox;
-    AlbumArtBox m_albumArtBox;
-    WaveVisualizer m_visualizer;
+        //--------------------------------------------------------------------------
+        // Event Handlers (subclasses can override)
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Album Art Texture (protected so subclasses can check for clicks)
-    //--------------------------------------------------------------------------
+        virtual void OnPreviousButtonPressed();
+        virtual void OnPlayPauseButtonPressed();
+        virtual void OnNextButtonPressed();
+        virtual void OnPlaybackSliderChanged(float value);
+        virtual void OnVolumeIconPressed();
+        virtual void OnVolumeSliderChanged(float value);
+        virtual void OnPlayModeButtonPressed();
+        virtual void OnAlbumArtClicked();
 
-    void* m_albumArtTexture = nullptr;
+        //--------------------------------------------------------------------------
+        // Album Art Helpers
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Album Art Load State (protected so subclasses can reset on track change)
-    //--------------------------------------------------------------------------
+        void LoadAlbumArtForCurrentTrack();
+        bool HasAlbumArtTexture() const { return m_albumArtTexture != nullptr; }
 
-    bool m_artLoadAttempted = false;
+        //--------------------------------------------------------------------------
+        // Theme (read by drawing methods)
+        //--------------------------------------------------------------------------
 
-    //--------------------------------------------------------------------------
-    // Scrolling text animation state (protected for subclass Draw() methods)
-    //--------------------------------------------------------------------------
+        PlayerBarTheme m_theme;
 
-    float m_titleScrollOffset = 0.0f;
-    float m_artistScrollOffset = 0.0f;
-    float m_lastTrackChangeTime = 0.0f;
+        //--------------------------------------------------------------------------
+        // Seeking State (only UI mutable state that's not in PlayerBarData)
+        //--------------------------------------------------------------------------
 
-    bool m_wasSeeking = false; 
+        bool m_isSeeking = false;
 
-private:
-    //--------------------------------------------------------------------------
-    // Internal Helpers
-    //--------------------------------------------------------------------------
+        //--------------------------------------------------------------------------
+        // Child Widgets (protected so subclasses can access for custom layouts)
+        //--------------------------------------------------------------------------
 
-    void LoadAlbumArtFromData();
-    void DestroyAlbumArtTexture();
-    void SyncChildWidgets();
+        AlbumArtLightbox m_lightbox;
+        AlbumArtBox m_albumArtBox;
+        WaveVisualizer m_visualizer;
 
-    //--------------------------------------------------------------------------
-    // Members
-    //--------------------------------------------------------------------------
+        //--------------------------------------------------------------------------
+        // Album Art Texture (protected so subclasses can check for clicks)
+        //--------------------------------------------------------------------------
 
-    // External dependencies (set once)
-    PlaybackController* m_playbackController = nullptr;
-    SDL_Renderer* m_renderer = nullptr;
+        void *m_albumArtTexture = nullptr;
 
-    // Pointer to controller's PlayerBarData (set from controller)
-    const PlayerBarData* m_data = nullptr;
+        //--------------------------------------------------------------------------
+        // Album Art Load State (protected so subclasses can reset on track change)
+        //--------------------------------------------------------------------------
 
-    // Rendering
-    ImageLoader m_imageLoader;
+        bool m_artLoadAttempted = false;
 
-    // Album Art Texture tracking
-    std::size_t m_lastAlbumArtTrackId = 0;
-    int m_albumArtWidth = 0;
-    int m_albumArtHeight = 0;
+        //--------------------------------------------------------------------------
+        // Scrolling text animation state (protected for subclass Draw() methods)
+        //--------------------------------------------------------------------------
 
-    int m_lastVisualizerMode = 0;
-};
+        float m_titleScrollOffset = 0.0f;
+        float m_artistScrollOffset = 0.0f;
+        float m_lastTrackChangeTime = 0.0f;
+
+        bool m_wasSeeking = false;
+
+    private:
+        //--------------------------------------------------------------------------
+        // Internal Helpers
+        //--------------------------------------------------------------------------
+
+        void LoadAlbumArtFromData();
+        void DestroyAlbumArtTexture();
+        void SyncChildWidgets();
+
+        //--------------------------------------------------------------------------
+        // Members
+        //--------------------------------------------------------------------------
+
+        // External dependencies (set once)
+        PlaybackController *m_playbackController = nullptr;
+        SDL_Renderer *m_renderer = nullptr;
+
+        // Pointer to controller's PlayerBarData (set from controller)
+        const PlayerBarData *m_data = nullptr;
+
+        // Rendering
+        ImageLoader m_imageLoader;
+
+        // Album Art Texture tracking
+        std::size_t m_lastAlbumArtTrackId = 0;
+        int m_albumArtWidth = 0;
+        int m_albumArtHeight = 0;
+
+        int m_lastVisualizerMode = 0;
+    };
 
 } // namespace moosic

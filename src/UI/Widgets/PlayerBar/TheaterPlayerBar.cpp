@@ -10,29 +10,38 @@ namespace moosic
 
 void TheaterPlayerBar::Draw()
 {
+    //----------------------------------------------------------------------
+    // Player Bar Background (edge-to-edge)
+    //----------------------------------------------------------------------
+    {
+        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos.x -= ImGui::GetStyle().WindowPadding.x;
+        float bgWidth = ImGui::GetWindowWidth();
+        float bgHeight = ImGui::GetContentRegionAvail().y;
+        DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+    
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
+
     float availWidth = ImGui::GetContentRegionAvail().x;
     float availHeight = ImGui::GetContentRegionAvail().y;
 
     //--------------------------------------------------------------------------
     // Large Album Art - Centered
     //--------------------------------------------------------------------------
-    float maxArtSize = (std::min)(availWidth * 0.7f, availHeight * 0.65f);
-    float artSize = (std::min)(maxArtSize, 400.0f);
+    float maxArtSize = (std::min)(availWidth * 0.5f, availHeight * 0.50f);
+    float artSize = (std::min)(maxArtSize, 300.0f);
 
     if (Data().trackJustChanged)
         m_artLoadAttempted = false;
     LoadAlbumArtForCurrentTrack();
 
-    float offsetX = (availWidth - artSize) * 0.5f;
-    ImGui::SetCursorPosX(offsetX);
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20.0f);
-
+    float artOffsetX = (availWidth - artSize) * 0.5f;
+    ImGui::SetCursorPosX(artOffsetX);
     m_albumArtBox.Draw(artSize, 8.0f, true, true);
     
     if (m_albumArtBox.IsClicked() && m_albumArtTexture)
-    {
         OnAlbumArtClicked();
-    }
 
     ImGui::Spacing();
     ImGui::Spacing();
@@ -44,18 +53,39 @@ void TheaterPlayerBar::Draw()
     float textOffsetX = (availWidth - textWidth) * 0.5f;
 
     ImGui::SetCursorPosX(textOffsetX);
-    ImGui::PushTextWrapPos(textOffsetX + textWidth);
     ImGui::TextColored(m_theme.TextPrimary, "%s", Data().title.c_str());
+    ImGui::SetCursorPosX(textOffsetX);
     ImGui::TextColored(m_theme.TextSecondary, "%s", Data().artist.c_str());
-    ImGui::PopTextWrapPos();
 
     ImGui::Spacing();
 
     //--------------------------------------------------------------------------
-    // Progress + Time
+    // Visualizer - Centered
     //--------------------------------------------------------------------------
-    ImGui::SetCursorPosX(textOffsetX);
-    ImGui::SetNextItemWidth(textWidth);
+    const auto& visStyle = m_visualizer.GetStyle();
+    float visWidth = (std::min)(visStyle.BoxWidth * 1.5f, textWidth);
+    float visHeight = visStyle.BoxHeight * 1.3f;
+    m_visualizer.SetBoxSize(visWidth, visHeight);
+    
+    float visOffsetX = (availWidth - visWidth) * 0.5f;
+    ImGui::SetCursorPosX(visOffsetX);
+    DrawVisualizer();
+    m_visualizer.SetBoxSize(visStyle.BoxWidth, visStyle.BoxHeight);
+
+    ImGui::Spacing();
+
+    //--------------------------------------------------------------------------
+    // Progress + Time - Centered
+    //--------------------------------------------------------------------------
+    float timeWidth = ImGui::CalcTextSize("00:00:00").x;
+    float sliderWidth = textWidth - timeWidth * 2 - 20.0f;
+    if (sliderWidth < 100.0f) sliderWidth = 100.0f;
+    float progressStartX = (availWidth - (timeWidth + 10.0f + sliderWidth + 10.0f + timeWidth)) * 0.5f;
+
+    ImGui::SetCursorPosX(progressStartX);
+    DrawElapsedTime();
+    ImGui::SameLine(0, 10.0f);
+    ImGui::SetNextItemWidth(sliderWidth);
     PushSliderStyle();
     float progress = Data().progress;
     if (ImGui::SliderFloat("##TheaterProgress", &progress, 0.0f, 1.0f, ""))
@@ -64,14 +94,10 @@ void TheaterPlayerBar::Draw()
         OnPlaybackSliderChanged(progress);
     }
     if (!ImGui::IsItemActive() && m_isSeeking)
-    {
         m_isSeeking = false;
-    }
-    PopStyle();
-
-    ImGui::SetCursorPosX(textOffsetX);
-    ImGui::TextColored(m_theme.TextSecondary, "%s / %s",
-                       Data().elapsedFormatted.c_str(), Data().totalFormatted.c_str());
+    PopSliderStyle();
+    ImGui::SameLine(0, 10.0f);
+    DrawTotalTime();
 
     ImGui::Spacing();
 
@@ -86,49 +112,45 @@ void TheaterPlayerBar::Draw()
 
     float controlsTotalWidth = btnWidth * 2 + playWidth + modeWidth + volSliderWidth + Gap * 5;
     float controlsOffsetX = (availWidth - controlsTotalWidth) * 0.5f;
+    if (controlsOffsetX < 0) controlsOffsetX = 0;
 
     ImGui::SetCursorPosX(controlsOffsetX);
 
-    // Previous
     PushNormalButtonStyle();
     if (ImGui::Button("|<", ImVec2(btnWidth, 0))) OnPreviousButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Play/Pause
     PushPrimaryButtonStyle();
     if (ImGui::Button(Data().isPlaying ? "||" : ">", ImVec2(playWidth, 0))) OnPlayPauseButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Next
     PushNormalButtonStyle();
     if (ImGui::Button(">|", ImVec2(btnWidth, 0))) OnNextButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Mode
     PushNormalButtonStyle();
-    if (ImGui::Button(Data().modeLabel.c_str(), ImVec2(modeWidth, 0)))
-        OnPlayModeButtonPressed();
+    if (ImGui::Button(Data().modeLabel.c_str(), ImVec2(modeWidth, 0))) OnPlayModeButtonPressed();
+    DrawClassicButtonDecorations(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
     PopStyle();
 
     ImGui::SameLine(0, Gap);
 
-    // Volume
     ImGui::SetNextItemWidth(volSliderWidth);
     PushSliderStyle();
     float tempVolume = Data().volume;
     if (ImGui::SliderFloat("##TheaterVol", &tempVolume, 0.0f, 1.0f, ""))
         OnVolumeSliderChanged(tempVolume);
-    PopStyle();
+    PopSliderStyle();
 
-    //--------------------------------------------------------------------------
-    // Lightbox (on top of everything)
-    //--------------------------------------------------------------------------
     m_lightbox.Draw();
 }
 

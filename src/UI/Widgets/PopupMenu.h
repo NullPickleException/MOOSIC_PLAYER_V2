@@ -12,10 +12,6 @@
 namespace moosic
 {
 
-    //==============================================================================
-    // MenuItem
-    //==============================================================================
-
     struct MenuItem
     {
         std::string label;
@@ -24,36 +20,33 @@ namespace moosic
         std::function<void()> action;
     };
 
-    //==============================================================================
-    // PopupMenuTheme
-    //==============================================================================
     struct PopupMenuTheme
     {
-        // ── Sizing ──────────────────────────────────────
+        // Sizing
         float MinWidth = 140.0f;
         float MaxWidth = 400.0f;
-        float ItemHeight = 0.0f; // ImGui default
+        float ItemHeight = 0.0f;
         float SeparatorHeight = 6.0f;
         float SeparatorThickness = 1.0f;
-        float SeparatorWidth = 1.0f; // Full width
+        float SeparatorWidth = 1.0f;
         float TextPaddingRight = 30.0f;
-        float TextPaddingLeft = 0.0f; // No extra left padding
+        float TextPaddingLeft = 0.0f;
         float ScreenEdgePadding = 5.0f;
-        float ExtraHeightBottom = 10.0f; // No extra bottom
-        float ExtraHeightTop = 0.0f;    // No extra top
+        float ExtraHeightBottom = 10.0f;
+        float ExtraHeightTop = 0.0f;
         float ExtraWidth = 0.0f;
 
-        // ── Padding & Spacing ──────────────────────────
+        // Padding & Spacing
         float WindowPaddingX = 4.0f;
         float WindowPaddingY = 4.0f;
         float ItemSpacingX = 4.0f;
         float ItemSpacingY = 2.0f;
 
-        // ── Appearance ─────────────────────────────────
-        float WindowRounding = 4.0f;   // Standard ImGui rounding
-        float WindowBorderSize = 1.5f; // Standard border
+        // Appearance
+        float WindowRounding = 4.0f;
+        float WindowBorderSize = 1.5f;
 
-        // ── Colors ─────────────────────────────────────
+        // Colors
         ImVec4 BackgroundColor = ImVec4(0.16f, 0.17f, 0.19f, 1.00f);
         ImVec4 BorderColor = ImVec4(0.10f, 0.10f, 0.14f, 1.00f);
         ImVec4 TextColor = ImVec4(0.90f, 0.90f, 0.92f, 1.00f);
@@ -62,6 +55,21 @@ namespace moosic
         ImVec4 HoverTextColor = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
         ImVec4 SeparatorColor = ImVec4(0.24f, 0.25f, 0.28f, 1.00f);
         ImVec4 ShadowColor = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+
+        //--------------------------------------------------------------------------
+        // Classic 2000s Popup Menu Effects
+        //--------------------------------------------------------------------------
+        
+        bool UseMenuGloss = false;
+        float MenuGlossIntensity = 0.0f;
+        ImVec4 MenuGlossColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+        
+        bool UseMenuGradient = false;
+        ImVec4 MenuGradientTop = ImVec4(0.16f, 0.17f, 0.19f, 1.00f);
+        ImVec4 MenuGradientBottom = ImVec4(0.16f, 0.17f, 0.19f, 1.00f);
+        
+        bool UseGlossySelection = false;
+        float SelectionGlossIntensity = 0.0f;
     };
 
     //==============================================================================
@@ -146,6 +154,39 @@ namespace moosic
 
             if (ImGui::Begin(id, nullptr, flags))
             {
+                // Draw gradient background if enabled
+                if (m_theme.UseMenuGradient)
+                {
+                    ImVec2 wp = ImGui::GetWindowPos();
+                    ImVec2 ws = ImGui::GetWindowSize();
+                    ImDrawList* dl = ImGui::GetWindowDrawList();
+                    dl->AddRectFilledMultiColor(
+                        wp, ImVec2(wp.x + ws.x, wp.y + ws.y),
+                        ImGui::GetColorU32(m_theme.MenuGradientTop),
+                        ImGui::GetColorU32(m_theme.MenuGradientTop),
+                        ImGui::GetColorU32(m_theme.MenuGradientBottom),
+                        ImGui::GetColorU32(m_theme.MenuGradientBottom));
+                }
+
+                // Draw menu gloss overlay if enabled
+                if (m_theme.UseMenuGloss && m_theme.MenuGlossIntensity > 0.0f)
+                {
+                    ImVec2 wp = ImGui::GetWindowPos();
+                    ImVec2 ws = ImGui::GetWindowSize();
+                    ImDrawList* dl = ImGui::GetWindowDrawList();
+                    float glossH = ws.y * 0.30f;
+                    ImVec4 glossCol = m_theme.MenuGlossColor;
+                    glossCol.w *= m_theme.MenuGlossIntensity;
+                    ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+                    dl->AddRectFilledMultiColor(
+                        ImVec2(wp.x + 2.0f, wp.y + 2.0f),
+                        ImVec2(wp.x + ws.x - 2.0f, wp.y + glossH),
+                        ImGui::GetColorU32(glossCol),
+                        ImGui::GetColorU32(glossCol),
+                        ImGui::GetColorU32(fadeOut),
+                        ImGui::GetColorU32(fadeOut));
+                }
+
                 // Add extra top spacing
                 if (m_theme.ExtraHeightTop > 0.0f)
                     ImGui::Dummy(ImVec2(1.0f, m_theme.ExtraHeightTop));
@@ -276,6 +317,24 @@ namespace moosic
                         m_isOpen = false;
                         return true;
                     }
+                }
+
+                // Glossy selection overlay on hovered items
+                if (m_theme.UseGlossySelection && m_theme.SelectionGlossIntensity > 0.0f && ImGui::IsItemHovered())
+                {
+                    ImVec2 rMin = ImGui::GetItemRectMin();
+                    ImVec2 rMax = ImGui::GetItemRectMax();
+                    ImDrawList* dl = ImGui::GetWindowDrawList();
+                    float glossH = (rMax.y - rMin.y) * 0.45f;
+                    ImVec4 glossCol = ImVec4(1.0f, 1.0f, 1.0f, m_theme.SelectionGlossIntensity * 0.4f);
+                    ImVec4 fadeOut = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+                    dl->AddRectFilledMultiColor(
+                        ImVec2(rMin.x + 2.0f, rMin.y + 1.0f),
+                        ImVec2(rMax.x - 2.0f, rMin.y + glossH),
+                        ImGui::GetColorU32(glossCol),
+                        ImGui::GetColorU32(glossCol),
+                        ImGui::GetColorU32(fadeOut),
+                        ImGui::GetColorU32(fadeOut));
                 }
 
                 if (ImGui::IsItemHovered())

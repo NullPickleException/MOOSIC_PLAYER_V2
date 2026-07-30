@@ -566,11 +566,33 @@ namespace moosic
     // Drawing Helpers
     //==============================================================================
 
-    void WaveVisualizer::DrawBackground(const ImVec2 &pos, const ImVec2 &size)
+        void WaveVisualizer::DrawBackground(const ImVec2 &pos, const ImVec2 &size)
     {
         ImDrawList *dl = ImGui::GetWindowDrawList();
-        dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
-                          ImGui::GetColorU32(m_style.BackgroundColor));
+        
+        // Draw gradient background if enabled
+        if (m_style.UseVisualizerGradient)
+        {
+            dl->AddRectFilledMultiColor(
+                pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                ImGui::GetColorU32(m_style.VisualizerGradientTop),
+                ImGui::GetColorU32(m_style.VisualizerGradientTop),
+                ImGui::GetColorU32(m_style.VisualizerGradientBottom),
+                ImGui::GetColorU32(m_style.VisualizerGradientBottom));
+        }
+        else
+        {
+            dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                              ImGui::GetColorU32(m_style.BackgroundColor));
+        }
+        
+        // Draw glass effect overlay if enabled
+        if (m_style.UseGlassEffect && m_style.GlassOpacity > 0.0f)
+        {
+            ImVec4 glassColor = ImVec4(1.0f, 1.0f, 1.0f, m_style.GlassOpacity);
+            dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                              ImGui::GetColorU32(glassColor));
+        }
     }
 
     void WaveVisualizer::DrawGrid(const ImVec2 &pos, const ImVec2 &size)
@@ -590,7 +612,6 @@ namespace moosic
             dl->AddLine(ImVec2(x, pos.y), ImVec2(x, pos.y + size.y), gridCol);
         }
     }
-
     void WaveVisualizer::DrawOscilloscope(const ImVec2 &pos, const ImVec2 &size)
     {
         if (!m_hasData || m_waveformData.empty())
@@ -624,25 +645,44 @@ namespace moosic
 
             float y = centerY - sample * amplitude;
 
-            y = std::clamp(y,
-                           pos.y + 2.0f,
-                           pos.y + size.y - 2.0f);
+            y = std::clamp(y, pos.y + 2.0f, pos.y + size.y - 2.0f);
 
             points.emplace_back(x, y);
         }
 
+        // Draw fill if enabled
+        if (m_style.EnableWaveformFill)
+        {
+            std::vector<ImVec2> fillPoints = points;
+            fillPoints.push_back(ImVec2(points.back().x, centerY));
+            fillPoints.push_back(ImVec2(points.front().x, centerY));
+            drawList->AddConvexPolyFilled(fillPoints.data(), (int)fillPoints.size(),
+                                          ImGui::GetColorU32(m_style.WaveformFillColor));
+        }
+
+        // Draw waveform line
         drawList->AddPolyline(
-            points.data(),
-            (int)points.size(),
+            points.data(), (int)points.size(),
             ImGui::GetColorU32(m_style.WaveformColor),
-            ImDrawFlags_None,
-            m_style.WaveformLineWidth);
+            ImDrawFlags_None, m_style.WaveformLineWidth);
+
+        // Draw waveform gloss if enabled
+        if (m_style.UseGlossyWaveform && m_style.WaveformGlossIntensity > 0.0f)
+        {
+            ImVec4 glossColor = ImVec4(1.0f, 1.0f, 1.0f, m_style.WaveformGlossIntensity * 0.3f);
+            // Shift waveform up slightly and draw thinner semi-transparent version for gloss
+            for (auto& p : points)
+                p.y -= 1.0f;
+            drawList->AddPolyline(
+                points.data(), (int)points.size(),
+                ImGui::GetColorU32(glossColor),
+                ImDrawFlags_None, (std::max)(1.0f, m_style.WaveformLineWidth * 0.5f));
+        }
     }
 
     //==============================================================================
     // DrawSpectrum
     //==============================================================================
-
     void WaveVisualizer::DrawSpectrum(const ImVec2 &pos, const ImVec2 &size)
     {
         if (m_smoothSpectrum.empty() || !m_hasData)
@@ -656,14 +696,12 @@ namespace moosic
         const float barW = m_style.BarWidth;
         const float barGap = m_style.BarGap;
 
-        // Apply horizontal scaling
         const float scaledWidth = size.x * m_style.SpectrumScaleX;
         const float xOffset = (size.x - scaledWidth) * 0.5f;
 
         const float totalW = bands * barW + (bands - 1) * barGap;
         const float startX = pos.x + xOffset + (scaledWidth - totalW) * 0.5f;
 
-        // Apply vertical scaling
         const float bottomY = pos.y + size.y - m_style.BarBottomPadding;
         const float maxH = (size.y - m_style.BarTopPadding - m_style.BarBottomPadding) * m_style.SpectrumScaleY;
 
@@ -678,7 +716,6 @@ namespace moosic
             if (y < pos.y + m_style.BarTopPadding)
                 y = pos.y + m_style.BarTopPadding;
 
-            // --- Compute color using the new ramp system ---
             ImVec4 barColor = ComputeBarColor(i, bands, value);
 
             float x = startX + i * (barW + barGap);
@@ -693,6 +730,26 @@ namespace moosic
             {
                 dl->AddRectFilled(ImVec2(x, y), ImVec2(x + barW, bottomY),
                                   ImGui::GetColorU32(barColor));
+            }
+
+            // Draw bar gloss if enabled
+            if (m_style.UseGlossyBars && m_style.BarGlossIntensity > 0.0f)
+            {
+                float glossH = barH * 0.35f;
+                if (glossH > 1.0f)
+                {
+                    ImVec4 fadeOut = ImVec4(m_style.BarGlossColor.x, m_style.BarGlossColor.y, 
+                                             m_style.BarGlossColor.z, 0.0f);
+                    ImVec4 glossCol = m_style.BarGlossColor;
+                    glossCol.w *= m_style.BarGlossIntensity;
+                    
+                    ImU32 colTop = ImGui::GetColorU32(glossCol);
+                    ImU32 colBot = ImGui::GetColorU32(fadeOut);
+                    
+                    dl->AddRectFilledMultiColor(
+                        ImVec2(x, y), ImVec2(x + barW, y + glossH),
+                        colTop, colTop, colBot, colBot);
+                }
             }
 
             // Draw peak dot if enabled

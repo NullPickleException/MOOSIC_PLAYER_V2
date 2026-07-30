@@ -30,12 +30,27 @@
 #include "Themes/Ocean_Themes/SeafoamTheme.h"
 #include "Themes/Ocean_Themes/PearlTheme.h"
 
-
 #include "Themes/Coffee_Themes/CoffeeTheme.h"
 #include "Themes/Coffee_Themes/CoffeeCreamTheme.h"
 #include "Themes/Coffee_Themes/CoffeeBlackTheme.h"
 #include "Themes/Coffee_Themes/MatchaTheme.h"
 #include "Themes/Coffee_Themes/LatteTheme.h"
+
+#include "Themes/Classic_Themes/ClassicIceTheme.h"
+#include "Themes/Classic_Themes/ClassicBlueTheme.h"
+#include "Themes/Classic_Themes/ClassicGreenTheme.h"
+#include "Themes/Classic_Themes/ClassicAmberTheme.h"
+#include "Themes/Classic_Themes/ClassicRubyTheme.h"
+#include "Themes/Classic_Themes/ClassicCrimsonTheme.h"
+#include "Themes/Classic_Themes/ClassicVioletTheme.h"
+#include "Themes/Classic_Themes/ClassicBronzeTheme.h"
+#include "Themes/Classic_Themes/ClassicRoseTheme.h"
+#include "Themes/Classic_Themes/ClassicMintTheme.h"
+#include "Themes/Classic_Themes/ClassicLavenderTheme.h"
+#include "Themes/Classic_Themes/ClassicPeachTheme.h"
+#include "Themes/Classic_Themes/ClassicRoseGoldTheme.h"
+#include "Themes/Classic_Themes/ClassicCloudTheme.h"
+#include "Themes/Classic_Themes/ClassicBubblegumTheme.h"
 
 #include <vector>
 #include <string>
@@ -105,19 +120,34 @@ namespace moosic
             RegisterTheme("Tsunami", CreateTsunamiTheme);
             RegisterTheme("Seafoam", CreateSeafoamTheme);
             RegisterTheme("Pearl", CreatePearlTheme);
-        
-        
+
             //===================================
             // Coffee Themes
             //===================================
             RegisterTheme("Coffee", CreateCoffeeTheme);
-            RegisterTheme("Coffe Cream", CreateCoffeeCreamTheme);
-            RegisterTheme("Coffe Black", CreateCoffeeBlackTheme);
+            RegisterTheme("Coffee Cream", CreateCoffeeCreamTheme);
+            RegisterTheme("Coffee Black", CreateCoffeeBlackTheme);
             RegisterTheme("Matcha", CreateMatchaTheme);
             RegisterTheme("Latte", CreateLatteTheme);
-            
-        
-        
+
+            //===================================
+            // Ice Themes
+            //===================================
+            RegisterTheme("Classic Ice", CreateClassicIceTheme);
+            RegisterTheme("Classic Blue", CreateClassicBlueTheme);
+            RegisterTheme("Classic Green", CreateClassicGreenTheme);
+            RegisterTheme("Classic Amber", CreateClassicAmberTheme);
+            RegisterTheme("Classic Ruby", CreateClassicRubyTheme);
+            RegisterTheme("Classic Crimson", CreateClassicCrimsonTheme);
+            RegisterTheme("Classic Violet", CreateClassicVioletTheme);
+            RegisterTheme("Classic Bronze", CreateClassicBronzeTheme);
+            RegisterTheme("Classic Rose", CreateClassicRoseTheme);
+            RegisterTheme("Classic Mint", CreateClassicMintTheme);
+            RegisterTheme("Classic Lavender", CreateClassicLavenderTheme);
+            RegisterTheme("Classic Peach", CreateClassicPeachTheme);
+            RegisterTheme("Classic Rose Gold", CreateClassicRoseGoldTheme);
+            RegisterTheme("Classic Cloud", CreateClassicCloudTheme);
+            RegisterTheme("Classic Bubblegum", CreateClassicBubblegumTheme);
         }
 
         //--------------------------------------------------------------------------

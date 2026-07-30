@@ -1,8 +1,6 @@
 //==============================================================================
 // AlbumArtBox.h
 //==============================================================================
-// A flexible album art widget that adapts to any layout size
-//==============================================================================
 
 #pragma once
 
@@ -12,10 +10,6 @@
 namespace moosic
 {
 
-//==============================================================================
-// AlbumArtBoxTheme
-//==============================================================================
-
 struct AlbumArtBoxTheme
 {
     //--------------------------------------------------------------------------
@@ -23,10 +17,10 @@ struct AlbumArtBoxTheme
     //--------------------------------------------------------------------------
 
     ImVec4 BorderColor         = ImVec4(0.3f, 0.3f, 0.3f, 1.0f);
-    ImVec4 BorderColorHovered  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);   // Border when hovered
-    ImVec4 BorderColorClicked  = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);   // Border when clicked
+    ImVec4 BorderColorHovered  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+    ImVec4 BorderColorClicked  = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
     float BorderThickness      = 1.0f;
-    float BorderThicknessHovered = 2.0f;                              // Thicker border on hover
+    float BorderThicknessHovered = 2.0f;
     float BorderRounding       = 0.0f;
 
     //--------------------------------------------------------------------------
@@ -34,15 +28,15 @@ struct AlbumArtBoxTheme
     //--------------------------------------------------------------------------
 
     ImVec4 BackgroundColor       = ImVec4(0.08f, 0.08f, 0.10f, 1.0f);
-    ImVec4 BackgroundColorHovered = ImVec4(0.12f, 0.12f, 0.15f, 1.0f); // Slightly lighter on hover
+    ImVec4 BackgroundColorHovered = ImVec4(0.12f, 0.12f, 0.15f, 1.0f);
 
     //--------------------------------------------------------------------------
-    // Overlay (tinted overlay on hover/click for feedback)
+    // Overlay
     //--------------------------------------------------------------------------
 
     bool ShowHoverOverlay         = true;
-    ImVec4 HoverOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.08f);  // Subtle white overlay on hover
-    ImVec4 ClickOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.15f);  // Stronger overlay on click
+    ImVec4 HoverOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.08f);
+    ImVec4 ClickOverlayColor      = ImVec4(1.0f, 1.0f, 1.0f, 0.15f);
 
     //--------------------------------------------------------------------------
     // Shadow
@@ -62,14 +56,31 @@ struct AlbumArtBoxTheme
     const char* PlaceholderText = "No Art";
 
     //--------------------------------------------------------------------------
-    // Play Button Overlay (centered play icon on hover)
+    // Play Button Overlay
     //--------------------------------------------------------------------------
 
-    bool ShowPlayButtonOnHover      = false;                              // Show play icon when hovered
-    ImVec4 PlayButtonColor          = ImVec4(1.0f, 1.0f, 1.0f, 0.9f);   // Play icon color
-    ImVec4 PlayButtonBackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);  // Circle behind play icon
-    float PlayButtonSize            = 0.35f;                             // Size relative to box (0.35 = 35%)
+    bool ShowPlayButtonOnHover      = false;
+    ImVec4 PlayButtonColor          = ImVec4(1.0f, 1.0f, 1.0f, 0.9f);
+    ImVec4 PlayButtonBackgroundColor = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
+    float PlayButtonSize            = 0.35f;
+
+    //--------------------------------------------------------------------------
+    // Classic 2000s Album Art Effects
+    //--------------------------------------------------------------------------
+    
+    bool UseGlossyOverlay = false;
+    float GlossyIntensity = 0.0f;
+    ImVec4 GlossyHighlightColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+    
+    bool UseInnerShadow = false;
+    ImVec4 InnerShadowColor = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+    float InnerShadowSize = 0.0f;
+    
+    bool UseReflection = false;
+    float ReflectionHeight = 0.0f;
+    float ReflectionOpacity = 0.0f;
 };
+
 
 //==============================================================================
 // AlbumArtBox

@@ -15,15 +15,30 @@ struct LightboxTheme
     ImVec4 TitleColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     ImVec4 ArtistColor = ImVec4(0.7f, 0.7f, 0.7f, 1.0f);
     
-    // Sizing - Made smaller and more compact
-    float MaxWidth = 400.0f;        // Reduced from 500
-    float MaxHeight = 400.0f;       // Reduced from 500
-    float BorderRounding = 4.0f;    // Matches your content panel rounding
-    float BorderThickness = 1.0f;   // Added - matches your theme border thickness
-    float CloseButtonSize = 24.0f;  // Reduced from 30
-    float Padding = 30.0f;          // Reduced from 40
-    float TitleSpacing = 12.0f;     // Added - spacing between image and title
-    float ArtistSpacing = 8.0f;     // Added - spacing between title and artist
+    // Sizing
+    float MaxWidth = 400.0f;
+    float MaxHeight = 400.0f;
+    float BorderRounding = 4.0f;
+    float BorderThickness = 1.0f;
+    float CloseButtonSize = 24.0f;
+    float Padding = 30.0f;
+    float TitleSpacing = 12.0f;
+    float ArtistSpacing = 8.0f;
+
+    //--------------------------------------------------------------------------
+    // Classic 2000s Lightbox Effects
+    //--------------------------------------------------------------------------
+    
+    bool UseLightboxGloss = false;
+    float LightboxGlossIntensity = 0.0f;
+    ImVec4 LightboxGlossColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+    
+    bool UseLightboxGradient = false;
+    ImVec4 LightboxGradientTop = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
+    ImVec4 LightboxGradientBottom = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
+    
+    bool UseGlossyCloseButton = false;
+    float CloseButtonGlossIntensity = 0.0f;
 };
 
 class AlbumArtLightbox

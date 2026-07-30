@@ -133,7 +133,7 @@ namespace moosic
         m_theme.ShowCustomButtons = !labels.empty();
     }
 
-    void TitleBar::Render()
+        void TitleBar::Render()
     {
         if (!m_window)
             return;
@@ -164,12 +164,59 @@ namespace moosic
             ImVec2 size = ImGui::GetWindowSize();
             const float btnW = m_theme.ButtonWidth;
 
-            // Background
-            ImVec4 bg = m_isFocused ? m_theme.BackgroundColorActive : m_theme.BackgroundColorInactive;
-            bg.w *= m_theme.BackgroundOpacity;
-            dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(bg));
+            // ── Background (gradient or flat) ────────────────────────────
+            if (m_theme.UseTitleBarGradient)
+            {
+                dl->AddRectFilledMultiColor(
+                    pos, ImVec2(pos.x + size.x, pos.y + size.y),
+                    ImGui::GetColorU32(m_theme.TitleBarGradientTop),
+                    ImGui::GetColorU32(m_theme.TitleBarGradientTop),
+                    ImGui::GetColorU32(m_theme.TitleBarGradientBottom),
+                    ImGui::GetColorU32(m_theme.TitleBarGradientBottom));
+            }
+            else
+            {
+                ImVec4 bg = m_isFocused ? m_theme.BackgroundColorActive : m_theme.BackgroundColorInactive;
+                bg.w *= m_theme.BackgroundOpacity;
+                dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(bg));
+            }
 
-            // Window border
+            // ── Title bar gloss overlay ──────────────────────────────────
+            if (m_theme.UseTitleBarGloss && m_theme.TitleBarGlossIntensity > 0.0f)
+            {
+                float glossH = size.y * 0.45f;
+                ImVec4 glossCol = m_theme.TitleBarGlossColor;
+                glossCol.w *= m_theme.TitleBarGlossIntensity;
+                ImVec4 fadeOut = ImVec4(glossCol.x, glossCol.y, glossCol.z, 0.0f);
+                dl->AddRectFilledMultiColor(
+                    ImVec2(pos.x, pos.y + 1.0f),
+                    ImVec2(pos.x + size.x, pos.y + glossH),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(glossCol),
+                    ImGui::GetColorU32(fadeOut),
+                    ImGui::GetColorU32(fadeOut));
+            }
+
+            // ── Title bar bevel edges ────────────────────────────────────
+            if (m_theme.UseTitleBarBevel && m_theme.TitleBarBevelThickness > 0.0f)
+            {
+                float t = m_theme.TitleBarBevelThickness;
+                ImU32 lightCol = ImGui::GetColorU32(m_theme.TitleBarBevelLight);
+                ImU32 darkCol  = ImGui::GetColorU32(m_theme.TitleBarBevelDark);
+                
+                // Top light edge
+                dl->AddRectFilled(
+                    ImVec2(pos.x, pos.y),
+                    ImVec2(pos.x + size.x, pos.y + t),
+                    lightCol);
+                // Bottom dark edge
+                dl->AddRectFilled(
+                    ImVec2(pos.x, pos.y + size.y - t),
+                    ImVec2(pos.x + size.x, pos.y + size.y),
+                    darkCol);
+            }
+
+            // ── Window border ────────────────────────────────────────────
             if (m_theme.ShowWindowBorder && m_theme.WindowBorderThickness > 0.0f)
             {
                 dl->AddRect(
@@ -198,12 +245,12 @@ namespace moosic
                 }
             }
 
-            // Accent
+            // ── Accent ───────────────────────────────────────────────────
             if (m_theme.ShowAccentLine)
                 dl->AddLine(pos, ImVec2(pos.x + size.x, pos.y),
                             ImGui::GetColorU32(m_theme.AccentLineColor), m_theme.AccentLineThickness);
 
-            // Logo
+            // ── Logo ─────────────────────────────────────────────────────
             float xOff = m_theme.TitleOffsetX;
             if (m_theme.ShowLogo && m_logoTexture)
             {
@@ -215,14 +262,14 @@ namespace moosic
                 xOff = m_theme.LogoPaddingLeft + logoW + m_theme.LogoPaddingRight;
             }
 
-            // Title
+            // ── Title ────────────────────────────────────────────────────
             ImVec4 tc = m_isFocused ? m_theme.TitleTextColor : m_theme.TitleTextColorInactive;
             dl->AddText(ImVec2(pos.x + xOff, pos.y + (barH - ImGui::GetTextLineHeight()) * 0.5f),
                         ImGui::GetColorU32(tc), m_theme.TitleText.c_str());
 
             float xPos = size.x - btnW * 3.0f;
 
-            // Custom buttons
+            // ── Custom buttons ───────────────────────────────────────────
             if (m_theme.ShowCustomButtons && !m_customButtonLabels.empty())
             {
                 xPos -= btnW * (float)m_customButtonLabels.size();
@@ -247,7 +294,7 @@ namespace moosic
                 xPos += btnW * (float)m_customButtonLabels.size();
             }
 
-            // Minimize
+            // ── Minimize ─────────────────────────────────────────────────
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Min", ImVec2(btnW, barH)))
                 SDL_MinimizeWindow(m_window);
@@ -262,7 +309,7 @@ namespace moosic
             }
             xPos += btnW;
 
-            // Maximize
+            // ── Maximize ─────────────────────────────────────────────────
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Max", ImVec2(btnW, barH)))
             {
@@ -293,7 +340,7 @@ namespace moosic
             }
             xPos += btnW;
 
-            // Close
+            // ── Close ────────────────────────────────────────────────────
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Cls", ImVec2(btnW, barH)))
             {
@@ -314,7 +361,7 @@ namespace moosic
                             ImGui::GetColorU32(m_theme.CloseButtonColor), t);
             }
 
-            // Bottom border
+            // ── Bottom border ────────────────────────────────────────────
             if (m_theme.ShowBottomBorder)
                 dl->AddLine(ImVec2(pos.x, pos.y + size.y), ImVec2(pos.x + size.x, pos.y + size.y),
                             ImGui::GetColorU32(m_theme.BottomBorderColor), m_theme.BottomBorderThickness);
@@ -326,6 +373,7 @@ namespace moosic
         ImGui::PopStyleVar(4);
     }
 
+    
     //==============================================================================
     // SDL Hit Testing - Platform-aware
     //==============================================================================
