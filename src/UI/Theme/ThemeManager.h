@@ -52,6 +52,26 @@
 #include "Themes/Classic_Themes/ClassicCloudTheme.h"
 #include "Themes/Classic_Themes/ClassicBubblegumTheme.h"
 
+#include "Themes/Solorized_Themes/SolarizedDark.h"
+#include "Themes/Solorized_Themes/SolarizedLight.h"
+
+#include "Themes/Gothic_Themes/CrimsonNightTheme.h"
+#include "Themes/Gothic_Themes/BloodMoonTheme.h"
+#include "Themes/Gothic_Themes/RavenTheme.h"
+#include "Themes/Gothic_Themes/CathedralTheme.h"
+#include "Themes/Gothic_Themes/ObsidianTheme.h"
+#include "Themes/Gothic_Themes/MidnightChapelTheme.h"
+#include "Themes/Gothic_Themes/BlackRoseTheme.h"
+#include "Themes/Gothic_Themes/PhantomTheme.h"
+#include "Themes/Gothic_Themes/VampireTheme.h"
+#include "Themes/Gothic_Themes/AshenTheme.h"
+#include "Themes/Gothic_Themes/CursedEmeraldTheme.h"
+#include "Themes/Gothic_Themes/WinterMorningTheme.h"
+#include "Themes/Gothic_Themes/ThornedBerryTheme.h"
+#include "Themes/Gothic_Themes/AmberChapelTheme.h"
+#include "Themes/Gothic_Themes/NightCreaturesTheme.h"
+#include "Themes/Gothic_Themes/ForgottenCemeteryTheme.h"
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -148,6 +168,32 @@ namespace moosic
             RegisterTheme("Classic Rose Gold", CreateClassicRoseGoldTheme);
             RegisterTheme("Classic Cloud", CreateClassicCloudTheme);
             RegisterTheme("Classic Bubblegum", CreateClassicBubblegumTheme);
+
+            //===================================
+            // Solarized Themes
+            //===================================
+            RegisterTheme("Solarized Dark", CreateSolarizedDarkTheme);
+            RegisterTheme("Solarized Light", CreateSolarizedLightTheme);
+
+            //===================================
+            // Gothic Themes
+            //===================================
+            RegisterTheme("Crimson Night", CreateCrimsonNightTheme);
+            RegisterTheme("Blood Moon", CreateBloodMoonTheme);
+            RegisterTheme("Raven", CreateRavenTheme);
+            RegisterTheme("Cathedral", CreateCathedralTheme);
+            RegisterTheme("Obsidian", CreateObsidianTheme);
+            RegisterTheme("Midnight Chapel", CreateMidnightChapelTheme);
+            RegisterTheme("Black Rose", CreateBlackRoseTheme);
+            RegisterTheme("Phantom", CreatePhantomTheme);
+            RegisterTheme("Vampire", CreateVampireTheme);
+            RegisterTheme("Ashen", CreateAshenTheme);
+            RegisterTheme("Cursed Emerald", CreateCursedEmeraldTheme);
+            RegisterTheme("Winter Morning", CreateWinterMorningTheme);
+            RegisterTheme("Thorned Berry", CreateThornedBerryTheme);
+            RegisterTheme("Amber Chapel", CreateAmberChapelTheme);
+            RegisterTheme("Night Creatures", CreateNightCreaturesTheme);
+            RegisterTheme("Forgotten Cemetery", CreateForgottenCemeteryTheme);
         }
 
         //--------------------------------------------------------------------------

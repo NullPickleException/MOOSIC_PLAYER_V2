@@ -47,11 +47,12 @@ namespace moosic
         const ImVec4 IceSubtle       = ImVec4(0.00f, 0.66f, 1.00f, 0.10f);
         const ImVec4 SearchDropdownBg = ImVec4(0.82f, 0.96f, 0.99f, 1.00f);
 
-        // ── Text ─────────────────────────────────────────────────────
-        const ImVec4 TextBright      = ImVec4(0.99f, 0.99f, 1.00f, 1.00f);
-        const ImVec4 TextMuted       = ImVec4(0.42f, 0.66f, 0.82f, 1.00f);
-        const ImVec4 TextDim         = ImVec4(0.28f, 0.48f, 0.65f, 1.00f);
-        const ImVec4 TextWhite       = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+        // ── Text (Dark Blue tones for readability on light bg) ──────
+        const ImVec4 TextDark        = ImVec4(0.05f, 0.15f, 0.35f, 1.00f);  // #0D2659 - Primary dark text
+        const ImVec4 TextDarkMuted   = ImVec4(0.10f, 0.25f, 0.50f, 1.00f);  // #1A4080 - Secondary text
+        const ImVec4 TextDarkDim     = ImVec4(0.20f, 0.40f, 0.65f, 1.00f);  // #3366A6 - Dimmed text
+        const ImVec4 TextWhite       = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);  // #FFFFFF - Text on dark bg
+        const ImVec4 TextBright      = ImVec4(0.90f, 0.95f, 1.00f, 1.00f);  // #E6F2FF - Light text
 
         // ── Borders ───────────────────────────────────────────────────
         const ImVec4 BorderSubtle    = ImVec4(0.35f, 0.72f, 0.92f, 1.00f);
@@ -63,7 +64,7 @@ namespace moosic
         const ImVec4 BevelBorder     = ImVec4(0.10f, 0.50f, 0.80f, 0.65f);
 
         //==========================================================================
-        // Title Bar
+        // Title Bar (keeps white text on blue gradient background)
         //==========================================================================
 
         t.TitleBar.BackgroundColor           = ImVec4(0.20f, 0.55f, 0.80f, 1.00f);
@@ -76,8 +77,8 @@ namespace moosic
         t.TitleBar.WindowBorderColor         = SkyBlueMid;
         t.TitleBar.ShowAccentLine            = true;
         t.TitleBar.AccentLineColor           = Accent;
-        t.TitleBar.TitleTextColor            = TextBright;
-        t.TitleBar.TitleTextColorInactive    = TextDim;
+        t.TitleBar.TitleTextColor            = TextWhite;          // White on dark blue title bar
+        t.TitleBar.TitleTextColorInactive    = TextBright;         // Light on inactive
 
         // Title bar classic effects
         t.TitleBar.UseTitleBarGradient       = true;
@@ -99,8 +100,8 @@ namespace moosic
         t.ContentPanel.TabInactive           = WhiteIceDefault;
         t.ContentPanel.TabHovered            = WhiteIceAlt;
         t.ContentPanel.TabRounding           = 4.0f;
-        t.ContentPanel.TabText               = TextWhite;
-        t.ContentPanel.TabTextInactive       = TextMuted;
+        t.ContentPanel.TabText               = TextWhite;          // White on accent tabs
+        t.ContentPanel.TabTextInactive       = TextDark;           // Dark on light inactive tabs
         t.ContentPanel.ButtonNormal          = SkyBlueDark;
         t.ContentPanel.ButtonHovered         = SkyBlueMid;
         t.ContentPanel.ButtonActive          = AccentDark;
@@ -131,11 +132,11 @@ namespace moosic
         t.Window.WindowBorder                = BorderSubtle;
         t.Window.TitleBar                    = WhiteIceDefault;
         t.Window.TitleBarActive              = WhiteIceAlt;
-        t.Window.HeaderText                  = TextBright;
-        t.Window.TextPrimary                 = TextBright;
-        t.Window.TextSecondary               = TextMuted;
-        t.Window.TextDisabled                = TextDim;
-        t.Window.BrandText                   = Accent;
+        t.Window.HeaderText                  = TextDark;           // Dark text on light header
+        t.Window.TextPrimary                 = TextDark;           // Dark primary text
+        t.Window.TextSecondary               = TextDarkMuted;      // Muted dark text
+        t.Window.TextDisabled                = TextDarkDim;        // Dimmed dark text
+        t.Window.BrandText                   = Accent;             // Accent remains bright
 
         t.Window.ButtonNormal                = SkyBlueDark;
         t.Window.ButtonHovered               = SkyBlueMid;
@@ -162,15 +163,15 @@ namespace moosic
         //==========================================================================
 
         t.TrackTable.HeaderBackground        = SkyBlueDark;
-        t.TrackTable.HeaderTextColor         = TextBright;
+        t.TrackTable.HeaderTextColor         = TextWhite;          // White on colored header
         t.TrackTable.HeaderBorderColor       = BorderSubtle;
         t.TrackTable.HeaderHovered           = WhiteIceSurface;
         t.TrackTable.HeaderActive            = Accent;
-        t.TrackTable.HeaderTextTitle         = TextBright;
-        t.TrackTable.HeaderTextArtist        = TextBright;
-        t.TrackTable.HeaderTextAlbum         = TextBright;
-        t.TrackTable.HeaderTextExtension     = TextBright;
-        t.TrackTable.HeaderTextDuration      = TextBright;
+        t.TrackTable.HeaderTextTitle         = TextWhite;
+        t.TrackTable.HeaderTextArtist        = TextWhite;
+        t.TrackTable.HeaderTextAlbum         = TextWhite;
+        t.TrackTable.HeaderTextExtension     = TextWhite;
+        t.TrackTable.HeaderTextDuration      = TextWhite;
         t.TrackTable.RowDefault              = WhiteIceDeep;
         t.TrackTable.RowDefaultAlt           = WhiteIceDefault;
         t.TrackTable.RowHovered              = IceVeryLight;
@@ -180,15 +181,15 @@ namespace moosic
         t.TrackTable.RowHeight               = 18.0f;
         t.TrackTable.RowPaddingX             = 4.0f;
         t.TrackTable.RowPaddingY             = 2.0f;
-        t.TrackTable.TextColor               = TextBright;
-        t.TrackTable.TextDim                 = TextDim;
-        t.TrackTable.TextSelected            = TextWhite;
-        t.TrackTable.TextPlaying             = TextWhite;
-        t.TrackTable.RowTextTitle            = TextBright;
-        t.TrackTable.RowTextArtist           = TextMuted;
-        t.TrackTable.RowTextAlbum            = TextMuted;
-        t.TrackTable.RowTextExtension        = TextDim;
-        t.TrackTable.RowTextDuration         = TextMuted;
+        t.TrackTable.TextColor               = TextDark;           // Dark text on light rows
+        t.TrackTable.TextDim                 = TextDarkDim;
+        t.TrackTable.TextSelected            = TextWhite;          // White on selected (colored bg)
+        t.TrackTable.TextPlaying             = TextWhite;          // White on playing (accent bg)
+        t.TrackTable.RowTextTitle            = TextDark;
+        t.TrackTable.RowTextArtist           = TextDarkMuted;
+        t.TrackTable.RowTextAlbum            = TextDarkMuted;
+        t.TrackTable.RowTextExtension        = TextDarkDim;
+        t.TrackTable.RowTextDuration         = TextDarkMuted;
         t.TrackTable.BorderColor             = BorderSubtle;
         t.TrackTable.BorderThickness         = 1.0f;
         t.TrackTable.ShowRowSeparators       = true;
@@ -230,7 +231,7 @@ namespace moosic
         t.Visualizer.WaveformFillColor       = ImVec4(Accent.x, Accent.y, Accent.z, 0.15f);
         t.Visualizer.GridColor               = ImVec4(SkyBlueDark.x, SkyBlueDark.y, SkyBlueDark.z, 0.30f);
         t.Visualizer.BorderColor             = BorderSubtle;
-        t.Visualizer.PlaceholderColor        = TextDim;
+        t.Visualizer.PlaceholderColor        = TextDarkDim;
         t.Visualizer.UseColorRamp            = true;
         t.Visualizer.SpectrumColorLow        = AccentDark;
         t.Visualizer.SpectrumColorMid        = Accent;
@@ -270,7 +271,7 @@ namespace moosic
         t.AlbumArtBox.BackgroundColorHovered = WhiteIceAlt;
         t.AlbumArtBox.ShowShadow             = true;
         t.AlbumArtBox.ShadowColor            = ImVec4(0.0f, 0.0f, 0.0f, 0.45f);
-        t.AlbumArtBox.PlaceholderTextColor   = TextDim;
+        t.AlbumArtBox.PlaceholderTextColor   = TextDarkDim;
         t.AlbumArtBox.ShowHoverOverlay       = true;
         t.AlbumArtBox.HoverOverlayColor      = ImVec4(Accent.x, Accent.y, Accent.z, 0.12f);
         t.AlbumArtBox.ClickOverlayColor      = ImVec4(Accent.x, Accent.y, Accent.z, 0.22f);
@@ -293,10 +294,10 @@ namespace moosic
 
         t.AlbumArtLightbox.BackgroundColor      = ImVec4(0.10f, 0.40f, 0.62f, 0.95f);
         t.AlbumArtLightbox.BorderColor          = SkyBlueDark;
-        t.AlbumArtLightbox.CloseButtonColor     = TextMuted;
+        t.AlbumArtLightbox.CloseButtonColor     = TextBright;         // Light on dark overlay
         t.AlbumArtLightbox.CloseButtonHovered   = Accent;
-        t.AlbumArtLightbox.TitleColor           = TextBright;
-        t.AlbumArtLightbox.ArtistColor          = TextMuted;
+        t.AlbumArtLightbox.TitleColor           = TextWhite;          // White on dark overlay
+        t.AlbumArtLightbox.ArtistColor          = TextBright;         // Light on dark overlay
         t.AlbumArtLightbox.MaxWidth             = 400.0f;
         t.AlbumArtLightbox.MaxHeight            = 400.0f;
         t.AlbumArtLightbox.BorderRounding       = 4.0f;
@@ -321,14 +322,14 @@ namespace moosic
         t.SearchBar.shadowColor              = ImVec4(0.0f, 0.0f, 0.0f, 0.45f);
         t.SearchBar.backgroundColor          = SearchDropdownBg;
         t.SearchBar.borderColor              = SkyBlueMid;
-        t.SearchBar.textColor                = TextBright;
+        t.SearchBar.textColor                = TextDark;           // Dark text in search
         t.SearchBar.highlightTextColor       = Accent;
         t.SearchBar.rowHoverColor            = WhiteIceAlt;
         t.SearchBar.separatorColor           = BorderSubtle;
         t.SearchBar.inputBgColor             = WhiteIceDefault;
         t.SearchBar.inputBorderColor         = SkyBlueMid;
-        t.SearchBar.inputTextColor           = TextBright;
-        t.SearchBar.inputHintColor           = TextDim;
+        t.SearchBar.inputTextColor           = TextDark;           // Dark text in input
+        t.SearchBar.inputHintColor           = TextDarkDim;
         t.SearchBar.UseSearchGloss           = true;
         t.SearchBar.SearchGlossIntensity     = 0.30f;
         t.SearchBar.SearchGlossColor         = GlossStrong;
@@ -344,8 +345,8 @@ namespace moosic
         // Player Bar
         //==========================================================================
 
-        t.PlayerBar.TextPrimary                 = t.Window.TextPrimary;
-        t.PlayerBar.TextSecondary               = t.Window.TextSecondary;
+        t.PlayerBar.TextPrimary                 = TextDark;        // Dark text on light player bar
+        t.PlayerBar.TextSecondary               = TextDarkMuted;
         t.PlayerBar.ButtonNormal                = WhiteIceDeep;
         t.PlayerBar.ButtonHovered               = SkyBlueMid;
         t.PlayerBar.ButtonActive                = AccentDark;
@@ -405,10 +406,10 @@ namespace moosic
 
         t.ContextMenu.BackgroundColor           = SearchDropdownBg;
         t.ContextMenu.BorderColor               = SkyBlueMid;
-        t.ContextMenu.TextColor                 = TextBright;
-        t.ContextMenu.TextDisabledColor         = TextDim;
+        t.ContextMenu.TextColor                 = TextDark;        // Dark text in menu
+        t.ContextMenu.TextDisabledColor         = TextDarkDim;
         t.ContextMenu.HoverColor                = Accent;
-        t.ContextMenu.HoverTextColor            = TextWhite;
+        t.ContextMenu.HoverTextColor            = TextWhite;       // White on accent hover
         t.ContextMenu.SeparatorColor            = BorderSubtle;
         t.ContextMenu.ShadowColor               = ImVec4(0.0f, 0.0f, 0.0f, 0.45f);
         t.ContextMenu.UseMenuGloss              = true;

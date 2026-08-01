@@ -41,9 +41,9 @@ namespace moosic
 
         // Load default logo from assets folder
         std::vector<std::string> logoPaths = {
-            "assets/Logo_img/COW_IMAGE.png",
-            "../assets/Logo_img/COW_IMAGE.png",
-            "../../assets/Logo_img/COW_IMAGE.png"};
+            "assets/Logo_img/Moosic_Logo_Default.png",
+            "../assets/Logo_img/Moosic_Logo_Default.png",
+            "../../assets/Logo_img/Moosic_Logo_Default.png"};
 
         for (const auto &path : logoPaths)
         {
@@ -81,30 +81,53 @@ namespace moosic
         // Convert to RGBA
         ImageData rgbaData = loader.ToRGBA(imageData);
 
-        // Create surface from RGBA data (same approach as working code)
-        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+        // Calculate desired logo size (height = title bar height - padding) WITH SCALE
+        int targetHeight = (int)((m_theme.Height - 6.0f) * m_theme.LogoScale);  // <<-- CHANGE HERE: Added * m_theme.LogoScale
+        int targetWidth = (int)(targetHeight * ((float)rgbaData.width / (float)rgbaData.height));
+        
+        // If the logo is pixel art, use nearest neighbor scaling
+        bool isPixelArt = true;
+        if (isPixelArt && (rgbaData.width != targetWidth || rgbaData.height != targetHeight)) {
+            int scale = 1;
+            while (rgbaData.width * (scale + 1) <= targetWidth && 
+                   rgbaData.height * (scale + 1) <= targetHeight) {
+                scale++;
+            }
+            
+            if (scale > 1) {
+                int newWidth = rgbaData.width * scale;
+                int newHeight = rgbaData.height * scale;
+                
+                if (newWidth <= targetWidth * 1.5f && newHeight <= targetHeight * 1.5f) {
+                    rgbaData = loader.ResizePixelArt(rgbaData, newWidth, newHeight, true);
+                } else {
+                    rgbaData = loader.Resize(rgbaData, targetWidth, targetHeight);
+                }
+            }
+        }
+
+        SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(
             rgbaData.data.data(),
             rgbaData.width,
             rgbaData.height,
             32,
             rgbaData.width * 4,
-            0x000000FF,  // R mask
-            0x0000FF00,  // G mask
-            0x00FF0000,  // B mask
-            0xFF000000   // A mask
+            0x000000FF,
+            0x0000FF00,
+            0x00FF0000,
+            0xFF000000
         );
 
         if (!surface)
             return false;
 
-        // Create texture from surface (handles format conversion automatically)
-        SDL_Texture* texture = SDL_CreateTextureFromSurface(m_renderer, surface);
-
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(m_renderer, surface);
         SDL_FreeSurface(surface);
 
         if (!texture)
             return false;
 
+        SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
         SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
 
         m_logoTexture = texture;
@@ -133,7 +156,7 @@ namespace moosic
         m_theme.ShowCustomButtons = !labels.empty();
     }
 
-        void TitleBar::Render()
+    void TitleBar::Render()
     {
         if (!m_window)
             return;
@@ -164,7 +187,7 @@ namespace moosic
             ImVec2 size = ImGui::GetWindowSize();
             const float btnW = m_theme.ButtonWidth;
 
-            // ── Background (gradient or flat) ────────────────────────────
+            // ── Background ──
             if (m_theme.UseTitleBarGradient)
             {
                 dl->AddRectFilledMultiColor(
@@ -181,7 +204,7 @@ namespace moosic
                 dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), ImGui::GetColorU32(bg));
             }
 
-            // ── Title bar gloss overlay ──────────────────────────────────
+            // ── Title bar gloss ──
             if (m_theme.UseTitleBarGloss && m_theme.TitleBarGlossIntensity > 0.0f)
             {
                 float glossH = size.y * 0.45f;
@@ -197,26 +220,24 @@ namespace moosic
                     ImGui::GetColorU32(fadeOut));
             }
 
-            // ── Title bar bevel edges ────────────────────────────────────
+            // ── Title bar bevel ──
             if (m_theme.UseTitleBarBevel && m_theme.TitleBarBevelThickness > 0.0f)
             {
                 float t = m_theme.TitleBarBevelThickness;
                 ImU32 lightCol = ImGui::GetColorU32(m_theme.TitleBarBevelLight);
-                ImU32 darkCol  = ImGui::GetColorU32(m_theme.TitleBarBevelDark);
-                
-                // Top light edge
+                ImU32 darkCol = ImGui::GetColorU32(m_theme.TitleBarBevelDark);
+
                 dl->AddRectFilled(
                     ImVec2(pos.x, pos.y),
                     ImVec2(pos.x + size.x, pos.y + t),
                     lightCol);
-                // Bottom dark edge
                 dl->AddRectFilled(
                     ImVec2(pos.x, pos.y + size.y - t),
                     ImVec2(pos.x + size.x, pos.y + size.y),
                     darkCol);
             }
 
-            // ── Window border ────────────────────────────────────────────
+            // ── Window border ──
             if (m_theme.ShowWindowBorder && m_theme.WindowBorderThickness > 0.0f)
             {
                 dl->AddRect(
@@ -245,16 +266,16 @@ namespace moosic
                 }
             }
 
-            // ── Accent ───────────────────────────────────────────────────
+            // ── Accent ──
             if (m_theme.ShowAccentLine)
                 dl->AddLine(pos, ImVec2(pos.x + size.x, pos.y),
                             ImGui::GetColorU32(m_theme.AccentLineColor), m_theme.AccentLineThickness);
 
-            // ── Logo ─────────────────────────────────────────────────────
+            // ── Logo ──
             float xOff = m_theme.TitleOffsetX;
             if (m_theme.ShowLogo && m_logoTexture)
             {
-                float logoH = barH - 6.0f;
+                float logoH = (barH - 6.0f) * m_theme.LogoScale;  // <<-- CHANGE HERE: Added * m_theme.LogoScale
                 float logoW = logoH * ((float)m_logoWidth / (float)m_logoHeight);
                 float yOff = 3.0f;
                 ImVec2 lp(pos.x + m_theme.LogoPaddingLeft, pos.y + yOff);
@@ -262,14 +283,14 @@ namespace moosic
                 xOff = m_theme.LogoPaddingLeft + logoW + m_theme.LogoPaddingRight;
             }
 
-            // ── Title ────────────────────────────────────────────────────
+            // ── Title ──
             ImVec4 tc = m_isFocused ? m_theme.TitleTextColor : m_theme.TitleTextColorInactive;
             dl->AddText(ImVec2(pos.x + xOff, pos.y + (barH - ImGui::GetTextLineHeight()) * 0.5f),
                         ImGui::GetColorU32(tc), m_theme.TitleText.c_str());
 
             float xPos = size.x - btnW * 3.0f;
 
-            // ── Custom buttons ───────────────────────────────────────────
+            // ── Custom buttons ──
             if (m_theme.ShowCustomButtons && !m_customButtonLabels.empty())
             {
                 xPos -= btnW * (float)m_customButtonLabels.size();
@@ -294,7 +315,7 @@ namespace moosic
                 xPos += btnW * (float)m_customButtonLabels.size();
             }
 
-            // ── Minimize ─────────────────────────────────────────────────
+            // ── Minimize ──
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Min", ImVec2(btnW, barH)))
                 SDL_MinimizeWindow(m_window);
@@ -309,7 +330,7 @@ namespace moosic
             }
             xPos += btnW;
 
-            // ── Maximize ─────────────────────────────────────────────────
+            // ── Maximize ──
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Max", ImVec2(btnW, barH)))
             {
@@ -340,7 +361,7 @@ namespace moosic
             }
             xPos += btnW;
 
-            // ── Close ────────────────────────────────────────────────────
+            // ── Close ──
             ImGui::SetCursorPos(ImVec2(xPos, 0));
             if (ImGui::InvisibleButton("##Cls", ImVec2(btnW, barH)))
             {
@@ -361,7 +382,7 @@ namespace moosic
                             ImGui::GetColorU32(m_theme.CloseButtonColor), t);
             }
 
-            // ── Bottom border ────────────────────────────────────────────
+            // ── Bottom border ──
             if (m_theme.ShowBottomBorder)
                 dl->AddLine(ImVec2(pos.x, pos.y + size.y), ImVec2(pos.x + size.x, pos.y + size.y),
                             ImGui::GetColorU32(m_theme.BottomBorderColor), m_theme.BottomBorderThickness);
@@ -373,9 +394,8 @@ namespace moosic
         ImGui::PopStyleVar(4);
     }
 
-    
     //==============================================================================
-    // SDL Hit Testing - Platform-aware
+    // SDL Hit Testing
     //==============================================================================
 
     SDL_HitTestResult TitleBar::HitTestCallback(SDL_Window *, const SDL_Point *area, void *data)
@@ -402,14 +422,22 @@ namespace moosic
         bool top = area->y < B;
         bool bottom = area->y >= h - B;
 
-        if (left && top) return SDL_HITTEST_RESIZE_TOPLEFT;
-        if (right && top) return SDL_HITTEST_RESIZE_TOPRIGHT;
-        if (left && bottom) return SDL_HITTEST_RESIZE_BOTTOMLEFT;
-        if (right && bottom) return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
-        if (left) return SDL_HITTEST_RESIZE_LEFT;
-        if (right) return SDL_HITTEST_RESIZE_RIGHT;
-        if (top) return SDL_HITTEST_RESIZE_TOP;
-        if (bottom) return SDL_HITTEST_RESIZE_BOTTOM;
+        if (left && top)
+            return SDL_HITTEST_RESIZE_TOPLEFT;
+        if (right && top)
+            return SDL_HITTEST_RESIZE_TOPRIGHT;
+        if (left && bottom)
+            return SDL_HITTEST_RESIZE_BOTTOMLEFT;
+        if (right && bottom)
+            return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
+        if (left)
+            return SDL_HITTEST_RESIZE_LEFT;
+        if (right)
+            return SDL_HITTEST_RESIZE_RIGHT;
+        if (top)
+            return SDL_HITTEST_RESIZE_TOP;
+        if (bottom)
+            return SDL_HITTEST_RESIZE_BOTTOM;
 
         if (area->y < (int)m_theme.Height)
         {
@@ -427,7 +455,7 @@ namespace moosic
             int w, h;
             SDL_GetWindowSize(m_window, &w, &h);
             int buttonArea = w - (int)(m_theme.ButtonWidth * (3 + m_customButtonLabels.size()));
-            
+
             if (area->x >= buttonArea)
                 return SDL_HITTEST_NORMAL;
             return SDL_HITTEST_DRAGGABLE;

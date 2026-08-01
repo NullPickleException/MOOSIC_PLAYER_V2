@@ -47,6 +47,7 @@ namespace moosic
         float LogoSize = 24.0f;
         float LogoPaddingLeft = 10.0f;
         float LogoPaddingRight = 8.0f;
+        float LogoScale = 1.00f; 
 
         // ── Window Buttons ──
         float ButtonWidth = 46.0f;
@@ -66,7 +67,7 @@ namespace moosic
         ImVec4 CustomButtonHoverBg = ImVec4(1.0f, 1.0f, 1.0f, 0.16f);
 
         // ── Layout ──
-        float Height = 35.0f;
+        float Height = 40.0f;
         float ResizeBorderWidth = 8.0f;
 
         int MinWindowWidth = 590;

@@ -243,7 +243,7 @@ void SettingsWindow::DrawLogoSelector()
     ImGui::PopStyleColor(3);
     
     ImGui::SameLine();
-    ImGui::TextColored(m_theme.TextDisabled, "Default: COW_IMAGE.png");
+    ImGui::TextColored(m_theme.TextDisabled, "Default: Moosic_Logo_Default.png");
 }
 
 void SettingsWindow::ApplySelectedLogo(int index)
