@@ -15,6 +15,7 @@ namespace moosic
     class PlaylistDataModel;
     class PlaybackController;
     class SettingsDataModel;
+    struct LayoutStateDataModel;
 }
 
 namespace moosic
@@ -32,12 +33,14 @@ public:
     bool Save(const MusicLibrary& library,
               const PlaylistDataModel& playlists,
               const PlaybackController& controller,
-              const SettingsDataModel& settings);
+              const SettingsDataModel& settings,
+              const LayoutStateDataModel& layoutState);
               
     bool Load(MusicLibrary& library,
               PlaylistDataModel& playlists,
               PlaybackController& controller,
-              SettingsDataModel& settings);
+              SettingsDataModel& settings,
+              LayoutStateDataModel& layoutState);
 
 private:
     std::filesystem::path m_savePath;

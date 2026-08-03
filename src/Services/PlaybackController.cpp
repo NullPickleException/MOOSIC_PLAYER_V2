@@ -1,5 +1,5 @@
 //==============================================================================
-// Services/PlaybackController.cpp
+// Services/PlaybackController.cpp (REVISED)
 //==============================================================================
 
 #include "PlaybackController.h"
@@ -23,11 +23,17 @@ PlaybackController::PlaybackController(MusicLibrary& library)
 }
 
 //==============================================================================
-// Safe Track Lookup
+// Safe Track Lookup (REVISED - checks both library AND temporary tracks)
 //==============================================================================
 
 const MusicTrack* PlaybackController::GetTrackById(std::size_t id) const
 {
+    // First check temporary tracks (owned by controller)
+    auto tempIt = m_allTracks.find(id);
+    if (tempIt != m_allTracks.end())
+        return tempIt->second;
+    
+    // Then check library tracks
     const auto& tracks = m_library.GetTracks();
     auto it = std::find_if(tracks.begin(), tracks.end(),
                            [id](const MusicTrack& t)
@@ -42,8 +48,13 @@ const MusicTrack* PlaybackController::GetCurrentTrackSafe() const
     return nullptr;
 }
 
+// REVISED: Don't increment play count for temporary tracks
 void PlaybackController::IncrementPlayCount(std::size_t trackId)
 {
+    // Only increment for library tracks (not temporary)
+    if (trackId >= TEMPORARY_TRACK_ID_START)
+        return;
+    
     auto& tracks = m_library.GetTracks();
     for (auto& t : tracks)
     {
@@ -53,6 +64,75 @@ void PlaybackController::IncrementPlayCount(std::size_t trackId)
             break;
         }
     }
+}
+
+//==============================================================================
+// Temporary Track Management (NEW)
+//==============================================================================
+
+void PlaybackController::SetTemporaryTrack(const MusicTrack& track)
+{
+    // Create a copy of the track that we own
+    auto tempTrack = std::make_unique<MusicTrack>(track);
+    
+    // Assign a temporary ID
+    tempTrack->SetId(m_nextTemporaryId);
+    
+    // Store the raw pointer for quick access
+    MusicTrack* trackPtr = tempTrack.get();
+    
+    // Store in our owned collections
+    m_temporaryTracks.push_back(std::move(tempTrack));
+    m_allTracks[m_nextTemporaryId] = trackPtr;
+    
+    // Set as current track list
+    m_currentTrackIds.clear();
+    m_currentTrackIds.push_back(m_nextTemporaryId);
+    m_currentIndex = 0;
+    
+    // Open in audio engine
+    m_audioEngine.Open(*trackPtr);
+    m_audioEngine.SetPosition(0.0f);
+    m_trackEndProcessed = false;
+    
+    m_nextTemporaryId--;
+    
+    std::cout << "[PlaybackController] Set temporary track: " 
+              << trackPtr->GetTitle() << std::endl;
+}
+
+void PlaybackController::SetTemporaryTrack(MusicTrack&& track)
+{
+    // Move the track into our ownership
+    auto tempTrack = std::make_unique<MusicTrack>(std::move(track));
+    
+    tempTrack->SetId(m_nextTemporaryId);
+    MusicTrack* trackPtr = tempTrack.get();
+    
+    m_temporaryTracks.push_back(std::move(tempTrack));
+    m_allTracks[m_nextTemporaryId] = trackPtr;
+    
+    m_currentTrackIds.clear();
+    m_currentTrackIds.push_back(m_nextTemporaryId);
+    m_currentIndex = 0;
+    
+    m_audioEngine.Open(*trackPtr);
+    m_audioEngine.SetPosition(0.0f);
+    m_trackEndProcessed = false;
+    
+    m_nextTemporaryId--;
+    
+    std::cout << "[PlaybackController] Set temporary track (moved): " 
+              << trackPtr->GetTitle() << std::endl;
+}
+
+bool PlaybackController::IsCurrentTrackTemporary() const
+{
+    if (m_currentIndex >= m_currentTrackIds.size())
+        return false;
+    
+    std::size_t currentId = m_currentTrackIds[m_currentIndex];
+    return currentId >= TEMPORARY_TRACK_ID_START;
 }
 
 //==============================================================================
@@ -103,7 +183,7 @@ void PlaybackController::SelectTrackByIndex(size_t index)
             m_audioEngine.SetPosition(0.0f);
             m_trackEndProcessed = false;
 
-            // Increment play count
+            // Increment play count (only for library tracks)
             IncrementPlayCount(m_currentTrackIds[index]);
 
             std::cout << "[PlaybackController] Selected index: " << index << "\n";
@@ -126,7 +206,7 @@ void PlaybackController::SelectTrack(const MusicTrack& track)
         m_audioEngine.Open(track);
         m_trackEndProcessed = false;
 
-        // Increment play count
+        // Increment play count (only for library tracks)
         IncrementPlayCount(trackId);
 
         std::cout << "[PlaybackController] Selected: " << track.GetTitle() << "\n";
@@ -138,7 +218,7 @@ void PlaybackController::SelectTrack(const MusicTrack& track)
         m_audioEngine.Open(track);
         m_trackEndProcessed = false;
 
-        // Increment play count
+        // Increment play count (only for library tracks)
         IncrementPlayCount(trackId);
 
         std::cout << "[PlaybackController] Selected (added to list): " << track.GetTitle() << "\n";
@@ -157,7 +237,7 @@ void PlaybackController::SelectTrackById(std::size_t trackId)
             m_audioEngine.Open(*track);
             m_trackEndProcessed = false;
 
-            // Increment play count
+            // Increment play count (only for library tracks)
             IncrementPlayCount(trackId);
 
             std::cout << "[PlaybackController] Selected by ID: " << track->GetTitle() << "\n";

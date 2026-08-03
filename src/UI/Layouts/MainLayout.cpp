@@ -7,17 +7,12 @@
 
 namespace moosic
 {
-
-    MainLayout::MainLayout(LibraryDataModel& libraryData,
-                           DirectoryDataModel& directoryData,
-                           PlaylistDataModel& playlistData,
-                           MusicLibrary& library,
-                           PlaybackController& playbackController)
-        : m_libraryData(libraryData)
-        , m_directoryData(directoryData)
-        , m_playlistData(playlistData)
-        , m_playbackController(playbackController)
-        , m_contentPanel(libraryData, directoryData, playlistData, library, &playbackController)
+    MainLayout::MainLayout(LibraryDataModel& libraryData, DirectoryDataModel& directoryData,
+                           PlaylistDataModel& playlistData, LayoutStateDataModel& layoutState,
+                           MusicLibrary& library, PlaybackController& playbackController)
+        : m_libraryData(libraryData), m_directoryData(directoryData), m_playlistData(playlistData),
+          m_playbackController(playbackController),
+          m_contentPanel(libraryData, directoryData, playlistData, layoutState, library, &playbackController)
     {
         m_playerBar.SetPlaybackController(&playbackController);
         m_playbackController.SetCurrentTrackList(m_libraryData.GetTracks());
@@ -27,7 +22,6 @@ namespace moosic
     {
         m_libraryData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
         m_playlistData.SyncPlayingTrack(m_playbackController.GetCurrentTrack());
-
         m_playerBar.SetRenderer(renderer);
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -44,8 +38,6 @@ namespace moosic
 
         ImGui::Separator();
         m_playerBar.Draw();
-
         ImGui::End();
     }
-
 } // namespace moosic

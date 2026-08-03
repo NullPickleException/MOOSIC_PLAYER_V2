@@ -7,43 +7,31 @@
 #include "../Data/LibraryDataModel.h"
 #include "../Data/DirectoryDataModel.h"
 #include "../Data/PlaylistDataModel.h"
+#include "../Data/LayoutStateDataModel.h"
 #include "../Windows/WindowContentPanel.h"
 #include "../Widgets/PlayerBar/StandardArtLeftPlayerBar.h"
 #include "../../Services/PlaybackController.h"
 #include "../Theme/Theme.h"
 #include "../Layouts/ILayout.h"
-
 #include <SDL.h>
 
 namespace moosic
 {
-
-class StandardArtLeftLayout : public ILayout
-{
-public:
-    StandardArtLeftLayout(LibraryDataModel& libraryData,
-                          DirectoryDataModel& directoryData,
-                          PlaylistDataModel& playlistData,
-                          MusicLibrary& library, 
-                          PlaybackController& playbackController);
-
-    void Draw(SDL_Renderer* renderer) override;
-
-    void ApplyTheme(const Theme& theme) override
+    class StandardArtLeftLayout : public ILayout
     {
-        m_contentPanel.ApplyTheme(theme);
-        m_playerBar.ApplyTheme(theme.PlayerBar);
-    }
-
-    WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
-
-private:
-    LibraryDataModel& m_libraryData;
-    DirectoryDataModel& m_directoryData;
-    PlaylistDataModel& m_playlistData;
-    WindowContentPanel m_contentPanel;
-    StandardArtLeftPlayerBar m_playerBar;
-    PlaybackController& m_playbackController;
-};
-
+    public:
+        StandardArtLeftLayout(LibraryDataModel& libraryData, DirectoryDataModel& directoryData,
+                              PlaylistDataModel& playlistData, LayoutStateDataModel& layoutState,
+                              MusicLibrary& library, PlaybackController& playbackController);
+        void Draw(SDL_Renderer* renderer) override;
+        void ApplyTheme(const Theme& theme) override { m_contentPanel.ApplyTheme(theme); m_playerBar.ApplyTheme(theme.PlayerBar); }
+        WindowContentPanel* GetContentPanel() override { return &m_contentPanel; }
+    private:
+        LibraryDataModel& m_libraryData;
+        DirectoryDataModel& m_directoryData;
+        PlaylistDataModel& m_playlistData;
+        WindowContentPanel m_contentPanel;
+        StandardArtLeftPlayerBar m_playerBar;
+        PlaybackController& m_playbackController;
+    };
 } // namespace moosic

@@ -8,16 +8,18 @@
 namespace moosic
 {
 
-    //==============================================================================
-    // Construction
-    //==============================================================================
-
     WindowContentPanel::WindowContentPanel(LibraryDataModel &libraryData,
                                            DirectoryDataModel &directoryData,
                                            PlaylistDataModel &playlistData,
+                                           LayoutStateDataModel &layoutState,
                                            MusicLibrary &library,
                                            PlaybackController *playbackController)
-        : m_libraryData(libraryData), m_directoryData(directoryData), m_playlistData(playlistData), m_library(library), m_directoryWindow(directoryData), m_libraryWindow(libraryData, playbackController), m_playlistWindow(playlistData, playbackController)
+        : m_libraryData(libraryData), m_directoryData(directoryData), m_playlistData(playlistData),
+          m_library(library),
+          m_layoutState(layoutState),
+          m_directoryWindow(directoryData),
+          m_libraryWindow(libraryData, playbackController),
+          m_playlistWindow(playlistData, playbackController)
     {
     }
 
@@ -27,61 +29,36 @@ namespace moosic
         m_playlistData.SyncPlayingTrack(track);
     }
 
-    //==============================================================================
-    // Classic 2000s Rendering Helpers
-    //==============================================================================
-
-    static void DrawTabBevelEdges(ImDrawList* dl, const ImVec2& min, const ImVec2& max, 
-                                   float rounding, float thickness,
-                                   const ImVec4& lightColor, const ImVec4& darkColor,
-                                   const ImVec4& borderColor)
+    static void DrawTabBevelEdges(ImDrawList *dl, const ImVec2 &min, const ImVec2 &max,
+                                  float rounding, float thickness,
+                                  const ImVec4 &lightColor, const ImVec4 &darkColor,
+                                  const ImVec4 &borderColor)
     {
-        if (thickness <= 0.0f) return;
-
-        float t = thickness;
-        float r = rounding;
-
-        ImU32 lightCol  = ImGui::GetColorU32(lightColor);
-        ImU32 darkCol   = ImGui::GetColorU32(darkColor);
+        if (thickness <= 0.0f)
+            return;
+        float t = thickness, r = rounding;
         ImU32 borderCol = ImGui::GetColorU32(borderColor);
-
         dl->PushClipRect(min, max, true);
-
-        // Outer border
         dl->AddRect(min, max, borderCol, r, ImDrawFlags_RoundCornersAll, 1.0f);
-
-        // Light highlight – concentric rounded rects fading inward
         for (float i = 0.0f; i < t; i += 0.5f)
         {
             float alpha = 1.0f - (i / t);
-            ImU32 col = ImGui::GetColorU32(ImVec4(
-                lightColor.x, lightColor.y, lightColor.z, lightColor.w * alpha));
-
-            dl->AddRect(
-                ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
-                ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
-                col, r, ImDrawFlags_RoundCornersAll, 1.0f);
+            ImU32 col = ImGui::GetColorU32(ImVec4(lightColor.x, lightColor.y, lightColor.z, lightColor.w * alpha));
+            dl->AddRect(ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
+                        ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
+                        col, r, ImDrawFlags_RoundCornersAll, 1.0f);
         }
-
-        // Dark shadow – concentric rounded rects fading inward
         for (float i = 0.0f; i < t; i += 0.5f)
         {
             float alpha = 1.0f - (i / t);
-            ImU32 col = ImGui::GetColorU32(ImVec4(
-                darkColor.x, darkColor.y, darkColor.z, darkColor.w * alpha));
-
-            dl->AddRect(
-                ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
-                ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
-                col, r, ImDrawFlags_RoundCornersAll, 1.0f);
+            ImU32 col = ImGui::GetColorU32(ImVec4(darkColor.x, darkColor.y, darkColor.z, darkColor.w * alpha));
+            dl->AddRect(ImVec2(min.x + i + 1.0f, min.y + i + 1.0f),
+                        ImVec2(max.x - i - 1.0f, max.y - i - 1.0f),
+                        col, r, ImDrawFlags_RoundCornersAll, 1.0f);
         }
-
         dl->PopClipRect();
     }
 
-    //==============================================================================
-    // Drawing
-    //==============================================================================
     void WindowContentPanel::Draw()
     {
         float pad = (m_theme.BorderThickness > 0.0f) ? m_theme.BorderThickness + 8.0f : 4.0f;
@@ -90,20 +67,16 @@ namespace moosic
         {
             ImVec2 cursorPos = ImGui::GetCursorScreenPos();
             ImVec2 availSize = ImGui::GetContentRegionAvail();
-
             ImDrawList *dl = ImGui::GetWindowDrawList();
-
             if (m_theme.UseGradientTabs)
             {
-                dl->AddRectFilledMultiColor(
-                    cursorPos,
+                dl->AddRectFilledMultiColor(cursorPos,
                     ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
                     ImGui::GetColorU32(m_theme.TabGradientTop),
                     ImGui::GetColorU32(m_theme.TabGradientTop),
                     ImGui::GetColorU32(m_theme.TabGradientBottom),
                     ImGui::GetColorU32(m_theme.TabGradientBottom));
             }
-
             if (m_theme.UseTabBevel)
             {
                 DrawTabBevelEdges(dl, cursorPos,
@@ -114,61 +87,72 @@ namespace moosic
             }
             else
             {
-                dl->AddRect(
-                    cursorPos,
+                dl->AddRect(cursorPos,
                     ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
                     ImGui::GetColorU32(m_theme.BorderColor),
-                    4.0f,
-                    ImDrawFlags_RoundCornersAll,
-                    m_theme.BorderThickness);
+                    4.0f, ImDrawFlags_RoundCornersAll, m_theme.BorderThickness);
             }
         }
 
-        ImGui::SetCursorPos(ImVec2(
-            ImGui::GetCursorPosX() + pad,
-            ImGui::GetCursorPosY() + pad));
-
-        ImVec2 innerSize = ImVec2(
-            ImGui::GetContentRegionAvail().x - pad,
-            ImGui::GetContentRegionAvail().y - pad);
-
+        ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + pad, ImGui::GetCursorPosY() + pad));
+        ImVec2 innerSize = ImVec2(ImGui::GetContentRegionAvail().x - pad, ImGui::GetContentRegionAvail().y - pad);
         ImGui::BeginChild("##ContentPanelInner", innerSize, false);
 
-        // REMOVED: UseGlossyTabs PushStyleColor/PopStyleColor block
-        // Tab colors are handled globally by ApplyImGuiStyle()
+        const auto desiredTab = m_layoutState.GetCurrentTab();
+        const bool needForceSelect = (desiredTab != m_appliedTab);
 
-        if (ImGui::BeginTabBar("ContentTabs"))
+        if (ImGui::BeginTabBar("##SharedContentTabs", ImGuiTabBarFlags_None))
         {
-            if (ImGui::BeginTabItem("Library"))
+            auto handleTab = [&](const char *label, LayoutStateDataModel::Tab tab, auto &&drawContent)
             {
-                m_libraryWindow.Draw();
-                ImGui::EndTabItem();
-            }
+                ImGuiTabItemFlags flags = 0;
+                if (needForceSelect && desiredTab == tab)
+                    flags = ImGuiTabItemFlags_SetSelected;
 
-            if (ImGui::BeginTabItem("Playlists"))
-            {
-                m_playlistWindow.Draw();
-                ImGui::EndTabItem();
-            }
+                if (ImGui::BeginTabItem(label, nullptr, flags))
+                {
+                    if (needForceSelect)
+                    {
+                        // Layout switch / first show: only the forced tab draws
+                        if (desiredTab == tab)
+                        {
+                            m_appliedTab = tab;
+                            drawContent();
+                        }
+                    }
+                    else
+                    {
+                        // Normal interaction: whatever ImGui selected is authoritative
+                        m_layoutState.SetCurrentTab(tab);
+                        m_appliedTab = tab;
+                        drawContent();
+                    }
 
-            if (ImGui::BeginTabItem("Directories"))
-            {
-                m_directoryWindow.Draw();
-                ImGui::EndTabItem();
-            }
+                    ImGui::EndTabItem();
+                }
+            };
 
-            if (ImGui::BeginTabItem("Settings"))
+            handleTab("Library", LayoutStateDataModel::Tab::Library,
+                      [&]() { m_libraryWindow.Draw(); });
+
+            handleTab("Playlists", LayoutStateDataModel::Tab::Playlists,
+                      [&]() { m_playlistWindow.Draw(); });
+
+            handleTab("Directories", LayoutStateDataModel::Tab::Directory,
+                      [&]() { m_directoryWindow.Draw(); });
+
+            handleTab("Settings", LayoutStateDataModel::Tab::Settings, [&]()
             {
                 ImGui::BeginChild("##SettingsScrollRegion", ImVec2(0, 0), false,
                                   ImGuiWindowFlags_AlwaysVerticalScrollbar);
                 m_settingsWindow.Draw();
                 ImGui::EndChild();
-                ImGui::EndTabItem();
-            }
+            });
 
             ImGui::EndTabBar();
         }
 
         ImGui::EndChild();
     }
+
 } // namespace moosic

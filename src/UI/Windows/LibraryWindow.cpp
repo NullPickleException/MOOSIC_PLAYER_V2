@@ -81,53 +81,12 @@ namespace moosic
             m_contextTrack = event.track;
             
             std::vector<MenuItem> items;
-            
-            // ── Play ──
-            items.push_back({"Play", true, false, [this]() {
-                OnTrackClicked(m_contextTrack, m_contextRow);
-            }});
-            
-            items.push_back({"", false, true, nullptr});
-            
-            // ── Add to Playlist ──
-            items.push_back({"Add to Playlist", true, false, [this]() {
-                // TODO: Implement add to playlist sub-menu
-            }});
-            
-            items.push_back({"", false, true, nullptr});
-            
-            // ── Actions ──
-            items.push_back({"Open Folder", true, false, [this]() {
-                if (!m_contextTrack) return;
-                try {
-                    std::filesystem::path filePath = m_contextTrack->GetPath();
-                    if (filePath.empty()) return;
-
-#ifdef _WIN32
-                    std::wstring wpath = filePath.wstring();
-                    std::wstring cmd = L"/select,\"" + wpath + L"\"";
-                    ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
-#elif defined(__APPLE__)
-                    std::string cmd = "open -R \"" + filePath.string() + "\"";
-                    system(cmd.c_str());
-#else
-                    std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
-                    system(cmd.c_str());
-#endif
-                } catch (...) {
-                    // Silently fail - file path has invalid characters
-                }
-            }});
-            
-            items.push_back({"Edit Track Info", true, false, [this]() {
-                // TODO: Implement track metadata editing dialog
-            }});
+            BuildContextMenu(items);
             
             m_contextMenu.SetItems(items);
             m_contextMenu.Open(
-                static_cast<int>(ImGui::GetMousePos().x),
-                static_cast<int>(ImGui::GetMousePos().y)
-            ); });
+                ImGui::GetMousePos().x,
+                ImGui::GetMousePos().y); });
 
         //======================================================================
         // Sort Handler
@@ -135,6 +94,35 @@ namespace moosic
 
         m_trackTable.OnSort([this](const SortRequest &sort)
                             { m_data.ApplySort(sort); });
+
+        //======================================================================
+        // Edit Track Dialog
+        //======================================================================
+
+        m_editTrackDialog.SetSaveCallback([this](const MusicTrack *track,
+                                                 const std::string &title,
+                                                 const std::string &artist,
+                                                 const std::string &album)
+                                          {
+            MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
+            mutableTrack->UpdateTitle(title);
+            mutableTrack->UpdateArtist(artist);
+            mutableTrack->UpdateAlbum(album);
+            m_data.NotifyDataChanged(); });
+
+        // Apply theme to edit dialog
+        {
+            EditTrackDialogTheme dialogTheme;
+            dialogTheme.BrandText = m_theme.BrandText;
+            dialogTheme.TextPrimary = m_theme.TextPrimary;
+            dialogTheme.TextDisabled = m_theme.TextDisabled;
+            dialogTheme.FrameBg = m_theme.ChildBg;
+            dialogTheme.ButtonNormal = m_theme.ButtonNormal;
+            dialogTheme.ButtonHovered = m_theme.ButtonHovered;
+            dialogTheme.ButtonActive = m_theme.ButtonActive;
+            dialogTheme.ButtonRounding = m_theme.ButtonRounding;
+            m_editTrackDialog.SetTheme(dialogTheme);
+        }
 
         m_data.SetOnDataChanged([this]() {});
     }
@@ -156,8 +144,8 @@ namespace moosic
         ImGui::Separator();
         DrawTrackTable();
 
-        // ── Context Menu ──
         m_contextMenu.Draw("##LibraryContextMenu");
+        m_editTrackDialog.Draw();
     }
 
     //==========================================================================
@@ -213,18 +201,18 @@ namespace moosic
         {
             if (m_toolbarOptions.ShowSearchBar)
                 ImGui::SameLine();
-            
+
             ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-            
+
             if (ImGui::Button("Clear"))
             {
                 m_searchBuffer[0] = '\0';
                 m_data.SetSearchFilter("");
             }
-            
+
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
         }
@@ -235,15 +223,15 @@ namespace moosic
             bool hasClear = m_toolbarOptions.ShowClearButton && !m_useDropdownSearch;
             if (hasSearch || hasClear)
                 ImGui::SameLine();
-            
+
             ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-            
+
             if (ImGui::Button("Refresh"))
                 m_data.Refresh();
-            
+
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
         }
@@ -271,7 +259,7 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
         ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
         ImGui::PushStyleColor(ImGuiCol_TextDisabled, m_theme.TextDisabled);
-        
+
         ImGui::SetNextItemWidth(m_toolbarOptions.SearchBarWidth);
         if (ImGui::InputTextWithHint("##Search",
                                      m_toolbarOptions.SearchHint.c_str(),
@@ -279,7 +267,7 @@ namespace moosic
         {
             m_data.SetSearchFilter(m_searchBuffer);
         }
-        
+
         ImGui::PopStyleColor(3);
     }
 
@@ -294,7 +282,6 @@ namespace moosic
         m_trackTable.SetPlayingRow(m_data.GetPlayingIndex(),
                                    m_data.GetPlayingTrack());
 
-        // ── Track Table with Themed Border ───────────────────
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
         ImGui::PushStyleColor(ImGuiCol_Border, m_theme.WindowBorder);
         ImGui::PushStyleColor(ImGuiCol_ChildBg, m_theme.ChildBg);
@@ -309,7 +296,7 @@ namespace moosic
         ImGui::PopStyleColor(2);
         ImGui::PopStyleVar();
     }
-    
+
     //==========================================================================
     // Track Click Handler
     //==========================================================================
@@ -331,6 +318,91 @@ namespace moosic
             m_playbackController->SelectTrack(*track);
             m_playbackController->Play();
         }
+    }
+
+    //==========================================================================
+    // Context Menu Builder
+    //==========================================================================
+
+    void LibraryWindow::BuildContextMenu(std::vector<MenuItem> &items)
+    {
+        // ── Play ──
+        items.push_back({"Play", true, false, [this]()
+                         { OnTrackClicked(m_contextTrack, m_contextRow); }});
+
+        items.push_back({"", false, true, nullptr});
+
+        // ── Add to Playlist (Submenu) ──
+        if (m_playlistModel && !m_playlistModel->GetAllPlaylists().empty())
+        {
+            std::vector<MenuItem> playlistItems;
+            const auto &playlists = m_playlistModel->GetAllPlaylists();
+
+            for (size_t j = 0; j < playlists.size(); ++j)
+            {
+                const auto &playlist = playlists[j];
+                playlistItems.push_back({playlist.name, true, false, [this, j]()
+                                         {
+                    if (m_playlistModel && m_contextTrack)
+                        m_playlistModel->AddTrackToPlaylist(j, m_contextTrack->GetId()); }});
+            }
+
+            // Separator before "New Playlist..."
+            playlistItems.push_back({"", false, true, nullptr});
+
+            // "New Playlist..." option
+            playlistItems.push_back({"New Playlist...", true, false, [this]()
+                                     {
+                if (m_playlistModel && m_contextTrack)
+                {
+                    static int counter = 1;
+                    std::string name = "New Playlist " + std::to_string(counter++);
+                    m_playlistModel->CreatePlaylist(name);
+                    size_t newIndex = m_playlistModel->GetAllPlaylists().size() - 1;
+                    m_playlistModel->AddTrackToPlaylist(newIndex, m_contextTrack->GetId());
+                } }});
+
+            MenuItem addToPlaylistItem;
+            addToPlaylistItem.label = "Add to Playlist";
+            addToPlaylistItem.enabled = true;
+            addToPlaylistItem.isSeparator = false;
+            addToPlaylistItem.isSubmenuArrow = true;
+            addToPlaylistItem.children = playlistItems;
+            addToPlaylistItem.action = nullptr;
+
+            items.push_back(addToPlaylistItem);
+        }
+        else
+        {
+            items.push_back({"Add to Playlist", false, false, nullptr});
+        }
+
+        items.push_back({"", false, true, nullptr});
+
+        // ── Open Folder ──
+        items.push_back({"Open Folder", true, false, [this]()
+                         {
+            if (!m_contextTrack) return;
+            try {
+                std::filesystem::path filePath = m_contextTrack->GetPath();
+                if (filePath.empty()) return;
+
+#ifdef _WIN32
+                std::wstring wpath = filePath.wstring();
+                std::wstring cmd = L"/select,\"" + wpath + L"\"";
+                ShellExecuteW(NULL, L"open", L"explorer.exe", cmd.c_str(), NULL, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+                std::string cmd = "open -R \"" + filePath.string() + "\"";
+                system(cmd.c_str());
+#else
+                std::string cmd = "xdg-open \"" + filePath.parent_path().string() + "\"";
+                system(cmd.c_str());
+#endif
+            } catch (...) {} }});
+
+        // ── Edit Track Info ──
+        items.push_back({"Edit Track Info...", true, false, [this]()
+                         { m_editTrackDialog.Open(m_contextTrack); }});
     }
 
     //==========================================================================

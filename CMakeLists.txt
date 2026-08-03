@@ -18,15 +18,19 @@ endif()
 
 set(APP_SOURCES
     src/main.cpp
+
     src/Core/Application.cpp
     src/Core/Input/InputManager.cpp
+
     src/Models/MusicLibrary.cpp
     src/Models/MusicTrack.cpp
+
     src/Services/DirectoryScanner.cpp
     src/Services/SavingSystem.cpp
     src/Services/AudioEngine.cpp
     src/Services/PlaybackController.cpp
     src/Services/ImageLoader.cpp
+    src/Services/FileDialog.cpp
     src/Services/Metadata/MetadataReader.cpp
     src/Services/Metadata/Mp3MetadataParser.cpp
     src/Services/Metadata/FlacMetadataParser.cpp
@@ -35,22 +39,27 @@ set(APP_SOURCES
     src/Services/Metadata/WavMetadataParser.cpp
     src/Services/Metadata/AiffMetadataParser.cpp
     src/Services/Metadata/WavPackMetadataParser.cpp
+
     src/UI/UI.cpp
+
     src/UI/Data/LibraryDataModel.cpp
     src/UI/Data/DirectoryDataModel.cpp
     src/UI/Data/PlaylistDataModel.cpp
     src/UI/Data/SettingsDataModel.cpp
+
     src/UI/Layouts/MainLayout.cpp
     src/UI/Layouts/SidebarLeftLayout.cpp
     src/UI/Layouts/CompactLayout.cpp
     src/UI/Layouts/MiniPlayerLayout.cpp
     src/UI/Layouts/TheaterLayout.cpp
     src/UI/Layouts/StandardArtLeftLayout.cpp
+
     src/UI/Windows/WindowContentPanel.cpp
     src/UI/Windows/LibraryWindow.cpp
     src/UI/Windows/PlaylistWindow.cpp
     src/UI/Windows/DirectoryWindow.cpp
     src/UI/Windows/SettingsWindow.cpp
+
     src/UI/Widgets/PlayerBar/IPlayerBar.cpp
     src/UI/Widgets/PlayerBar/StandardPlayerBar.cpp
     src/UI/Widgets/PlayerBar/CompactPlayerBar.cpp
@@ -64,7 +73,10 @@ set(APP_SOURCES
     src/UI/Widgets/AlbumArtLightBox.cpp
     src/UI/Widgets/AlbumArtBox.cpp
     src/UI/Widgets/WaveVisualizer.cpp
-)
+    src/UI/Widgets/EditTrackDialog.cpp
+    src/UI/Widgets/MenuBar/MenuBar.cpp 
+
+    )
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/thirdparty/imgui)
 

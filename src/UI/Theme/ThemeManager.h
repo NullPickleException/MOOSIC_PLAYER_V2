@@ -72,6 +72,37 @@
 #include "Themes/Gothic_Themes/NightCreaturesTheme.h"
 #include "Themes/Gothic_Themes/ForgottenCemeteryTheme.h"
 
+#include "Themes/Nature_Themes/ForestTheme.h"
+#include "Themes/Nature_Themes/MossTheme.h"
+#include "Themes/Nature_Themes/PineTheme.h"
+#include "Themes/Nature_Themes/SakuraTheme.h"
+#include "Themes/Nature_Themes/DesertTheme.h"
+#include "Themes/Nature_Themes/CanyonTheme.h"
+#include "Themes/Nature_Themes/GlacierFrostTheme.h"
+#include "Themes/Nature_Themes/BambooTheme.h"
+#include "Themes/Nature_Themes/OliveTheme.h"
+
+#include "Themes/Neon_Themes/NeonPurpleTheme.h"
+#include "Themes/Neon_Themes/NeonCyanTheme.h"
+#include "Themes/Neon_Themes/NeonLimeTheme.h"
+#include "Themes/Neon_Themes/NeonPinkTheme.h"
+#include "Themes/Neon_Themes/CyberpunkTheme.h"
+#include "Themes/Neon_Themes/VaporwaveTheme.h"
+#include "Themes/Neon_Themes/TronTheme.h"
+#include "Themes/Neon_Themes/OutrunTheme.h"
+#include "Themes/Neon_Themes/DigitalRainTheme.h"
+
+#include "Themes/Retro_Themes/Commodore64InspiredTheme.h"
+#include "Themes/Retro_Themes/AmberCRTTheme.h"
+#include "Themes/Retro_Themes/TerminalGreenTheme.h"
+#include "Themes/Retro_Themes/DOSTheme.h"
+#include "Themes/Retro_Themes/AtariInspiredTheme.h"
+#include "Themes/Retro_Themes/NintendoInspiredTheme.h"
+#include "Themes/Retro_Themes/XboxInspiredTheme.h"
+#include "Themes/Retro_Themes/PlayStationInspiredTheme.h"
+#include "Themes/Retro_Themes/GameboyInspiredTheme.h"
+#include "Themes/Retro_Themes/RetroOSBlueTheme.h"
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -194,6 +225,46 @@ namespace moosic
             RegisterTheme("Amber Chapel", CreateAmberChapelTheme);
             RegisterTheme("Night Creatures", CreateNightCreaturesTheme);
             RegisterTheme("Forgotten Cemetery", CreateForgottenCemeteryTheme);
+
+            //===================================
+            // Nature Themes
+            //===================================
+            RegisterTheme("Forest", CreateForestTheme);
+            RegisterTheme("Moss", CreateMossTheme);
+            RegisterTheme("Pine", CreatePineTheme);
+            RegisterTheme("Sakura", CreateSakuraTheme);
+            RegisterTheme("Desert", CreateDesertTheme);
+            RegisterTheme("Canyon", CreateCanyonTheme);
+            RegisterTheme("Glacier Frost", CreateGlacierFrostTheme);
+            RegisterTheme("Bamboo", CreateBambooTheme);
+            RegisterTheme("Olive", CreateOliveTheme);
+
+            //===================================
+            // Neon Themes
+            //===================================
+            RegisterTheme("Neon Purple", CreateNeonPurpleTheme);
+            RegisterTheme("Neon Cyan", CreateNeonCyanTheme);
+            RegisterTheme("Neon Lime", CreateNeonLimeTheme);
+            RegisterTheme("Neon Pink", CreateNeonPinkTheme);
+            RegisterTheme("Cyberpunk", CreateCyberpunkTheme);
+            RegisterTheme("Vaporwave", CreateVaporwaveTheme);
+            RegisterTheme("Tron", CreateTronTheme);
+            RegisterTheme("Outrun", CreateOutrunTheme);
+            RegisterTheme("Digital Rain", CreateDigitalRainTheme);
+
+            //===================================
+            // Retro Themes
+            //===================================
+            RegisterTheme("Commodore 64 Inspired", CreateCommodore64InspiredTheme);
+            RegisterTheme("Amber CRT", CreateAmberCRTTheme);
+            RegisterTheme("Terminal Green", CreateTerminalGreenTheme);
+            RegisterTheme("DOS", CreateDOSTheme);
+            RegisterTheme("Atari Inspired", CreateAtariInspiredTheme);
+            RegisterTheme("Nintendo Inspired", CreateNintendoInspiredTheme);
+            RegisterTheme("Xbox Inspired", CreateXboxInspiredTheme);
+            RegisterTheme("PlayStation Inspired", CreatePlayStationInspiredTheme);
+            RegisterTheme("Gameboy Inspired", CreateGameboyInspiredTheme);
+            RegisterTheme("Retro OS Blue", CreateRetroOSBlueTheme);
         }
 
         //--------------------------------------------------------------------------

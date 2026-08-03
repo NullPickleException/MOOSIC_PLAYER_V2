@@ -1,14 +1,12 @@
-//==============================================================================
-// UI/Windows/PlaylistWindow.h
-//==============================================================================
-
 #pragma once
 
-#include "../Data/PlaylistDataModel.h"
+#include "IWindow.h"
 #include "../Widgets/TrackTable.h"
 #include "../Widgets/PopupMenu.h"
-#include "IWindow.h"
+#include "../Widgets/EditTrackDialog.h"
+#include "../Data/PlaylistDataModel.h"
 #include "../../Services/PlaybackController.h"
+
 #include <string>
 
 namespace moosic
@@ -79,6 +77,9 @@ namespace moosic
         // ── Context Menu State ──────────────────────
         int m_contextRow = -1;
         const MusicTrack *m_contextTrack = nullptr;
+
+        // ── Edit Track Dialog ───────────────────────
+        EditTrackDialog m_editTrackDialog;
     };
 
 } // namespace moosic

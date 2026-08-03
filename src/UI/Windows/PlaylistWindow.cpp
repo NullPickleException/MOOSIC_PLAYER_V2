@@ -109,9 +109,9 @@ namespace moosic
                 } catch (...) {}
             }});
             
-            items.push_back({"Edit Track Info", true, false, []() {
-                // TODO: Implement track metadata editing dialog
-            }});
+            items.push_back({"Edit Track Info...", true, false, [this]() {
+    m_editTrackDialog.Open(m_contextTrack);
+                }});
             
             m_trackContextMenu.SetItems(items);
             m_trackContextMenu.Open(
@@ -156,6 +156,24 @@ namespace moosic
                     event.track->GetId());
             } });
 
+        //======================================================================
+        // Edit Track Dialog
+        //======================================================================
+
+        m_editTrackDialog.SetSaveCallback([this](const MusicTrack *track,
+                                                 const std::string &title,
+                                                 const std::string &artist,
+                                                 const std::string &album)
+                                          {
+    // Cast away const to modify (safe since MusicLibrary owns the data)
+    MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
+    mutableTrack->UpdateTitle(title);
+    mutableTrack->UpdateArtist(artist);
+    mutableTrack->UpdateAlbum(album);
+    
+    // Refresh the UI
+    m_data.NotifyDataChanged(); });
+
         m_data.SetOnDataChanged([this]() {});
     }
 
@@ -199,6 +217,7 @@ namespace moosic
         DrawCreatePlaylistPopup();
         DrawRenamePlaylistPopup();
         DrawAddTrackPopup();
+        m_editTrackDialog.Draw(); // <-- ADD THIS LINE
     }
 
     //==============================================================================
@@ -219,13 +238,13 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-        
+
         if (ImGui::Button("+ New Playlist", ImVec2(-1, 0)))
         {
             m_newPlaylistNameBuffer[0] = '\0';
             m_showCreatePlaylistPopup = true;
         }
-        
+
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
 
@@ -366,12 +385,12 @@ namespace moosic
 
         float buttonWidth = 110.0f;
         ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonWidth);
-        
+
         ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-        
+
         if (ImGui::Button("+ Add Tracks", ImVec2(buttonWidth, 0)))
         {
             m_selectedPlaylistForAdd = static_cast<int>(activeIndex.value());
@@ -381,7 +400,7 @@ namespace moosic
             m_selectedAddTrack = nullptr;
             m_showAddTrackPopup = true;
         }
-        
+
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
 
@@ -485,8 +504,8 @@ namespace moosic
 
             if (m_selectedAddTrack)
                 ImGui::TextColored(m_theme.TextPrimary, "Selected: %s - %s",
-                            m_selectedAddTrack->GetTitle().c_str(),
-                            m_selectedAddTrack->GetArtist().c_str());
+                                   m_selectedAddTrack->GetTitle().c_str(),
+                                   m_selectedAddTrack->GetArtist().c_str());
             else
                 ImGui::TextColored(m_theme.TextDisabled, "Select a track to add");
 
@@ -500,7 +519,7 @@ namespace moosic
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-            
+
             if (ImGui::Button("Add Selected", ImVec2(100, 0)))
             {
                 m_data.AddTrackToPlaylist(
@@ -509,6 +528,8 @@ namespace moosic
                 m_selectedAddTrackIndex = -1;
                 m_selectedAddTrack = nullptr;
             }
+            if (!canAdd)
+                ImGui::EndDisabled();
 
             ImGui::SameLine();
 
@@ -518,12 +539,9 @@ namespace moosic
                 m_selectedAddTrack = nullptr;
                 ImGui::CloseCurrentPopup();
             }
-            
+
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
-
-            if (!canAdd)
-                ImGui::EndDisabled();
 
             ImGui::EndPopup();
         }

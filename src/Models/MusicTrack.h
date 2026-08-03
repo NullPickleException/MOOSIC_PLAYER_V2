@@ -7,89 +7,96 @@
 namespace moosic
 {
 
-class MusicTrack
-{
-public:
-    MusicTrack() = default;
-    ~MusicTrack() = default;
+    class MusicTrack
+    {
+    public:
+        MusicTrack() = default;
+        ~MusicTrack() = default;
 
-    //----------------------------------------------------------
-    // Setters
-    //----------------------------------------------------------
+        //----------------------------------------------------------
+        // Setters
+        //----------------------------------------------------------
 
-    void SetId(std::size_t id);
-    void SetPath(const std::filesystem::path& path);
+        void SetId(std::size_t id);
+        void SetPath(const std::filesystem::path &path);
 
-    void SetTitle(const std::string& title);
-    void SetArtist(const std::string& artist);
-    void SetAlbum(const std::string& album);
-    void SetGenre(const std::string& genre);
+        void SetTitle(const std::string &title);
+        void SetArtist(const std::string &artist);
+        void SetAlbum(const std::string &album);
+        void SetGenre(const std::string &genre);
 
-    void SetTrackNumber(unsigned int trackNumber);
-    void SetYear(unsigned int year);
+        void SetTrackNumber(unsigned int trackNumber);
+        void SetYear(unsigned int year);
 
-    void SetDuration(unsigned int seconds);
-    void SetSampleRate(unsigned int sampleRate);
-    void SetBitRate(unsigned int bitRate);
-    void SetChannels(unsigned int channels);
+        void SetDuration(unsigned int seconds);
+        void SetSampleRate(unsigned int sampleRate);
+        void SetBitRate(unsigned int bitRate);
+        void SetChannels(unsigned int channels);
 
-    void SetHasAlbumArt(bool value);
-    void SetAlbumArtData(const std::vector<unsigned char>& data);
-    void SetFavourite(bool value);
-    
-    void SetPlayCount(unsigned int count);
-    void IncrementPlayCount();
+        void SetHasAlbumArt(bool value);
+        void SetAlbumArtData(const std::vector<unsigned char> &data);
+        void SetFavourite(bool value);
 
-    //----------------------------------------------------------
-    // Getters
-    //----------------------------------------------------------
+        void SetPlayCount(unsigned int count);
+        void IncrementPlayCount();
 
-    std::size_t GetId() const;
-    const std::filesystem::path& GetPath() const;
-    std::string GetFilename() const;
-    std::string GetExtension() const;
+        //----------------------------------------------------------
+        // Getters
+        //----------------------------------------------------------
 
-    const std::string& GetTitle() const;
-    const std::string& GetArtist() const;
-    const std::string& GetAlbum() const;
-    const std::string& GetGenre() const;
+        std::size_t GetId() const;
+        const std::filesystem::path &GetPath() const;
+        std::string GetFilename() const;
+        std::string GetExtension() const;
 
-    unsigned int GetTrackNumber() const;
-    unsigned int GetYear() const;
+        const std::string &GetTitle() const;
+        const std::string &GetArtist() const;
+        const std::string &GetAlbum() const;
+        const std::string &GetGenre() const;
 
-    unsigned int GetDuration() const;
-    unsigned int GetSampleRate() const;
-    unsigned int GetBitRate() const;
-    unsigned int GetChannels() const;
+        unsigned int GetTrackNumber() const;
+        unsigned int GetYear() const;
 
-    bool HasAlbumArt() const;
-    const std::vector<unsigned char>& GetAlbumArtData() const;
-    bool IsFavourite() const;
-    unsigned int GetPlayCount() const;
+        unsigned int GetDuration() const;
+        unsigned int GetSampleRate() const;
+        unsigned int GetBitRate() const;
+        unsigned int GetChannels() const;
 
-private:
-    std::filesystem::path m_path;
+        bool HasAlbumArt() const;
+        const std::vector<unsigned char> &GetAlbumArtData() const;
+        bool IsFavourite() const;
+        unsigned int GetPlayCount() const;
 
-    std::string m_title;
-    std::string m_artist;
-    std::string m_album;
-    std::string m_genre;
+        //----------------------------------------------------------
+        // Editing and Updating info
+        //----------------------------------------------------------
+        void UpdateTitle(const std::string &title) { m_title = title; }
+        void UpdateArtist(const std::string &artist) { m_artist = artist; }
+        void UpdateAlbum(const std::string &album) { m_album = album; }
 
-    unsigned int m_trackNumber = 0;
-    unsigned int m_year = 0;
+    private:
+        std::filesystem::path m_path;
 
-    unsigned int m_durationSeconds = 0;
-    unsigned int m_sampleRate = 0;
-    unsigned int m_bitRate = 0;
-    unsigned int m_channels = 0;
+        std::string m_title;
+        std::string m_artist;
+        std::string m_album;
+        std::string m_genre;
 
-    bool m_hasAlbumArt = false;
-    bool m_isFavourite = false;
-    
-    std::vector<unsigned char> m_albumArtData;
+        unsigned int m_trackNumber = 0;
+        unsigned int m_year = 0;
 
-    std::size_t m_id = 0;
-    unsigned int m_playCount = 0;
-};
+        unsigned int m_durationSeconds = 0;
+        unsigned int m_sampleRate = 0;
+        unsigned int m_bitRate = 0;
+        unsigned int m_channels = 0;
+
+        bool m_hasAlbumArt = false;
+        bool m_isFavourite = false;
+
+        std::vector<unsigned char> m_albumArtData;
+
+        std::size_t m_id = 0;
+        unsigned int m_playCount = 0;
+    };
 
 }

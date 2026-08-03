@@ -9,6 +9,7 @@
 #include "../Models/MusicTrack.h"
 #include "../UI/Data/PlaylistDataModel.h"
 #include "../UI/Data/SettingsDataModel.h"
+#include "../UI/Data/LayoutStateDataModel.h"
 #include "PlaybackController.h"
 
 #include <nlohmann/json.hpp>
@@ -16,90 +17,11 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
-#include <codecvt>
-#include <locale>
 
 using json = nlohmann::json;
 
 namespace moosic
 {
-
-    //==============================================================================
-    // Helper: Escape non-ASCII characters for JSON compatibility
-    // This preserves the original bytes so paths round-trip correctly
-    //==============================================================================
-
-    static std::string EscapePath(const std::string &input)
-    {
-        // On Windows, convert to UTF-8 if needed
-        // On Linux/macOS, paths are already UTF-8 bytes
-        return input;
-    }
-
-    static std::string UnescapePath(const std::string &input)
-    {
-        return input;
-    }
-
-    //==============================================================================
-    // Helper: Clean string for display text only (title, artist, album)
-    //==============================================================================
-
-    static std::string SanitizeString(const std::string &input)
-    {
-        std::string result;
-        result.reserve(input.size());
-
-        for (size_t i = 0; i < input.size(); ++i)
-        {
-            unsigned char c = static_cast<unsigned char>(input[i]);
-
-            if (c >= 0x20 && c <= 0x7E)
-            {
-                result += c;
-            }
-            else if (c == '\t' || c == '\n' || c == '\r')
-            {
-                result += c;
-            }
-            else if (c == 0x96 || c == 0x97)
-                result += '-';
-            else if (c == 0x91 || c == 0x92)
-                result += '\'';
-            else if (c == 0x93 || c == 0x94)
-                result += '"';
-            else if (c == 0x85)
-                result += "...";
-            else if (c == 0xF6 || c == 0xD6)
-                result += "o";
-            else if (c == 0xE9 || c == 0xC9)
-                result += "e";
-            else if (c == 0xE8 || c == 0xC8)
-                result += "e";
-            else if (c == 0xE0 || c == 0xC0)
-                result += "a";
-            else if (c == 0xF1 || c == 0xD1)
-                result += "n";
-            else if (c == 0xFC || c == 0xDC)
-                result += "u";
-            else if (c == 0xE4 || c == 0xC4)
-                result += "a";
-            else if (c == 0xF8 || c == 0xD8)
-                result += "o";
-            else if (c == 0xE6 || c == 0xC6)
-                result += "ae";
-            else if (c == 0xDF)
-                result += "ss";
-            else if (c == 0xB0)
-                result += "deg";
-            else if (c >= 0x80 && c <= 0xBF)
-                result += '?';
-            else
-                result += ' ';
-        }
-
-        return result;
-    }
 
     //==============================================================================
     // Constructor
@@ -117,7 +39,8 @@ namespace moosic
     bool SavingSystem::Save(const MusicLibrary &library,
                             const PlaylistDataModel &playlists,
                             const PlaybackController &controller,
-                            const SettingsDataModel &settings)
+                            const SettingsDataModel &settings,
+                            const LayoutStateDataModel &layoutState)
     {
         try
         {
@@ -220,10 +143,17 @@ namespace moosic
             j["settings"]["visualizerMode"] = settings.GetVisualizerMode();
             j["settings"]["layoutMode"] = settings.GetLayoutMode();
             j["settings"]["logoPath"] = settings.GetLogoPath();
-
             j["settings"]["fontPath"] = settings.GetFontPath();
             j["settings"]["fontName"] = settings.GetFontName();
             j["settings"]["fontSize"] = settings.GetFontSize();
+
+            //----------------------------------------------------------------------
+            // Layout State
+            //----------------------------------------------------------------------
+            j["layoutState"]["currentLayout"] = static_cast<int>(layoutState.GetCurrentLayout());
+            j["layoutState"]["currentTab"] = static_cast<int>(layoutState.GetCurrentTab());
+            j["layoutState"]["sidebarWidth"] = layoutState.sidebarWidth;
+            j["layoutState"]["miniPlayerActiveWindow"] = static_cast<int>(layoutState.miniPlayerActiveWindow);
 
             //----------------------------------------------------------------------
             // Atomic save
@@ -240,7 +170,6 @@ namespace moosic
             file.write(jsonStr.c_str(), jsonStr.size());
             file.close();
 
-            // Delete old file and rename temp
             std::error_code ec;
             std::filesystem::remove(m_savePath, ec);
             std::filesystem::rename(tempPath, m_savePath, ec);
@@ -265,7 +194,8 @@ namespace moosic
     bool SavingSystem::Load(MusicLibrary &library,
                             PlaylistDataModel &playlists,
                             PlaybackController &controller,
-                            SettingsDataModel &settings)
+                            SettingsDataModel &settings,
+                            LayoutStateDataModel &layoutState)
     {
         try
         {
@@ -276,7 +206,6 @@ namespace moosic
                 return false;
             }
 
-            // Read entire file as string
             std::string content((std::istreambuf_iterator<char>(file)),
                                 std::istreambuf_iterator<char>());
             file.close();
@@ -406,12 +335,13 @@ namespace moosic
                 settings.SetFontSize(j["settings"].value("fontSize", 16.0f));
             }
 
-            if (j.contains("settings"))
-            {
-                settings.SetThemeName(j["settings"].value("themeName", "Dark"));
-                settings.SetVisualizerMode(j["settings"].value("visualizerMode", 0));
-                settings.SetLayoutMode(j["settings"].value("layoutMode", 0));
-            }
+            //----------------------------------------------------------------------
+            // Layout State
+            //----------------------------------------------------------------------
+            if (j["layoutState"].contains("currentLayout"))
+                layoutState.SetCurrentLayout(static_cast<LayoutStateDataModel::Layout>(j["layoutState"]["currentLayout"].get<int>()));
+            if (j["layoutState"].contains("currentTab"))
+                layoutState.SetCurrentTab(static_cast<LayoutStateDataModel::Tab>(j["layoutState"]["currentTab"].get<int>()));
 
             std::cout << "[SavingSystem] Loaded: " << library.GetTrackCount()
                       << " tracks, " << playlists.GetAllPlaylists().size()

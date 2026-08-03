@@ -297,39 +297,33 @@ namespace moosic
     //==========================================================================
     // Save/Load
     //==========================================================================
-
     void Application::SaveState()
     {
-        auto *contentPanel = m_ui.GetCurrentContentPanel();
-        if (!contentPanel)
-            return;
-
         m_savingSystem.Save(
             m_library,
-            contentPanel->GetPlaylistData(),
+            m_ui.GetPlaylistDataModel(),
             m_playbackController,
-            m_ui.GetSettingsDataModel());
+            m_ui.GetSettingsDataModel(),
+            m_ui.GetLayoutState());
     }
 
     void Application::LoadState()
     {
-        auto *contentPanel = m_ui.GetCurrentContentPanel();
-        if (!contentPanel)
-            return;
-
         if (m_savingSystem.Load(
                 m_library,
-                contentPanel->GetPlaylistData(),
+                m_ui.GetPlaylistDataModel(),
                 m_playbackController,
-                m_ui.GetSettingsDataModel()))
+                m_ui.GetSettingsDataModel(),
+                m_ui.GetLayoutState()))
         {
-            contentPanel->GetLibraryData().Refresh();
+            auto *contentPanel = m_ui.GetCurrentContentPanel();
+            if (contentPanel)
+                contentPanel->GetLibraryData().Refresh();
 
             const auto &settings = m_ui.GetSettingsDataModel();
             m_ui.SetTheme(settings.GetThemeName());
             m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
 
-            // Reload saved logo
             std::string savedLogo = settings.GetLogoPath();
             if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
             {
