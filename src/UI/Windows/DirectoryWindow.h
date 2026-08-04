@@ -15,18 +15,18 @@
 namespace moosic
 {
 
-class DirectoryWindow : public IWindow
-{
-public:
-    explicit DirectoryWindow(DirectoryDataModel& dataModel);
-    ~DirectoryWindow() = default;
+    class DirectoryWindow : public IWindow
+    {
+    public:
+        explicit DirectoryWindow(DirectoryDataModel &dataModel);
+        ~DirectoryWindow() = default;
 
-    void Draw() override;
-    void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
+        void Draw() override;
+        void ApplyTheme(const WindowTheme &theme) override { m_theme = theme; }
 
-private:
-    DirectoryDataModel& m_data;  // Shared data - we don't own it!
-    WindowTheme m_theme;
-};
+    private:
+        DirectoryDataModel &m_data; // Shared data - we don't own it!
+        WindowTheme m_theme;
+    };
 
-} // namespace moosic   
+} // namespace moosic

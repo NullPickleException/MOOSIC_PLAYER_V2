@@ -1,17 +1,32 @@
+//==============================================================================
+// Core/Input/InputManager.h
+//==============================================================================
+
 #pragma once
 
 #include <SDL.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <functional>
 
 namespace moosic
 {
+    // Hotkey action identifiers
+    enum class HotkeyAction
+    {
+        PlayPause,
+        NextTrack,
+        PreviousTrack,
+        Stop,
+        VolumeUp,
+        VolumeDown,
+        MuteToggle,
+        SeekForward,
+        SeekBackward
+    };
+
     class InputManager
     {
-    // =========================================================================
-    // Public Methods
-    // =========================================================================
-
     public:
         InputManager() = default;
         ~InputManager() = default;
@@ -42,21 +57,18 @@ namespace moosic
         bool ShouldQuit() const { return m_quit; }
         void QuitProgram() { m_quit = true; }
 
-    // =========================================================================
-    // Private Members
-    // =========================================================================
+        // ---- Hotkey Support ----
+        bool IsHotkeyPressed(HotkeyAction action) const;
+        void ProcessHotkeys();  // Call once per frame after ProcessEvent
 
     private:
         // ---- State ----
         bool m_quit = false;
         bool m_windowResized = false;
-        int m_mouseX = 0;
-        int m_mouseY = 0;
-        int m_mouseDeltaX = 0;
-        int m_mouseDeltaY = 0;
+        int m_mouseX = 0, m_mouseY = 0;
+        int m_mouseDeltaX = 0, m_mouseDeltaY = 0;
         int m_mouseWheelDelta = 0;
-        int m_windowWidth = 0;
-        int m_windowHeight = 0;
+        int m_windowWidth = 0, m_windowHeight = 0;
 
         // ---- Keyboard ----
         std::unordered_map<SDL_Keycode, bool> m_keyStates;

@@ -164,7 +164,11 @@ namespace moosic
         // UI & State
         //======================================================================
         m_ui.Initialize(m_window);
-        LoadState();
+        LoadState(); // Library gets loaded here!
+
+        // ===== ADD THIS - Scan for new files AFTER library is loaded =====
+        m_ui.ScanForNewFilesOnStartup();
+        // =================================================================
 
         std::cout << "Window initialized: " << width << "x" << height << "\n";
         return true;

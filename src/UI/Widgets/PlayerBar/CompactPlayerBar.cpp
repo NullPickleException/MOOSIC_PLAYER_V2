@@ -18,14 +18,36 @@ void CompactPlayerBar::Draw()
     //----------------------------------------------------------------------
     // Player Bar Background (edge-to-edge, drawn behind everything)
     //----------------------------------------------------------------------
+    ImVec2 bgPos;  // Store bgPos for button positioning
     {
-        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos = ImGui::GetCursorScreenPos();
         bgPos.x -= ImGui::GetStyle().WindowPadding.x;
         float bgWidth = ImGui::GetWindowWidth();
         float bgHeight = ImGui::GetTextLineHeightWithSpacing() * 2.5f
                        + ImGui::GetFrameHeightWithSpacing() * 2.0f
                        + 50.0f;
         DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+
+    //----------------------------------------------------------------------
+    // Track Options Button - Top Right Corner
+    //----------------------------------------------------------------------
+    {
+        ImVec2 savedCursor = ImGui::GetCursorPos();
+
+        float btnWidth = 30.0f;
+        float rightPadding = 8.0f;
+        float topPadding = 6.0f;
+
+        float buttonScreenX = bgPos.x + ImGui::GetWindowWidth() - btnWidth - rightPadding - ImGui::GetStyle().WindowPadding.x;
+        float buttonScreenY = bgPos.y + topPadding;
+
+        ImVec2 windowPos = ImGui::GetWindowPos();
+        ImGui::SetCursorPos(ImVec2(buttonScreenX - windowPos.x, buttonScreenY - windowPos.y));
+
+        DrawTrackOptionsButton();
+
+        ImGui::SetCursorPos(savedCursor);
     }
 
     // Small top padding so content doesn't overlap the bevel border

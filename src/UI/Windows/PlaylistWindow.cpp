@@ -600,11 +600,6 @@ namespace moosic
             }
 
             ImGui::SameLine();
-            if (ImGui::Button("Cancel", ImVec2(120, 0)))
-            {
-                m_newPlaylistNameBuffer[0] = '\0';
-                ImGui::CloseCurrentPopup();
-            }
 
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
@@ -612,6 +607,12 @@ namespace moosic
             if (!canCreate)
                 ImGui::EndDisabled();
 
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                m_newPlaylistNameBuffer[0] = '\0';
+                ImGui::CloseCurrentPopup();
+            }
+            
             ImGui::EndPopup();
         }
     }

@@ -21,6 +21,8 @@ namespace moosic
           m_libraryWindow(libraryData, playbackController),
           m_playlistWindow(playlistData, playbackController)
     {
+
+        m_libraryWindow.SetPlaylistDataModel(&m_playlistData);
     }
 
     void WindowContentPanel::UpdatePlayingTrack(const MusicTrack *track)
@@ -71,26 +73,26 @@ namespace moosic
             if (m_theme.UseGradientTabs)
             {
                 dl->AddRectFilledMultiColor(cursorPos,
-                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
-                    ImGui::GetColorU32(m_theme.TabGradientTop),
-                    ImGui::GetColorU32(m_theme.TabGradientTop),
-                    ImGui::GetColorU32(m_theme.TabGradientBottom),
-                    ImGui::GetColorU32(m_theme.TabGradientBottom));
+                                            ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                                            ImGui::GetColorU32(m_theme.TabGradientTop),
+                                            ImGui::GetColorU32(m_theme.TabGradientTop),
+                                            ImGui::GetColorU32(m_theme.TabGradientBottom),
+                                            ImGui::GetColorU32(m_theme.TabGradientBottom));
             }
             if (m_theme.UseTabBevel)
             {
                 DrawTabBevelEdges(dl, cursorPos,
-                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
-                    4.0f, m_theme.TabBevelThickness,
-                    m_theme.TabBevelLight, m_theme.TabBevelDark,
-                    m_theme.TabBevelBorderColor);
+                                  ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                                  4.0f, m_theme.TabBevelThickness,
+                                  m_theme.TabBevelLight, m_theme.TabBevelDark,
+                                  m_theme.TabBevelBorderColor);
             }
             else
             {
                 dl->AddRect(cursorPos,
-                    ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
-                    ImGui::GetColorU32(m_theme.BorderColor),
-                    4.0f, ImDrawFlags_RoundCornersAll, m_theme.BorderThickness);
+                            ImVec2(cursorPos.x + availSize.x, cursorPos.y + availSize.y),
+                            ImGui::GetColorU32(m_theme.BorderColor),
+                            4.0f, ImDrawFlags_RoundCornersAll, m_theme.BorderThickness);
             }
         }
 
@@ -133,21 +135,23 @@ namespace moosic
             };
 
             handleTab("Library", LayoutStateDataModel::Tab::Library,
-                      [&]() { m_libraryWindow.Draw(); });
+                      [&]()
+                      { m_libraryWindow.Draw(); });
 
             handleTab("Playlists", LayoutStateDataModel::Tab::Playlists,
-                      [&]() { m_playlistWindow.Draw(); });
+                      [&]()
+                      { m_playlistWindow.Draw(); });
 
             handleTab("Directories", LayoutStateDataModel::Tab::Directory,
-                      [&]() { m_directoryWindow.Draw(); });
+                      [&]()
+                      { m_directoryWindow.Draw(); });
 
             handleTab("Settings", LayoutStateDataModel::Tab::Settings, [&]()
-            {
+                      {
                 ImGui::BeginChild("##SettingsScrollRegion", ImVec2(0, 0), false,
                                   ImGuiWindowFlags_AlwaysVerticalScrollbar);
                 m_settingsWindow.Draw();
-                ImGui::EndChild();
-            });
+                ImGui::EndChild(); });
 
             ImGui::EndTabBar();
         }

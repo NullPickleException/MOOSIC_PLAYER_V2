@@ -1,5 +1,5 @@
 //==============================================================================
-// UI.h (REVISED)
+// UI.h (REVISED with Hotkeys)
 //==============================================================================
 
 #pragma once
@@ -59,16 +59,13 @@ namespace moosic
         void LoadSavedLogo(const std::string &path);
         void ApplyPendingFont();
 
+        void ScanForNewFilesOnStartup() { m_directoryData.ScanForNewFiles(); }
+
     private:
-        // Matches LayoutStateDataModel::Layout: 0=Standard, 1=Compact, 2=StandardArtLeft, 3=SidebarLeft, 4=MiniPlayer, 5=Theater
         enum class LayoutMode
         {
-            Standard = 0,
-            Compact = 1,
-            StandardArtLeft = 2,
-            SidebarLeft = 3,
-            MiniPlayer = 4,
-            Theater = 5
+            Standard = 0, Compact = 1, StandardArtLeft = 2,
+            SidebarLeft = 3, MiniPlayer = 4, Theater = 5
         };
 
         void HandleLayoutSwitch(InputManager &input);
@@ -82,8 +79,6 @@ namespace moosic
         // Menu bar
         void DrawMenuBar();
         void SetupMenuBarCallbacks();
-
-        // Menu bar actions
         void OnFileOpen();
         void OnFileExit();
         void OnViewLayout(LayoutMode mode);
@@ -91,11 +86,11 @@ namespace moosic
         void OnPlaybackPause();
         void OnPlaybackStop();
         void OnHelpAbout();
-        
-        // NEW: Temporary file playback (without adding to library)
         void OpenAndPlayTemporaryAudioFile(const std::filesystem::path& filePath);
 
-    private:
+        // ──── NEW: Global Hotkey Handler ────
+        void HandleGlobalHotkeys(InputManager &input);
+
         LibraryDataModel m_libraryData;
         PlaylistDataModel m_playlistData;
         DirectoryDataModel m_directoryData;
@@ -121,10 +116,10 @@ namespace moosic
         std::string m_pendingFontPath;
         float m_pendingFontSize = 16.0f;
         bool m_initialized = false;
-
-        // Menu bar callback state
         bool m_menuCallbacksSet = false;
-        
+
+        // ──── NEW: Volume state for mute toggle ────
+        float m_lastVolumeBeforeMute = 0.8f;
     };
 
 } // namespace moosic

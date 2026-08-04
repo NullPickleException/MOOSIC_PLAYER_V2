@@ -68,17 +68,24 @@ void SidePlayerBar::Draw()
     ImGui::Spacing();
 
     //----------------------------------------------------------------------
-    // Song Info - Scrolling text
+    // Song Info - Fixed height containers to prevent flickering
     //----------------------------------------------------------------------
     float textMaxWidth = contentWidth;
+    float textHeight = ImGui::GetTextLineHeight() + 4.0f;
 
     ImGui::SetCursorPosX(centerX);
+    ImGui::BeginChild("##TitleContainer", ImVec2(0, textHeight), false, 
+                      ImGuiWindowFlags_NoScrollbar);
     DrawScrollingText(Data().title.c_str(), m_theme.TextPrimary, textMaxWidth,
                       m_titleScrollOffset, m_lastTrackChangeTime, trackChanged);
+    ImGui::EndChild();
 
     ImGui::SetCursorPosX(centerX);
+    ImGui::BeginChild("##ArtistContainer", ImVec2(0, textHeight), false, 
+                       ImGuiWindowFlags_NoScrollbar);
     DrawScrollingText(Data().artist.c_str(), m_theme.TextSecondary, textMaxWidth,
                       m_artistScrollOffset, m_lastTrackChangeTime, trackChanged);
+    ImGui::EndChild();
 
     ImGui::Spacing();
     ImGui::SetCursorPosX(centerX);

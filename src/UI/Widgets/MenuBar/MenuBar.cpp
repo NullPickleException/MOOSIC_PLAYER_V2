@@ -41,7 +41,7 @@ namespace moosic
         if (vertPadding < 0.0f)
             vertPadding = 0.0f;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding+2.0)); // THIS controls padding inside each button
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding + 2.0)); // THIS controls padding inside each button
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, bgColor);
@@ -138,11 +138,11 @@ namespace moosic
                         if (OnPlaybackPause)
                             OnPlaybackPause();
                     }
-                    if (ImGui::MenuItem("Stop", "Ctrl+S"))
-                    {
-                        if (OnPlaybackStop)
-                            OnPlaybackStop();
-                    }
+                    // if (ImGui::MenuItem("Stop", "Ctrl+S"))
+                    // {
+                    //     if (OnPlaybackStop)
+                    //         OnPlaybackStop();
+                    // }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Next Track", "Ctrl+Right"))
                     {
@@ -166,6 +166,18 @@ namespace moosic
                             OnHelpAbout();
                     }
                     ImGui::EndMenu();
+                }
+
+                // Version number aligned to the right
+                {
+                    const char *version = "v2.0.0"; // ← change here or use member
+                    float textWidth = ImGui::CalcTextSize(version).x;
+                    float rightPadding = 12.0f;
+
+                    ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - textWidth - rightPadding);
+
+                    // Dimmed look (optional)
+                    ImGui::TextUnformatted(version);
                 }
 
                 ImGui::PopStyleVar(6);

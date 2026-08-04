@@ -17,6 +17,7 @@
 #include <vector>
 #include <filesystem>
 #include <functional>
+#include <set>
 
 namespace moosic
 {
@@ -59,6 +60,12 @@ public:
     void ClearAll();
 
     //--------------------------------------------------------------------------
+    // Startup: Check for new files in existing directories
+    //--------------------------------------------------------------------------
+
+    void ScanForNewFiles();  // Call once on startup after library is loaded
+
+    //--------------------------------------------------------------------------
     // Update (call each frame)
     //--------------------------------------------------------------------------
 
@@ -73,7 +80,10 @@ public:
 
 private:
     void StartImport(const std::filesystem::path& folder);
+    void StartIncrementalImport(const std::filesystem::path& folder, const std::vector<std::filesystem::path>& newFiles);
     void CommitImport();
+    
+    std::vector<std::filesystem::path> FindNewFiles(const std::filesystem::path& directory) const;
     
     void NotifyChanged();
 

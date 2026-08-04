@@ -1,14 +1,14 @@
+//==============================================================================
+// Core/Input/InputManager.cpp
+//==============================================================================
+
 #include "InputManager.h"
+#include <iostream>
 
 namespace moosic
 {
-    // =========================================================================
-    // Event Processing
-    // =========================================================================
-
     void InputManager::Reset()
     {
-        // ---- Clear Per-Frame States ----
         m_keyPressed.clear();
         m_keyReleased.clear();
         m_mouseButtonPressed.clear();
@@ -72,10 +72,7 @@ namespace moosic
         }
     }
 
-    // =========================================================================
-    // Keyboard Queries
-    // =========================================================================
-
+    // ---- Keyboard Queries ----
     bool InputManager::IsKeyDown(SDL_Keycode key) const
     {
         auto it = m_keyStates.find(key);
@@ -92,10 +89,7 @@ namespace moosic
         return m_keyReleased.find(key) != m_keyReleased.end();
     }
 
-    // =========================================================================
-    // Mouse Queries
-    // =========================================================================
-
+    // ---- Mouse Queries ----
     bool InputManager::IsMouseButtonDown(int button) const
     {
         auto it = m_mouseButtonStates.find(button);
@@ -122,5 +116,48 @@ namespace moosic
     {
         dx = m_mouseDeltaX;
         dy = m_mouseDeltaY;
+    }
+
+    // ---- Hotkey Support ----
+    bool InputManager::IsHotkeyPressed(HotkeyAction action) const
+    {
+        bool ctrl = IsKeyDown(SDLK_LCTRL) || IsKeyDown(SDLK_RCTRL);
+        
+        switch (action)
+        {
+            case HotkeyAction::PlayPause:
+                return IsKeyPressed(SDLK_SPACE);
+                
+            case HotkeyAction::NextTrack:
+                return (ctrl && IsKeyPressed(SDLK_RIGHT));
+                
+            case HotkeyAction::PreviousTrack:
+                return (ctrl && IsKeyPressed(SDLK_LEFT));
+                
+            case HotkeyAction::Stop:
+                return (ctrl && IsKeyPressed(SDLK_s));
+                
+            case HotkeyAction::VolumeUp:
+                return (ctrl && IsKeyPressed(SDLK_UP));
+                
+            case HotkeyAction::VolumeDown:
+                return (ctrl && IsKeyPressed(SDLK_DOWN));
+                
+            case HotkeyAction::MuteToggle:
+                return (ctrl && IsKeyPressed(SDLK_m));
+                
+            case HotkeyAction::SeekForward:
+                return IsKeyPressed(SDLK_RIGHT) && !ctrl;
+                
+            case HotkeyAction::SeekBackward:
+                return IsKeyPressed(SDLK_LEFT) && !ctrl;
+        }
+        return false;
+    }
+
+    void InputManager::ProcessHotkeys()
+    {
+        // Platform-specific global hotkey registration hook
+        // For true global hotkeys (background), register OS-level shortcuts here
     }
 }

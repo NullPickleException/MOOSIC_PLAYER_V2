@@ -4,7 +4,7 @@
 // Base interface for player bar implementations with theme support.
 // Reads all playback state from PlayerBarData (owned by PlaybackController).
 // Owns only: theme, renderer reference, album art texture, scroll state,
-// and child widgets.
+// child widgets, and track options dropdown.
 //==============================================================================
 
 #pragma once
@@ -14,30 +14,35 @@
 #include "../AlbumArtLightBox.h"
 #include "../AlbumArtBox.h"
 #include "../WaveVisualizer.h"
+#include "../PopupMenu.h"
+#include "../EditTrackDialog.h"
+
 #include <imgui.h>
 #include <SDL.h>
+
 #include <string>
 #include <unordered_map>
+#include <functional>
 
 namespace moosic
 {
 
     class PlaybackController;
 
-    //==============================================================================
+    //==========================================================================
     // PlayerBarTheme
-    //==============================================================================
+    //==========================================================================
     struct PlayerBarTheme
     {
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Text
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         ImVec4 TextPrimary = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
         ImVec4 TextSecondary = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Buttons
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         ImVec4 ButtonNormal = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
         ImVec4 ButtonHovered = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
         ImVec4 ButtonActive = ImVec4(0.46f, 0.46f, 0.46f, 1.00f);
@@ -46,16 +51,16 @@ namespace moosic
         ImVec4 ButtonPrimaryHovered = ButtonHovered;
         ImVec4 ButtonPrimaryActive = ButtonActive;
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Sliders
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         ImVec4 SliderTrack = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
         ImVec4 SliderGrab = ImVec4(0.65f, 0.65f, 0.65f, 1.00f);
         ImVec4 SliderGrabActive = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Classic 2000s Slider Effects (default: off)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         bool UseSliderTrackGradient = false;
         ImVec4 SliderTrackGradientTop = ImVec4(0.28f, 0.28f, 0.30f, 1.00f);
         ImVec4 SliderTrackGradientBottom = ImVec4(0.18f, 0.18f, 0.20f, 1.00f);
@@ -70,9 +75,9 @@ namespace moosic
         ImVec4 SliderGrabBevelDark = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
         ImVec4 SliderGrabBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Sizing
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         float ButtonRounding = 5.0f;
         float SliderRounding = 3.0f;
         float AlbumArtRounding = 0.0f;
@@ -83,22 +88,24 @@ namespace moosic
         float PrimaryButtonExtraWidth = 5.0f;
         float ButtonHeightExtra = 0.0f;
 
-        //--------------------------------------------------------------------------
+        float OptionsButtonWidth = 28.0f;
+
+        //----------------------------------------------------------------------
         // Scrolling text
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         float ScrollSpeed = 30.0f;
         float ScrollDelay = 1.5f;
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Child Widget Themes
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         LightboxTheme Lightbox;
         AlbumArtBoxTheme AlbumArtBox;
         WaveVisualizerStyle Visualizer;
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Classic 2000s Progress Bar Effects (default: off)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         ImVec4 ProgressTrackColor = ImVec4(0.24f, 0.24f, 0.24f, 1.0f);
         ImVec4 ProgressFillColor = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
         ImVec4 ProgressFillTop = ImVec4(0.26f, 0.59f, 0.98f, 1.0f);
@@ -109,9 +116,9 @@ namespace moosic
         float ProgressHeight = 8.0f;
         float ProgressRounding = 4.0f;
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Classic 2000s Button Effects (default: off)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         bool UseButtonGloss = false;
         float ButtonGlossIntensity = 0.0f;
         ImVec4 ButtonGlossHighlight = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
@@ -122,9 +129,9 @@ namespace moosic
         ImVec4 ButtonBevelDark = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
         ImVec4 ButtonBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Classic 2000s Player Bar Background (default: off)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         bool UsePlayerBarGradient = false;
         ImVec4 PlayerBarGradientTop = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
         ImVec4 PlayerBarGradientBottom = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
@@ -138,44 +145,44 @@ namespace moosic
         ImVec4 PlayerBarBevelBorderColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
     };
 
-    //==============================================================================
+    //==========================================================================
     // IPlayerBar - Base Interface
-    //==============================================================================
+    //==========================================================================
 
     class IPlayerBar
     {
     public:
-        virtual ~IPlayerBar() = default;
+        IPlayerBar();
+        virtual ~IPlayerBar() { delete m_editTrackDialog; }
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Core Interface
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
 
         virtual void Draw() = 0;
 
-        // Theme application
         void ApplyTheme(const PlayerBarTheme &theme);
-
-        // External dependencies
         void SetPlaybackController(PlaybackController *controller);
         void SetRenderer(SDL_Renderer *renderer);
 
-        //--------------------------------------------------------------------------
-        // Album Art Cache - Clears all cached textures (call on library refresh)
-        //--------------------------------------------------------------------------
+        // Track options callbacks
+        void SetOnEditTrackInfo(std::function<void()> callback) { m_onEditTrackInfo = std::move(callback); }
+        void SetOnOpenTrackFolder(std::function<void()> callback) { m_onOpenTrackFolder = std::move(callback); }
+        void SetEditTrackDialog(EditTrackDialog *dialog) { m_editTrackDialog = dialog; }
+
         void ClearAlbumArtCache();
 
     protected:
-        //--------------------------------------------------------------------------
-        // Data Access (bars read from data, never write to it)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // Data Access
+        //----------------------------------------------------------------------
 
         const PlayerBarData &Data() const { return *m_data; }
         PlaybackController *Controller() const { return m_playbackController; }
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Style Helpers
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
 
         void PushNormalButtonStyle();
         void PushPrimaryButtonStyle();
@@ -184,10 +191,10 @@ namespace moosic
         void PopStyle();
         void PopStyleVarOnly();
         void PopSliderStyle();
-        
-        //--------------------------------------------------------------------------
+
+        //----------------------------------------------------------------------
         // Classic 2000s Rendering Helpers
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
 
         void DrawGlossOverlay(const ImVec2 &min, const ImVec2 &max, float rounding);
         void DrawBevelEdges(const ImVec2 &min, const ImVec2 &max, float rounding);
@@ -198,27 +205,23 @@ namespace moosic
         void DrawSliderGradientBg(const ImVec2 &min, const ImVec2 &max, float rounding);
         void DrawClassicSliderDecorations(const ImVec2 &min, const ImVec2 &max);
 
-        //--------------------------------------------------------------------------
-        // Drawing Methods - Modular (subclasses override Draw() to arrange)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // Drawing Methods
+        //----------------------------------------------------------------------
 
         void DrawAlbumArt();
         void DrawSongInfo();
         void DrawPlaybackTimeline();
         void DrawControls();
         void DrawVisualizer();
+        void DrawTrackOptionsButton();
 
-        // Individual control drawers
         void DrawPreviousButton();
         void DrawPlayPauseButton();
         void DrawNextButton();
         void DrawPlayModeButton();
         void DrawVolumeIcon();
         void DrawVolumeSlider();
-
-        //--------------------------------------------------------------------------
-        // Drawing - Song Info Helpers
-        //--------------------------------------------------------------------------
 
         void DrawSongTitle();
         void DrawArtistName();
@@ -228,9 +231,9 @@ namespace moosic
         void DrawTotalTime();
         void DrawPlaybackSlider();
 
-        //--------------------------------------------------------------------------
-        // Event Handlers (subclasses can override)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // Event Handlers
+        //----------------------------------------------------------------------
 
         virtual void OnPreviousButtonPressed();
         virtual void OnPlayPauseButtonPressed();
@@ -240,84 +243,66 @@ namespace moosic
         virtual void OnVolumeSliderChanged(float value);
         virtual void OnPlayModeButtonPressed();
         virtual void OnAlbumArtClicked();
-
-        //--------------------------------------------------------------------------
-        // Album Art Helpers
-        //--------------------------------------------------------------------------
+        virtual void OnTrackOptionsClicked();
+        void OnEditTrackInfoDefault();
+        void OnOpenTrackFolderDefault();
+        //----------------------------------------------------------------------
+        // Album Art
+        //----------------------------------------------------------------------
 
         void LoadAlbumArtForCurrentTrack();
         bool HasAlbumArtTexture() const { return m_albumArtTexture != nullptr; }
 
-        //--------------------------------------------------------------------------
-        // Theme (read by drawing methods)
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // Theme & State
+        //----------------------------------------------------------------------
 
         PlayerBarTheme m_theme;
-
-        //--------------------------------------------------------------------------
-        // Seeking State (only UI mutable state that's not in PlayerBarData)
-        //--------------------------------------------------------------------------
-
         bool m_isSeeking = false;
-
-        //--------------------------------------------------------------------------
-        // Child Widgets (protected so subclasses can access for custom layouts)
-        //--------------------------------------------------------------------------
 
         AlbumArtLightbox m_lightbox;
         AlbumArtBox m_albumArtBox;
         WaveVisualizer m_visualizer;
 
-        //--------------------------------------------------------------------------
-        // Album Art Texture (protected so subclasses can check for clicks)
-        //--------------------------------------------------------------------------
-
         void *m_albumArtTexture = nullptr;
-
-        //--------------------------------------------------------------------------
-        // Album Art Load State (protected so subclasses can reset on track change)
-        //--------------------------------------------------------------------------
-
         bool m_artLoadAttempted = false;
-
-        //--------------------------------------------------------------------------
-        // Scrolling text animation state (protected for subclass Draw() methods)
-        //--------------------------------------------------------------------------
 
         float m_titleScrollOffset = 0.0f;
         float m_artistScrollOffset = 0.0f;
         float m_lastTrackChangeTime = 0.0f;
-
         bool m_wasSeeking = false;
 
+        // Track options dropdown
+        ContextMenu m_trackOptionsMenu;
+
+        EditTrackDialog *m_editTrackDialog = nullptr;
+
+        bool m_showTrackOptions = false;
+        std::function<void()> m_onEditTrackInfo;
+        std::function<void()> m_onOpenTrackFolder;
+
     private:
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Internal Helpers
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
 
         void LoadAlbumArtFromData();
         void DestroyAlbumArtTexture();
         void SyncChildWidgets();
 
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
         // Members
-        //--------------------------------------------------------------------------
+        //----------------------------------------------------------------------
 
-        // External dependencies (set once)
         PlaybackController *m_playbackController = nullptr;
         SDL_Renderer *m_renderer = nullptr;
-
-        // Pointer to controller's PlayerBarData (set from controller)
         const PlayerBarData *m_data = nullptr;
 
-        // Rendering
         ImageLoader m_imageLoader;
 
-        // Album Art Texture tracking
         std::size_t m_lastAlbumArtTrackId = 0;
         int m_albumArtWidth = 0;
         int m_albumArtHeight = 0;
-
         int m_lastVisualizerMode = 0;
     };
 

@@ -13,14 +13,37 @@ void StandardArtLeftPlayerBar::Draw()
     //----------------------------------------------------------------------
     // Player Bar Background (edge-to-edge)
     //----------------------------------------------------------------------
+    ImVec2 bgPos;
+    float bgHeight;
     {
-        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos = ImGui::GetCursorScreenPos();
         bgPos.x -= ImGui::GetStyle().WindowPadding.x;
         float bgWidth = ImGui::GetWindowWidth();
-        float bgHeight = ImGui::GetTextLineHeightWithSpacing() * 3.0f
+        bgHeight = ImGui::GetTextLineHeightWithSpacing() * 3.0f
                        + ImGui::GetFrameHeightWithSpacing() * 2.0f
                        + 65.0f;
         DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
+    }
+
+    //----------------------------------------------------------------------
+    // Track Options Button - Top Right Corner (does NOT affect layout)
+    //----------------------------------------------------------------------
+    {
+        ImVec2 savedCursor = ImGui::GetCursorPos();
+
+        float btnWidth = 30.0f;
+        float rightPadding = 8.0f;
+        float topPadding = 6.0f;
+
+        float buttonScreenX = bgPos.x + ImGui::GetWindowWidth() - btnWidth - rightPadding - ImGui::GetStyle().WindowPadding.x;
+        float buttonScreenY = bgPos.y + topPadding;
+
+        ImVec2 windowPos = ImGui::GetWindowPos();
+        ImGui::SetCursorPos(ImVec2(buttonScreenX - windowPos.x, buttonScreenY - windowPos.y));
+
+        DrawTrackOptionsButton();
+
+        ImGui::SetCursorPos(savedCursor);
     }
     
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
@@ -53,7 +76,7 @@ void StandardArtLeftPlayerBar::Draw()
     // Right Panel
     //----------------------------------------------------------------------
     ImGui::BeginGroup();
-    float rightWidth = availWidth - ArtColumnWidth - Gap - 10.0f;
+    float rightWidth = availWidth - ArtColumnWidth - Gap - 50.0f;
     float rightStartX = ImGui::GetCursorPosX();
 
     bool trackChanged = Data().trackJustChanged;
@@ -205,6 +228,10 @@ void StandardArtLeftPlayerBar::Draw()
 
     ImGui::EndGroup();
     m_lightbox.Draw();
+    
+    // Draw the edit track dialog (modal popup)
+    if (m_editTrackDialog)
+        m_editTrackDialog->Draw();
 }
 
 } // namespace moosic
