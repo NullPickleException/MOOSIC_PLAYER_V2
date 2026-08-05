@@ -26,16 +26,10 @@ namespace moosic
         : m_data(dataModel), m_playbackController(playbackController)
     {
         //======================================================================
-        // Main Track Table (Playlist Content)
+        // Main Track Table (Playlist Content) - Config from DataModel
         //======================================================================
 
-        TrackTableConfig config;
-        config.Columns = {
-            TrackColumn::Title,
-            TrackColumn::Artist,
-            TrackColumn::Duration};
-        config.Sortable = false;
-        m_trackTable.ApplyConfig(config);
+        m_trackTable.ApplyConfig(m_data.GetTrackTableConfig());
 
         TrackTableStyle style;
         style.TitleWidth = 350.0f;
@@ -49,6 +43,11 @@ namespace moosic
 
         m_trackTable.OnRowDoubleClick([this](const RowEventData &event)
                                       { OnTrackClicked(event.track, event.rowIndex); });
+
+        // Track columns changed callback - save to DataModel
+        m_trackTable.OnColumnsChanged([this](const TrackTableConfig& config) {
+            m_data.SetTrackTableConfig(config);
+        });
 
         //======================================================================
         // Track Right-Click Context Menu
@@ -120,18 +119,10 @@ namespace moosic
             ); });
 
         //======================================================================
-        // Add Track Table (Library Tracks)
+        // Add Track Table (Library Tracks) - Config from DataModel
         //======================================================================
 
-        TrackTableConfig addConfig;
-        addConfig.Columns = {
-            TrackColumn::Title,
-            TrackColumn::Artist,
-            TrackColumn::Album,
-        };
-        addConfig.Sortable = true;
-        addConfig.Resizable = true;
-        m_addTrackTable.ApplyConfig(addConfig);
+        m_addTrackTable.ApplyConfig(m_data.GetAddTrackTableConfig());
 
         TrackTableStyle addStyle;
         addStyle.TitleWidth = 250.0f;
@@ -156,6 +147,11 @@ namespace moosic
                     event.track->GetId());
             } });
 
+        // Add track table columns changed callback - save to DataModel
+        m_addTrackTable.OnColumnsChanged([this](const TrackTableConfig& config) {
+            m_data.SetAddTrackTableConfig(config);
+        });
+
         //======================================================================
         // Edit Track Dialog
         //======================================================================
@@ -165,13 +161,11 @@ namespace moosic
                                                  const std::string &artist,
                                                  const std::string &album)
                                           {
-    // Cast away const to modify (safe since MusicLibrary owns the data)
     MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
     mutableTrack->UpdateTitle(title);
     mutableTrack->UpdateArtist(artist);
     mutableTrack->UpdateAlbum(album);
     
-    // Refresh the UI
     m_data.NotifyDataChanged(); });
 
         m_data.SetOnDataChanged([this]() {});
@@ -185,6 +179,10 @@ namespace moosic
     {
         if (m_playbackController)
             m_data.SyncPlayingTrack(m_playbackController->GetCurrentTrack());
+
+        // Apply config from data model each frame
+        m_trackTable.ApplyConfig(m_data.GetTrackTableConfig());
+        m_addTrackTable.ApplyConfig(m_data.GetAddTrackTableConfig());
 
         DrawPlaylistSidebar();
 
@@ -217,7 +215,7 @@ namespace moosic
         DrawCreatePlaylistPopup();
         DrawRenamePlaylistPopup();
         DrawAddTrackPopup();
-        m_editTrackDialog.Draw(); // <-- ADD THIS LINE
+        m_editTrackDialog.Draw();
     }
 
     //==============================================================================

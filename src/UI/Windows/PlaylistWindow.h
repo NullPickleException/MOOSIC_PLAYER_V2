@@ -1,3 +1,7 @@
+//==============================================================================
+// UI/Windows/PlaylistWindow.h
+//==============================================================================
+
 #pragma once
 
 #include "IWindow.h"
@@ -54,7 +58,7 @@ namespace moosic
 
         // ── Sidebar Splitter ────────────────────────
         float m_sidebarWidth = 220.0f;
-        static constexpr float MIN_SIDEBAR_WIDTH = 150.0f;
+        static constexpr float MIN_SIDEBAR_WIDTH = 100.0f;
         static constexpr float MAX_SIDEBAR_WIDTH = 400.0f;
 
         // ── UI State ────────────────────────────────

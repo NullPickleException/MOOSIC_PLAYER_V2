@@ -27,7 +27,6 @@ namespace moosic
           m_compactLayout(m_libraryData, m_directoryData, m_playlistData, m_layoutState, library, playbackController),
           m_standardArtLeftLayout(m_libraryData, m_directoryData, m_playlistData, m_layoutState, library, playbackController),
           m_sidebarLayout(m_libraryData, m_directoryData, m_playlistData, m_layoutState, library, playbackController),
-          m_miniPlayerLayout(m_libraryData, m_directoryData, m_playlistData, m_layoutState, library, playbackController),
           m_theaterLayout(m_libraryData, m_directoryData, m_playlistData, m_layoutState, library, playbackController)
     {
     }
@@ -104,9 +103,6 @@ namespace moosic
         case LayoutMode::SidebarLeft:
             m_sidebarLayout.Draw(renderer);
             break;
-        case LayoutMode::MiniPlayer:
-            m_miniPlayerLayout.Draw(renderer);
-            break;
         case LayoutMode::Theater:
             m_theaterLayout.Draw(renderer);
             break;
@@ -159,7 +155,6 @@ namespace moosic
         m_compactLayout.ApplyTheme(theme);
         m_standardArtLeftLayout.ApplyTheme(theme);
         m_sidebarLayout.ApplyTheme(theme);
-        m_miniPlayerLayout.ApplyTheme(theme);
         m_theaterLayout.ApplyTheme(theme);
     }
 
@@ -293,8 +288,6 @@ namespace moosic
         if (input.IsKeyPressed(SDLK_4))
             newMode = LayoutMode::SidebarLeft;
         if (input.IsKeyPressed(SDLK_5))
-            newMode = LayoutMode::MiniPlayer;
-        if (input.IsKeyPressed(SDLK_6))
             newMode = LayoutMode::Theater;
 
         if (newMode != m_layoutMode)
@@ -310,8 +303,6 @@ namespace moosic
             if (auto *panel = m_standardArtLeftLayout.GetContentPanel())
                 panel->InvalidateTabSelection();
             if (auto *panel = m_sidebarLayout.GetContentPanel())
-                panel->InvalidateTabSelection();
-            if (auto *panel = m_miniPlayerLayout.GetContentPanel())
                 panel->InvalidateTabSelection();
             if (auto *panel = m_theaterLayout.GetContentPanel())
                 panel->InvalidateTabSelection();
@@ -332,8 +323,6 @@ namespace moosic
             return m_standardArtLeftLayout.GetContentPanel();
         case LayoutMode::SidebarLeft:
             return m_sidebarLayout.GetContentPanel();
-        case LayoutMode::MiniPlayer:
-            return m_miniPlayerLayout.GetContentPanel();
         case LayoutMode::Theater:
             return m_theaterLayout.GetContentPanel();
         default:
@@ -581,8 +570,6 @@ namespace moosic
         if (auto *panel = m_standardArtLeftLayout.GetContentPanel())
             panel->InvalidateTabSelection();
         if (auto *panel = m_sidebarLayout.GetContentPanel())
-            panel->InvalidateTabSelection();
-        if (auto *panel = m_miniPlayerLayout.GetContentPanel())
             panel->InvalidateTabSelection();
         if (auto *panel = m_theaterLayout.GetContentPanel())
             panel->InvalidateTabSelection();

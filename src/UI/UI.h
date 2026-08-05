@@ -65,7 +65,7 @@ namespace moosic
         enum class LayoutMode
         {
             Standard = 0, Compact = 1, StandardArtLeft = 2,
-            SidebarLeft = 3, MiniPlayer = 4, Theater = 5
+            SidebarLeft = 3, Theater = 4
         };
 
         void HandleLayoutSwitch(InputManager &input);
@@ -106,7 +106,6 @@ namespace moosic
         CompactLayout m_compactLayout;
         StandardArtLeftLayout m_standardArtLeftLayout;
         SidebarLeftLayout m_sidebarLayout;
-        MiniPlayerLayout m_miniPlayerLayout;
         TheaterLayout m_theaterLayout;
 
         PlaybackController &m_playbackController;

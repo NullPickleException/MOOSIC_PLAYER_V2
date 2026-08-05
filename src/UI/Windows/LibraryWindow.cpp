@@ -20,112 +20,113 @@ namespace moosic
     // Constructor
     //==========================================================================
 
-    LibraryWindow::LibraryWindow(LibraryDataModel &dataModel,
-                                 PlaybackController *playbackController)
-        : m_data(dataModel), m_playbackController(playbackController)
+LibraryWindow::LibraryWindow(LibraryDataModel &dataModel,
+                             PlaybackController *playbackController)
+    : m_data(dataModel), m_playbackController(playbackController)
+{
+    //======================================================================
+    // Track Table – apply the config that lives in the data model
+    //======================================================================
+    m_trackTable.ApplyConfig(m_data.GetTableConfig());
+
+    // Style (theme) can still be set here or via ApplyTrackTableTheme()
+    TrackTableStyle style;
+    style.TitleWidth = 350.0f;
+    style.ArtistWidth = 180.0f;
+    style.AlbumWidth = 180.0f;
+    style.ExtensionWidth = 50.0f;
+    style.DurationWidth = 80.0f;
+    style.RowHeight = 18.0f;
+    m_trackTable.ApplyTheme(style);
+
+    //======================================================================
+    // Toolbar Defaults
+    //======================================================================
+
+    m_toolbarOptions.ShowSearchBar = true;
+    m_toolbarOptions.ShowRefreshButton = true;
+    m_toolbarOptions.ShowClearButton = false;
+    m_toolbarOptions.ShowTrackCount = true;
+    m_toolbarOptions.ShowBrandHeader = true;
+    m_toolbarOptions.BrandText = "MOOSIC LIBRARY";
+    m_toolbarOptions.SearchBarWidth = 500.0f;
+    m_toolbarOptions.SearchHint = "Search title, artist or album...";
+
+    SetupSearchBar();
+
+    //======================================================================
+    // Track Table Callbacks
+    //======================================================================
+
+    m_trackTable.OnRowClick([this](const RowEventData &event)
+                            { OnTrackClicked(event.track, event.rowIndex); });
+
+    m_trackTable.OnRowDoubleClick([this](const RowEventData &event)
+                                  { OnTrackClicked(event.track, event.rowIndex); });
+
+    //======================================================================
+    // Right-Click Context Menu
+    //======================================================================
+
+    m_trackTable.OnRowRightClick([this](const RowEventData &event)
+                                 {
+        m_contextRow = event.rowIndex;
+        m_contextTrack = event.track;
+        
+        std::vector<MenuItem> items;
+        BuildContextMenu(items);
+        
+        m_contextMenu.SetItems(items);
+        m_contextMenu.Open(
+            ImGui::GetMousePos().x,
+            ImGui::GetMousePos().y); });
+
+    //======================================================================
+    // Sort Handler
+    //======================================================================
+
+    m_trackTable.OnSort([this](const SortRequest &sort)
+                        { m_data.ApplySort(sort); });
+
+    //======================================================================
+    // COLUMNS CHANGED HANDLER
+    //======================================================================
+
+    m_trackTable.OnColumnsChanged([this](const TrackTableConfig& config) {
+        m_data.SetTableConfig(config);
+    });
+
+    //======================================================================
+    // Edit Track Dialog
+    //======================================================================
+
+    m_editTrackDialog.SetSaveCallback([this](const MusicTrack *track,
+                                             const std::string &title,
+                                             const std::string &artist,
+                                             const std::string &album)
+                                      {
+        MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
+        mutableTrack->UpdateTitle(title);
+        mutableTrack->UpdateArtist(artist);
+        mutableTrack->UpdateAlbum(album);
+        m_data.NotifyDataChanged(); });
+
+    // Apply theme to edit dialog
     {
-        //======================================================================
-        // Track Table Configuration
-        //======================================================================
-
-        TrackTableConfig config;
-        config.Columns = {
-            TrackColumn::Title,
-            TrackColumn::Artist,
-            TrackColumn::Album,
-            TrackColumn::Extension,
-            TrackColumn::Duration};
-        m_trackTable.ApplyConfig(config);
-
-        TrackTableStyle style;
-        style.TitleWidth = 350.0f;
-        style.ArtistWidth = 180.0f;
-        style.AlbumWidth = 180.0f;
-        style.ExtensionWidth = 50.0f;
-        style.DurationWidth = 80.0f;
-        style.RowHeight = 18.0f;
-        m_trackTable.ApplyTheme(style);
-
-        //======================================================================
-        // Toolbar Defaults
-        //======================================================================
-
-        m_toolbarOptions.ShowSearchBar = true;
-        m_toolbarOptions.ShowRefreshButton = true;
-        m_toolbarOptions.ShowClearButton = false;
-        m_toolbarOptions.ShowTrackCount = true;
-        m_toolbarOptions.ShowBrandHeader = true;
-        m_toolbarOptions.BrandText = "MOOSIC LIBRARY";
-        m_toolbarOptions.SearchBarWidth = 500.0f;
-        m_toolbarOptions.SearchHint = "Search title, artist or album...";
-
-        SetupSearchBar();
-
-        //======================================================================
-        // Track Table Callbacks
-        //======================================================================
-
-        m_trackTable.OnRowClick([this](const RowEventData &event)
-                                { OnTrackClicked(event.track, event.rowIndex); });
-
-        m_trackTable.OnRowDoubleClick([this](const RowEventData &event)
-                                      { OnTrackClicked(event.track, event.rowIndex); });
-
-        //======================================================================
-        // Right-Click Context Menu
-        //======================================================================
-
-        m_trackTable.OnRowRightClick([this](const RowEventData &event)
-                                     {
-            m_contextRow = event.rowIndex;
-            m_contextTrack = event.track;
-            
-            std::vector<MenuItem> items;
-            BuildContextMenu(items);
-            
-            m_contextMenu.SetItems(items);
-            m_contextMenu.Open(
-                ImGui::GetMousePos().x,
-                ImGui::GetMousePos().y); });
-
-        //======================================================================
-        // Sort Handler
-        //======================================================================
-
-        m_trackTable.OnSort([this](const SortRequest &sort)
-                            { m_data.ApplySort(sort); });
-
-        //======================================================================
-        // Edit Track Dialog
-        //======================================================================
-
-        m_editTrackDialog.SetSaveCallback([this](const MusicTrack *track,
-                                                 const std::string &title,
-                                                 const std::string &artist,
-                                                 const std::string &album)
-                                          {
-            MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
-            mutableTrack->UpdateTitle(title);
-            mutableTrack->UpdateArtist(artist);
-            mutableTrack->UpdateAlbum(album);
-            m_data.NotifyDataChanged(); });
-
-        // Apply theme to edit dialog
-        {
-            EditTrackDialogTheme dialogTheme;
-            dialogTheme.BrandText = m_theme.BrandText;
-            dialogTheme.TextPrimary = m_theme.TextPrimary;
-            dialogTheme.TextDisabled = m_theme.TextDisabled;
-            dialogTheme.FrameBg = m_theme.ChildBg;
-            dialogTheme.ButtonNormal = m_theme.ButtonNormal;
-            dialogTheme.ButtonHovered = m_theme.ButtonHovered;
-            dialogTheme.ButtonActive = m_theme.ButtonActive;
-            dialogTheme.ButtonRounding = m_theme.ButtonRounding;
-            m_editTrackDialog.SetTheme(dialogTheme);
-        }
-
-        m_data.SetOnDataChanged([this]() {});
+        EditTrackDialogTheme dialogTheme;
+        dialogTheme.BrandText = m_theme.BrandText;
+        dialogTheme.TextPrimary = m_theme.TextPrimary;
+        dialogTheme.TextDisabled = m_theme.TextDisabled;
+        dialogTheme.FrameBg = m_theme.ChildBg;
+        dialogTheme.ButtonNormal = m_theme.ButtonNormal;
+        dialogTheme.ButtonHovered = m_theme.ButtonHovered;
+        dialogTheme.ButtonActive = m_theme.ButtonActive;
+        dialogTheme.ButtonRounding = m_theme.ButtonRounding;
+        m_editTrackDialog.SetTheme(dialogTheme);
     }
+
+    m_data.SetOnDataChanged([this]() {});
+}
 
     //==========================================================================
     // Main Draw
@@ -139,10 +140,14 @@ namespace moosic
         if (m_playbackController)
             m_data.SyncPlayingTrack(m_playbackController->GetCurrentTrack());
 
+        m_trackTable.ApplyConfig(m_data.GetTableConfig());
+
         DrawHeader();
         DrawToolbar();
         ImGui::Separator();
         DrawTrackTable();
+
+        m_data.SetTableConfig(m_trackTable.GetConfig());
 
         m_contextMenu.Draw("##LibraryContextMenu");
         m_editTrackDialog.Draw();
@@ -186,28 +191,45 @@ namespace moosic
         if (!anyToolbar)
             return;
 
+        float availWidth = ImGui::GetContentRegionAvail().x;
+        float buttonWidth = 80.0f;
+        float spacing = 8.0f;
+        
+        // Calculate how many buttons we need space for
+        float buttonsReservedWidth = 0.0f;
+        if (m_toolbarOptions.ShowRefreshButton)
+            buttonsReservedWidth += buttonWidth;
+        if (m_toolbarOptions.ShowClearButton && !m_useDropdownSearch)
+            buttonsReservedWidth += buttonWidth + spacing;
+
+        // Search bar takes remaining space
+        float searchBarWidth = availWidth - buttonsReservedWidth - spacing;
+        if (searchBarWidth < 100.0f) searchBarWidth = 100.0f;
+
         if (m_toolbarOptions.ShowSearchBar)
         {
             if (m_useDropdownSearch)
             {
+                m_searchBar.SetWidth(searchBarWidth);
                 DrawDropdownSearch();
                 m_searchBar.BlockExternalScroll();
             }
             else
-                DrawInlineSearch();
+            {
+                DrawInlineSearch(searchBarWidth);
+            }
         }
 
         if (m_toolbarOptions.ShowClearButton && !m_useDropdownSearch)
         {
-            if (m_toolbarOptions.ShowSearchBar)
-                ImGui::SameLine();
+            ImGui::SameLine(0, spacing);
 
             ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
 
-            if (ImGui::Button("Clear"))
+            if (ImGui::Button("Clear", ImVec2(buttonWidth, 0)))
             {
                 m_searchBuffer[0] = '\0';
                 m_data.SetSearchFilter("");
@@ -219,18 +241,20 @@ namespace moosic
 
         if (m_toolbarOptions.ShowRefreshButton)
         {
-            bool hasSearch = m_toolbarOptions.ShowSearchBar;
-            bool hasClear = m_toolbarOptions.ShowClearButton && !m_useDropdownSearch;
-            if (hasSearch || hasClear)
-                ImGui::SameLine();
+            ImGui::SameLine(0, spacing);
 
             ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
 
-            if (ImGui::Button("Refresh"))
+            if (ImGui::Button("Refresh", ImVec2(buttonWidth, 0)))
+            {
+                // FIXED: Actually scan for new files instead of just refreshing the model
                 m_data.Refresh();
+                if (m_directoryData)
+                    m_directoryData->ScanForNewFiles();
+            }
 
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(3);
@@ -245,7 +269,6 @@ namespace moosic
 
     void LibraryWindow::DrawDropdownSearch()
     {
-        m_searchBar.SetWidth(m_toolbarOptions.SearchBarWidth);
         m_searchBar.SetHint(m_toolbarOptions.SearchHint);
         m_searchBar.Draw();
     }
@@ -254,13 +277,13 @@ namespace moosic
     // Inline Search
     //==========================================================================
 
-    void LibraryWindow::DrawInlineSearch()
+    void LibraryWindow::DrawInlineSearch(float searchBarWidth)
     {
         ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
         ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
         ImGui::PushStyleColor(ImGuiCol_TextDisabled, m_theme.TextDisabled);
 
-        ImGui::SetNextItemWidth(m_toolbarOptions.SearchBarWidth);
+        ImGui::SetNextItemWidth(searchBarWidth);
         if (ImGui::InputTextWithHint("##Search",
                                      m_toolbarOptions.SearchHint.c_str(),
                                      m_searchBuffer, sizeof(m_searchBuffer)))
@@ -347,10 +370,8 @@ namespace moosic
                         m_playlistModel->AddTrackToPlaylist(j, m_contextTrack->GetId()); }});
             }
 
-            // Separator before "New Playlist..."
             playlistItems.push_back({"", false, true, nullptr});
 
-            // "New Playlist..." option
             playlistItems.push_back({"New Playlist...", true, false, [this]()
                                      {
                 if (m_playlistModel && m_contextTrack)
@@ -457,6 +478,15 @@ namespace moosic
             {
                 OnTrackClicked(tracks[result.trackIndex], result.trackIndex);
             } });
+    }
+
+    //==========================================================================
+    // Set Directory Data Model (for Refresh button)
+    //==========================================================================
+
+    void LibraryWindow::SetDirectoryDataModel(DirectoryDataModel* directoryData)
+    {
+        m_directoryData = directoryData;
     }
 
 } // namespace moosic

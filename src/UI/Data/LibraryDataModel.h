@@ -61,6 +61,23 @@ namespace moosic
         void SyncPlayingTrack(const MusicTrack *currentTrack);
 
         //--------------------------------------------------------------------------
+        // Track Table Configuration (owned by the model – single source of truth)
+        //--------------------------------------------------------------------------
+
+        void SetTableConfig(const TrackTableConfig &config);
+        const TrackTableConfig &GetTableConfig() const { return m_tableConfig; }
+        TrackTableConfig &GetTableConfig() { return m_tableConfig; }
+
+        // Convenience helpers for column visibility / order
+        void SetVisibleColumns(const std::vector<TrackColumn> &columns);
+        const std::vector<TrackColumn> &GetVisibleColumns() const { return m_tableConfig.Columns; }
+
+        void ShowColumn(TrackColumn column);          // append if not already present
+        void HideColumn(TrackColumn column);          // remove if present
+        bool IsColumnVisible(TrackColumn column) const;
+        void MoveColumn(int fromIndex, int toIndex);  // reorder
+
+        //--------------------------------------------------------------------------
         // Refresh
         //--------------------------------------------------------------------------
 
@@ -103,6 +120,9 @@ namespace moosic
 
         size_t m_lastKnownTrackCount = 0;
         DataChangedCallback m_onDataChanged;
+
+        // Owned table configuration (columns + flags)
+        TrackTableConfig m_tableConfig;
     };
 
 } // namespace moosic

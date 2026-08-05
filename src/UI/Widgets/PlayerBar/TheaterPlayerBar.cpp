@@ -13,24 +13,35 @@ void TheaterPlayerBar::Draw()
     //----------------------------------------------------------------------
     // Player Bar Background (edge-to-edge)
     //----------------------------------------------------------------------
+    ImVec2 bgPos;
     {
-        ImVec2 bgPos = ImGui::GetCursorScreenPos();
+        bgPos = ImGui::GetCursorScreenPos();
         bgPos.x -= ImGui::GetStyle().WindowPadding.x;
         float bgWidth = ImGui::GetWindowWidth();
         float bgHeight = ImGui::GetContentRegionAvail().y;
         DrawPlayerBarBackground(bgPos, ImVec2(bgWidth, bgHeight));
     }
-    
+
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
 
     float availWidth = ImGui::GetContentRegionAvail().x;
     float availHeight = ImGui::GetContentRegionAvail().y;
 
+    float padding = 4.0f;
+    float infoLineHeight = ImGui::GetTextLineHeight() + 2.0f;
+    float visHeight = 40.0f;
+    float progressHeight = ImGui::GetFrameHeight() + 8.0f;
+    float controlsHeight = ImGui::GetFrameHeight() + 8.0f;
+    float bottomPadding = 12.0f;
+    
+    float totalFixedHeight = padding + infoLineHeight * 2 + padding + visHeight + padding + progressHeight + padding + controlsHeight + padding + bottomPadding;
+    float artAvailableHeight = availHeight - totalFixedHeight;
+    
     //--------------------------------------------------------------------------
-    // Large Album Art - Centered
+    // Large Album Art - Centered, uses remaining space
     //--------------------------------------------------------------------------
-    float maxArtSize = (std::min)(availWidth * 0.5f, availHeight * 0.50f);
-    float artSize = (std::min)(maxArtSize, 300.0f);
+    float maxArtSize = (std::min)(availWidth * 0.65f, artAvailableHeight);
+    float artSize = (std::max)(maxArtSize, 100.0f);
 
     if (Data().trackJustChanged)
         m_artLoadAttempted = false;
@@ -44,17 +55,22 @@ void TheaterPlayerBar::Draw()
         OnAlbumArtClicked();
 
     ImGui::Spacing();
-    ImGui::Spacing();
 
     //--------------------------------------------------------------------------
-    // Song Info - Centered
+    // Song Info - Options button at right edge of text area
     //--------------------------------------------------------------------------
-    float textWidth = (std::min)(availWidth * 0.8f, 500.0f);
-    float textOffsetX = (availWidth - textWidth) * 0.5f;
+    float textWidth = (std::min)(availWidth * 0.85f, 500.0f);
+    float textLeftX = (availWidth - textWidth) * 0.5f;
+    float textRightX = textLeftX + textWidth;
 
-    ImGui::SetCursorPosX(textOffsetX);
+    ImGui::SetCursorPosX(textLeftX);
     ImGui::TextColored(m_theme.TextPrimary, "%s", Data().title.c_str());
-    ImGui::SetCursorPosX(textOffsetX);
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(textRightX - 30.0f);
+    DrawTrackOptionsButton();
+
+    ImGui::SetCursorPosX(textLeftX);
     ImGui::TextColored(m_theme.TextSecondary, "%s", Data().artist.c_str());
 
     ImGui::Spacing();
@@ -64,7 +80,6 @@ void TheaterPlayerBar::Draw()
     //--------------------------------------------------------------------------
     const auto& visStyle = m_visualizer.GetStyle();
     float visWidth = (std::min)(visStyle.BoxWidth * 1.5f, textWidth);
-    float visHeight = visStyle.BoxHeight * 1.3f;
     m_visualizer.SetBoxSize(visWidth, visHeight);
     
     float visOffsetX = (availWidth - visWidth) * 0.5f;
@@ -77,10 +92,13 @@ void TheaterPlayerBar::Draw()
     //--------------------------------------------------------------------------
     // Progress + Time - Centered
     //--------------------------------------------------------------------------
-    float timeWidth = ImGui::CalcTextSize("00:00:00").x;
+    float timeWidth = ImGui::CalcTextSize("00:00").x;
     float sliderWidth = textWidth - timeWidth * 2 - 20.0f;
     if (sliderWidth < 100.0f) sliderWidth = 100.0f;
-    float progressStartX = (availWidth - (timeWidth + 10.0f + sliderWidth + 10.0f + timeWidth)) * 0.5f;
+    
+    float totalWidth = timeWidth + 10.0f + sliderWidth + 10.0f + timeWidth;
+    float progressStartX = (availWidth - totalWidth) * 0.5f;
+    float sliderCenterX = progressStartX + timeWidth + 10.0f + sliderWidth * 0.5f;
 
     ImGui::SetCursorPosX(progressStartX);
     DrawElapsedTime();
@@ -102,19 +120,21 @@ void TheaterPlayerBar::Draw()
     ImGui::Spacing();
 
     //--------------------------------------------------------------------------
-    // Controls - Centered
+    // Controls - Play/Pause centered under slider
     //--------------------------------------------------------------------------
     constexpr float Gap = 8.0f;
-    float btnWidth = 44.0f;
-    float playWidth = 52.0f;
-    float modeWidth = ImGui::CalcTextSize(Data().modeLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 10.0f;
-    float volSliderWidth = 120.0f;
+    float btnWidth = 40.0f;
+    float playWidth = 48.0f;
+    float modeWidth = ImGui::CalcTextSize(Data().modeLabel.c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 8.0f;
+    float volSliderWidth = 100.0f;
 
-    float controlsTotalWidth = btnWidth * 2 + playWidth + modeWidth + volSliderWidth + Gap * 5;
-    float controlsOffsetX = (availWidth - controlsTotalWidth) * 0.5f;
-    if (controlsOffsetX < 0) controlsOffsetX = 0;
+    float playStartX = sliderCenterX - playWidth * 0.5f;
+    float prevStartX = playStartX - Gap - btnWidth;
+    float nextStartX = playStartX + playWidth + Gap;
+    float modeStartX = nextStartX + btnWidth + Gap;
+    float volStartX = modeStartX + modeWidth + Gap;
 
-    ImGui::SetCursorPosX(controlsOffsetX);
+    ImGui::SetCursorPosX(prevStartX);
 
     PushNormalButtonStyle();
     if (ImGui::Button("|<", ImVec2(btnWidth, 0))) OnPreviousButtonPressed();
@@ -144,6 +164,10 @@ void TheaterPlayerBar::Draw()
 
     ImGui::SameLine(0, Gap);
 
+    ImGui::SetCursorPosX(volStartX);
+    DrawVolumeIcon();
+
+    ImGui::SameLine(0, 4.0f);
     ImGui::SetNextItemWidth(volSliderWidth);
     PushSliderStyle();
     float tempVolume = Data().volume;
@@ -151,7 +175,14 @@ void TheaterPlayerBar::Draw()
         OnVolumeSliderChanged(tempVolume);
     PopSliderStyle();
 
+    // Bottom spacing so buttons aren't on the border edge
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + bottomPadding);
+
     m_lightbox.Draw();
+    
+    // Draw the edit track dialog (modal popup)
+    if (m_editTrackDialog)
+        m_editTrackDialog->Draw();
 }
 
 } // namespace moosic

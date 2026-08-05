@@ -10,6 +10,21 @@ namespace moosic
     LibraryDataModel::LibraryDataModel(MusicLibrary &library)
         : m_sourceLibrary(library)
     {
+        // Default column set – can later be loaded from settings
+        m_tableConfig.Columns = {
+            TrackColumn::Title,
+            TrackColumn::Artist,
+            TrackColumn::Album,
+            TrackColumn::Extension,
+            TrackColumn::Duration
+        };
+        m_tableConfig.Sortable   = true;
+        m_tableConfig.Resizable  = true;
+        m_tableConfig.Reorderable = true;
+        m_tableConfig.Hideable   = true;
+        m_tableConfig.Borders    = true;
+        m_tableConfig.AlternateRows = true;
+
         Refresh();
     }
 
@@ -116,6 +131,60 @@ namespace moosic
         if (currentTrack) { int i = FindTrackIndex(currentTrack); if (i >= 0 && i != m_playingIndex) { m_playingIndex = i; m_selectedIndex = i; if (m_onDataChanged) m_onDataChanged(); } }
         else if (m_playingIndex != -1) { m_playingIndex = -1; m_selectedIndex = -1; if (m_onDataChanged) m_onDataChanged(); }
     }
+
+    //==========================================================================
+    // Table Configuration
+    //==========================================================================
+
+    void LibraryDataModel::SetTableConfig(const TrackTableConfig &config)
+    {
+        m_tableConfig = config;
+        if (m_onDataChanged) m_onDataChanged();
+    }
+
+    void LibraryDataModel::SetVisibleColumns(const std::vector<TrackColumn> &columns)
+    {
+        m_tableConfig.Columns = columns;
+        if (m_onDataChanged) m_onDataChanged();
+    }
+
+    void LibraryDataModel::ShowColumn(TrackColumn column)
+    {
+        if (IsColumnVisible(column)) return;
+        m_tableConfig.Columns.push_back(column);
+        if (m_onDataChanged) m_onDataChanged();
+    }
+
+    void LibraryDataModel::HideColumn(TrackColumn column)
+    {
+        auto &cols = m_tableConfig.Columns;
+        cols.erase(std::remove(cols.begin(), cols.end(), column), cols.end());
+        if (m_onDataChanged) m_onDataChanged();
+    }
+
+    bool LibraryDataModel::IsColumnVisible(TrackColumn column) const
+    {
+        const auto &cols = m_tableConfig.Columns;
+        return std::find(cols.begin(), cols.end(), column) != cols.end();
+    }
+
+    void LibraryDataModel::MoveColumn(int fromIndex, int toIndex)
+    {
+        auto &cols = m_tableConfig.Columns;
+        if (fromIndex < 0 || fromIndex >= static_cast<int>(cols.size()) ||
+            toIndex   < 0 || toIndex   >= static_cast<int>(cols.size()) ||
+            fromIndex == toIndex)
+            return;
+
+        TrackColumn col = cols[fromIndex];
+        cols.erase(cols.begin() + fromIndex);
+        cols.insert(cols.begin() + toIndex, col);
+        if (m_onDataChanged) m_onDataChanged();
+    }
+
+    //==========================================================================
+    // Refresh
+    //==========================================================================
 
     void LibraryDataModel::Refresh()
     {

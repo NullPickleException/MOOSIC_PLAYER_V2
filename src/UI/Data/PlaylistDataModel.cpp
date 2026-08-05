@@ -17,6 +17,25 @@ namespace moosic
 PlaylistDataModel::PlaylistDataModel(MusicLibrary& library)
     : m_library(library)
 {
+    // Initialize default track table configs
+    m_trackTableConfig.Columns = {
+        TrackColumn::Title,
+        TrackColumn::Artist,
+        TrackColumn::Duration
+    };
+    m_trackTableConfig.VisibleColumns = m_trackTableConfig.Columns;
+    m_trackTableConfig.Sortable = false;
+    m_trackTableConfig.Hideable = true;
+    
+    m_addTrackTableConfig.Columns = {
+        TrackColumn::Title,
+        TrackColumn::Artist,
+        TrackColumn::Album
+    };
+    m_addTrackTableConfig.VisibleColumns = m_addTrackTableConfig.Columns;
+    m_addTrackTableConfig.Sortable = true;
+    m_addTrackTableConfig.Resizable = true;
+    m_addTrackTableConfig.Hideable = true;
 }
 
 //==============================================================================
@@ -187,7 +206,6 @@ void PlaylistDataModel::SetAddTrackSearchFilter(const std::string& query)
 
 std::vector<const MusicTrack*> PlaylistDataModel::SearchLibraryForTracks() const
 {
-    // FIX: Return ALL tracks when search is empty, not empty results
     if (m_addTrackSearchQuery.empty())
     {
         std::vector<const MusicTrack*> allTracks;
@@ -353,6 +371,22 @@ void PlaylistDataModel::SetSearchFilter(const std::string& query)
     if (m_searchQuery == query) return;
     m_searchQuery = query;
     ApplyFilterAndSort();
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+//==============================================================================
+// Track Table Configurations (NEW)
+//==============================================================================
+
+void PlaylistDataModel::SetTrackTableConfig(const TrackTableConfig& config)
+{
+    m_trackTableConfig = config;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetAddTrackTableConfig(const TrackTableConfig& config)
+{
+    m_addTrackTableConfig = config;
     if (m_onDataChanged) m_onDataChanged();
 }
 

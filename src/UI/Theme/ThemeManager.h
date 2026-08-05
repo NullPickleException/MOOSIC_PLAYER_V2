@@ -81,6 +81,9 @@
 #include "Themes/Nature_Themes/GlacierFrostTheme.h"
 #include "Themes/Nature_Themes/BambooTheme.h"
 #include "Themes/Nature_Themes/OliveTheme.h"
+#include "Themes/Nature_Themes/AutumnWarmthTheme.h"
+#include "Themes/Nature_Themes/ArcticFrostTheme.h"
+#include "Themes/Nature_Themes/SunsetGlowTheme.h"
 
 #include "Themes/Neon_Themes/NeonPurpleTheme.h"
 #include "Themes/Neon_Themes/NeonCyanTheme.h"
@@ -98,8 +101,6 @@
 #include "Themes/Retro_Themes/DOSTheme.h"
 #include "Themes/Retro_Themes/AtariInspiredTheme.h"
 #include "Themes/Retro_Themes/NintendoInspiredTheme.h"
-#include "Themes/Retro_Themes/XboxInspiredTheme.h"
-#include "Themes/Retro_Themes/PlayStationInspiredTheme.h"
 #include "Themes/Retro_Themes/GameboyInspiredTheme.h"
 #include "Themes/Retro_Themes/RetroOSBlueTheme.h"
 
@@ -233,11 +234,14 @@ namespace moosic
             RegisterTheme("Moss", CreateMossTheme);
             RegisterTheme("Pine", CreatePineTheme);
             RegisterTheme("Sakura", CreateSakuraTheme);
+            RegisterTheme("Autumn Warmth", CreateAutumnWarmthTheme);
             RegisterTheme("Desert", CreateDesertTheme);
             RegisterTheme("Canyon", CreateCanyonTheme);
             RegisterTheme("Glacier Frost", CreateGlacierFrostTheme);
+            RegisterTheme("Arctic Frost", CreateArcticFrostTheme);
             RegisterTheme("Bamboo", CreateBambooTheme);
             RegisterTheme("Olive", CreateOliveTheme);
+            RegisterTheme("Sunset Glow", CreateSunsetGlowTheme);
 
             //===================================
             // Neon Themes
@@ -261,8 +265,6 @@ namespace moosic
             RegisterTheme("DOS", CreateDOSTheme);
             RegisterTheme("Atari Inspired", CreateAtariInspiredTheme);
             RegisterTheme("Nintendo Inspired", CreateNintendoInspiredTheme);
-            RegisterTheme("Xbox Inspired", CreateXboxInspiredTheme);
-            RegisterTheme("PlayStation Inspired", CreatePlayStationInspiredTheme);
             RegisterTheme("Gameboy Inspired", CreateGameboyInspiredTheme);
             RegisterTheme("Retro OS Blue", CreateRetroOSBlueTheme);
         }

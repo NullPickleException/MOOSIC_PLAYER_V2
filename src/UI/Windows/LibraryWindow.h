@@ -6,6 +6,7 @@
 
 #include "IWindow.h"
 #include "../Data/LibraryDataModel.h"
+#include "../Data/DirectoryDataModel.h"
 #include "../Data/PlaylistDataModel.h"
 #include "../Widgets/TrackTable.h"
 #include "../Widgets/TrackSearchBar.h"
@@ -50,17 +51,14 @@ namespace moosic
         void SetToolbarOptions(const LibraryToolbarOptions &options) { m_toolbarOptions = options; }
         LibraryToolbarOptions &GetToolbarOptions() { return m_toolbarOptions; }
 
-        //----------------------------------------------------------------------
-        // Playlist Data Model - for "Add to Playlist" context menu submenu
-        //----------------------------------------------------------------------
         void SetPlaylistDataModel(PlaylistDataModel *playlistModel)
         {
             m_playlistModel = playlistModel;
         }
 
-        //----------------------------------------------------------------------
-        // Search Mode
-        //----------------------------------------------------------------------
+        // NEW: Set directory data model so Refresh button can scan for new files
+        void SetDirectoryDataModel(DirectoryDataModel* directoryData);
+
         void SetUseDropdownSearch(bool useDropdown) { m_useDropdownSearch = useDropdown; }
         bool IsUsingDropdownSearch() const { return m_useDropdownSearch; }
 
@@ -74,33 +72,27 @@ namespace moosic
         void HandleTableSorting();
         void SetupSearchBar();
 
-        //----------------------------------------------------------------------
-        // Context Menu Builder
-        //----------------------------------------------------------------------
         void BuildContextMenu(std::vector<MenuItem> &items);
 
-        // Search modes
         void DrawDropdownSearch();
-        void DrawInlineSearch();
+        void DrawInlineSearch(float searchBarWidth);
 
     private:
         LibraryDataModel &m_data;
         PlaybackController *m_playbackController;
         PlaylistDataModel *m_playlistModel = nullptr;
+        DirectoryDataModel *m_directoryData = nullptr;  // NEW
         TrackTable m_trackTable;
         TrackSearchBar m_searchBar;
         WindowTheme m_theme;
         LibraryToolbarOptions m_toolbarOptions;
 
-        // ── Context Menu ────────────────────────────
         ContextMenu m_contextMenu;
         int m_contextRow = -1;
         const MusicTrack *m_contextTrack = nullptr;
 
-        // ── Edit Track Dialog ───────────────────────
         EditTrackDialog m_editTrackDialog;
 
-        // Search state
         bool m_useDropdownSearch = false;
         char m_searchBuffer[256] = "";
     };

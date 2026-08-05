@@ -68,24 +68,21 @@ void SidePlayerBar::Draw()
     ImGui::Spacing();
 
     //----------------------------------------------------------------------
-    // Song Info - Fixed height containers to prevent flickering
+    // Song Info - Push transparent child bg before scrolling text
     //----------------------------------------------------------------------
     float textMaxWidth = contentWidth;
-    float textHeight = ImGui::GetTextLineHeight() + 4.0f;
 
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0, 0, 0, 0));
+    
     ImGui::SetCursorPosX(centerX);
-    ImGui::BeginChild("##TitleContainer", ImVec2(0, textHeight), false, 
-                      ImGuiWindowFlags_NoScrollbar);
     DrawScrollingText(Data().title.c_str(), m_theme.TextPrimary, textMaxWidth,
                       m_titleScrollOffset, m_lastTrackChangeTime, trackChanged);
-    ImGui::EndChild();
 
     ImGui::SetCursorPosX(centerX);
-    ImGui::BeginChild("##ArtistContainer", ImVec2(0, textHeight), false, 
-                       ImGuiWindowFlags_NoScrollbar);
     DrawScrollingText(Data().artist.c_str(), m_theme.TextSecondary, textMaxWidth,
                       m_artistScrollOffset, m_lastTrackChangeTime, trackChanged);
-    ImGui::EndChild();
+
+    ImGui::PopStyleColor();
 
     ImGui::Spacing();
     ImGui::SetCursorPosX(centerX);
@@ -185,6 +182,10 @@ void SidePlayerBar::Draw()
     ImGui::Spacing();
 
     m_lightbox.Draw();
+    
+    // Draw the edit track dialog (modal popup)
+    if (m_editTrackDialog)
+        m_editTrackDialog->Draw();
 }
 
 } // namespace moosic

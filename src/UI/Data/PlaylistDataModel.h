@@ -102,6 +102,16 @@ public:
     const std::string& GetSearchFilter() const { return m_searchQuery; }
 
     //--------------------------------------------------------------------------
+    // Track Table Configurations (NEW - for save/load)
+    //--------------------------------------------------------------------------
+
+    void SetTrackTableConfig(const TrackTableConfig& config);
+    const TrackTableConfig& GetTrackTableConfig() const { return m_trackTableConfig; }
+    
+    void SetAddTrackTableConfig(const TrackTableConfig& config);
+    const TrackTableConfig& GetAddTrackTableConfig() const { return m_addTrackTableConfig; }
+
+    //--------------------------------------------------------------------------
     // Library Access (for direct track manipulation like play count)
     //--------------------------------------------------------------------------
 
@@ -148,6 +158,10 @@ private:
     int m_playingIndex = -1;
     
     DataChangedCallback m_onDataChanged;
+
+    // NEW: Track table configurations
+    TrackTableConfig m_trackTableConfig;
+    TrackTableConfig m_addTrackTableConfig;
 };
 
 } // namespace moosic

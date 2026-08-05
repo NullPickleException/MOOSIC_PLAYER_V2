@@ -18,7 +18,7 @@ void CompactPlayerBar::Draw()
     //----------------------------------------------------------------------
     // Player Bar Background (edge-to-edge, drawn behind everything)
     //----------------------------------------------------------------------
-    ImVec2 bgPos;  // Store bgPos for button positioning
+    ImVec2 bgPos;
     {
         bgPos = ImGui::GetCursorScreenPos();
         bgPos.x -= ImGui::GetStyle().WindowPadding.x;
@@ -50,7 +50,6 @@ void CompactPlayerBar::Draw()
         ImGui::SetCursorPos(savedCursor);
     }
 
-    // Small top padding so content doesn't overlap the bevel border
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.0f);
 
     //----------------------------------------------------------------------
@@ -240,6 +239,10 @@ void CompactPlayerBar::Draw()
 
     ImGui::Spacing();
     m_lightbox.Draw();
+    
+    // Draw the edit track dialog (modal popup)
+    if (m_editTrackDialog)
+        m_editTrackDialog->Draw();
 }
 
 } // namespace moosic

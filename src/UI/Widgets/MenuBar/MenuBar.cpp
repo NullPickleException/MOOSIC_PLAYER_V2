@@ -33,7 +33,7 @@ namespace moosic
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, borderThickness);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 0.0f)); // THIS controls gap between File/View/Playback/Help
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 0.0f));
 
         // Calculate vertical padding to center text in menu bar
         float fontHeight = ImGui::GetFontSize();
@@ -41,7 +41,7 @@ namespace moosic
         if (vertPadding < 0.0f)
             vertPadding = 0.0f;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding + 2.0)); // THIS controls padding inside each button
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding + 2.0));
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, bgColor);
@@ -63,11 +63,9 @@ namespace moosic
         {
             if (ImGui::BeginMenuBar())
             {
-                // X = gap between File / View / Playback / Help
-                // Y = gap between items inside dropdowns
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14.0f, 10.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 8.0f));
-                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f)); // was (0, 4)
+                ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(8.0f, 0.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.0f);
@@ -112,15 +110,10 @@ namespace moosic
                         if (OnViewLayout)
                             OnViewLayout(3);
                     }
-                    if (ImGui::MenuItem("Mini Player", "5"))
+                    if (ImGui::MenuItem("Theater Mode", "5"))
                     {
                         if (OnViewLayout)
                             OnViewLayout(4);
-                    }
-                    if (ImGui::MenuItem("Theater Mode", "6"))
-                    {
-                        if (OnViewLayout)
-                            OnViewLayout(5);
                     }
                     ImGui::EndMenu();
                 }
@@ -138,11 +131,6 @@ namespace moosic
                         if (OnPlaybackPause)
                             OnPlaybackPause();
                     }
-                    // if (ImGui::MenuItem("Stop", "Ctrl+S"))
-                    // {
-                    //     if (OnPlaybackStop)
-                    //         OnPlaybackStop();
-                    // }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Next Track", "Ctrl+Right"))
                     {
@@ -170,13 +158,12 @@ namespace moosic
 
                 // Version number aligned to the right
                 {
-                    const char *version = "v2.0.0"; // ← change here or use member
+                    const char *version = "v2.0.0";
                     float textWidth = ImGui::CalcTextSize(version).x;
                     float rightPadding = 12.0f;
 
                     ImGui::SameLine(ImGui::GetWindowContentRegionMax().x - textWidth - rightPadding);
 
-                    // Dimmed look (optional)
                     ImGui::TextUnformatted(version);
                 }
 

@@ -299,43 +299,67 @@ namespace moosic
     }
 
     //==========================================================================
-    // Save/Load
-    //==========================================================================
-    void Application::SaveState()
+// Save/Load
+//==========================================================================
+
+void Application::SaveState()
+{
+    // Get the live LibraryDataModel from the UI
+    LibraryDataModel* libData = nullptr;
+    if (auto* panel = m_ui.GetCurrentContentPanel())
+        libData = &panel->GetLibraryData();
+
+    // Fallback – should never happen after UI is fully constructed
+    if (!libData)
     {
-        m_savingSystem.Save(
+        std::cerr << "[Application] SaveState: no LibraryDataModel available\n";
+        return;
+    }
+
+    m_savingSystem.Save(
+        m_library,
+        m_ui.GetPlaylistDataModel(),
+        m_playbackController,
+        m_ui.GetSettingsDataModel(),
+        m_ui.GetLayoutState(),
+        *libData);                                 // ← NEW
+}
+
+void Application::LoadState()
+{
+    LibraryDataModel* libData = nullptr;
+    if (auto* panel = m_ui.GetCurrentContentPanel())
+        libData = &panel->GetLibraryData();
+
+    if (!libData)
+    {
+        std::cerr << "[Application] LoadState: no LibraryDataModel available\n";
+        return;
+    }
+
+    if (m_savingSystem.Load(
             m_library,
             m_ui.GetPlaylistDataModel(),
             m_playbackController,
             m_ui.GetSettingsDataModel(),
-            m_ui.GetLayoutState());
-    }
-
-    void Application::LoadState()
+            m_ui.GetLayoutState(),
+            *libData))                             // ← NEW
     {
-        if (m_savingSystem.Load(
-                m_library,
-                m_ui.GetPlaylistDataModel(),
-                m_playbackController,
-                m_ui.GetSettingsDataModel(),
-                m_ui.GetLayoutState()))
+        // Refresh the filtered list after tracks + config are restored
+        libData->Refresh();
+
+        const auto &settings = m_ui.GetSettingsDataModel();
+        m_ui.SetTheme(settings.GetThemeName());
+        m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
+
+        std::string savedLogo = settings.GetLogoPath();
+        if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
         {
-            auto *contentPanel = m_ui.GetCurrentContentPanel();
-            if (contentPanel)
-                contentPanel->GetLibraryData().Refresh();
-
-            const auto &settings = m_ui.GetSettingsDataModel();
-            m_ui.SetTheme(settings.GetThemeName());
-            m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
-
-            std::string savedLogo = settings.GetLogoPath();
-            if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
-            {
-                m_ui.LoadSavedLogo(savedLogo);
-            }
+            m_ui.LoadSavedLogo(savedLogo);
         }
-
-        m_playbackController.Pause();
     }
+
+    m_playbackController.Pause();
+}
 
 } // namespace moosic

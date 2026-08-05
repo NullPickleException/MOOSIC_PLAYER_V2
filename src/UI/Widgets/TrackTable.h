@@ -14,7 +14,6 @@
 
 namespace moosic
 {
-
     enum class TrackColumn
     {
         Title,
@@ -132,7 +131,16 @@ namespace moosic
         bool Borders = true;
         bool AlternateRows = true;
 
+        // ALL columns - NEVER remove anything from this list
         std::vector<TrackColumn> Columns = {
+            TrackColumn::Title,
+            TrackColumn::Artist,
+            TrackColumn::Album,
+            TrackColumn::Extension,
+            TrackColumn::Duration};
+
+        // VISIBLE columns - track which ones are currently shown
+        std::vector<TrackColumn> VisibleColumns = {
             TrackColumn::Title,
             TrackColumn::Artist,
             TrackColumn::Album,
@@ -187,6 +195,7 @@ namespace moosic
 
         using RowEventCallback = std::function<void(const RowEventData &)>;
         using SortEventCallback = std::function<void(const SortRequest &)>;
+        using ColumnsChangedCallback = std::function<void(const TrackTableConfig &)>;
 
         //--------------------------------------------------------------------------
         // Configuration
@@ -204,6 +213,7 @@ namespace moosic
         void OnRowHover(RowEventCallback callback) { m_onRowHover = std::move(callback); }
         void OnRowRightClick(RowEventCallback callback) { m_onRowRightClick = std::move(callback); }
         void OnSort(SortEventCallback callback) { m_onSort = std::move(callback); }
+        void OnColumnsChanged(ColumnsChangedCallback callback) { m_onColumnsChanged = std::move(callback); }
 
         //--------------------------------------------------------------------------
         // Context Menu
@@ -259,6 +269,8 @@ namespace moosic
 
         const std::vector<const MusicTrack *> &GetCurrentTrackList() const { return m_currentTrackList; }
 
+        const TrackTableConfig &GetConfig() const { return m_config; }
+
     private:
         //--------------------------------------------------------------------------
         // Internal Drawing
@@ -272,6 +284,7 @@ namespace moosic
         //--------------------------------------------------------------------------
 
         void HandleSort();
+        void SyncHiddenColumns();
         ImGuiTableFlags BuildFlags() const;
         void PushStyle();
         void PopStyle();
@@ -284,6 +297,9 @@ namespace moosic
 
         RowEventData CreateRowEvent(int rowIndex, const MusicTrack *track) const;
         std::string TruncateText(const std::string &text, float maxWidth) const;
+
+        // Get stable column ID for ImGui
+        static ImGuiID GetColumnId(TrackColumn column);
 
     private:
         //--------------------------------------------------------------------------
@@ -299,6 +315,7 @@ namespace moosic
         RowEventCallback m_onRowHover;
         RowEventCallback m_onRowRightClick;
         SortEventCallback m_onSort;
+        ColumnsChangedCallback m_onColumnsChanged;
 
         // Context menu items (stored but rendered externally)
         std::vector<ContextMenuItem> m_contextMenuItems;
@@ -320,6 +337,9 @@ namespace moosic
 
         // Current display data
         std::vector<const MusicTrack *> m_currentTrackList;
+
+        // Store ImGui's column names for lookup
+        std::vector<std::string> m_columnNames;
     };
 
 } // namespace moosic
