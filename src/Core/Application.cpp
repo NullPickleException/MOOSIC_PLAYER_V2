@@ -5,6 +5,7 @@
 #include "Application.h"
 #include "UI/Windows/WindowContentPanel.h"
 #include "Services/ImageLoader.h"
+#include "Services/SystemMediaTransport.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
@@ -17,6 +18,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <SDL_syswm.h>
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #else
@@ -99,7 +101,7 @@ namespace moosic
         //======================================================================
         // SDL Initialization
         //======================================================================
-        if (SDL_Init(SDL_INIT_VIDEO) < 0)
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0)
         {
             std::cerr << "SDL could not initialize!\n"
                       << SDL_GetError() << std::endl;
@@ -166,9 +168,51 @@ namespace moosic
         m_ui.Initialize(m_window);
         LoadState(); // Library gets loaded here!
 
-        // ===== ADD THIS - Scan for new files AFTER library is loaded =====
+        // ===== Scan for new files AFTER library is loaded =====
         m_ui.ScanForNewFilesOnStartup();
-        // =================================================================
+        // ======================================================
+
+        //======================================================================
+        // System Media Transport (Windows SMTC / Linux MPRIS / macOS stub)
+        //======================================================================
+#ifdef _WIN32
+        SDL_SysWMinfo wmInfo;
+        SDL_VERSION(&wmInfo.version);
+        if (SDL_GetWindowWMInfo(m_window, &wmInfo))
+        {
+            void *hwnd = wmInfo.info.win.window;
+            m_systemMediaTransport.Initialize(hwnd);
+        }
+#else
+        m_systemMediaTransport.Initialize(nullptr);
+#endif
+
+        // Register callback on every platform (no-op where unsupported)
+        m_systemMediaTransport.SetButtonCallback(
+            [this](SystemMediaButton button)
+            {
+                switch (button)
+                {
+                case SystemMediaButton::Play:
+                    m_playbackController.Play();
+                    break;
+                case SystemMediaButton::Pause:
+                    m_playbackController.Pause();
+                    break;
+                case SystemMediaButton::PlayPause:
+                    m_playbackController.TogglePlayPause();
+                    break;
+                case SystemMediaButton::Next:
+                    m_playbackController.Next();
+                    break;
+                case SystemMediaButton::Previous:
+                    m_playbackController.Previous();
+                    break;
+                case SystemMediaButton::Stop:
+                    m_playbackController.Stop();
+                    break;
+                }
+            });
 
         std::cout << "Window initialized: " << width << "x" << height << "\n";
         return true;
@@ -220,6 +264,9 @@ namespace moosic
 
     void Application::Shutdown()
     {
+        // Shutdown system media transport first
+        m_systemMediaTransport.Shutdown();
+
         SaveState();
 
         ImGui_ImplSDLRenderer2_Shutdown();
@@ -238,6 +285,7 @@ namespace moosic
 
     void Application::Update()
     {
+        // Auto-save every 30 seconds
         static auto lastAutoSave = std::chrono::steady_clock::now();
         auto now = std::chrono::steady_clock::now();
 
@@ -245,6 +293,27 @@ namespace moosic
         {
             SaveState();
             lastAutoSave = now;
+        }
+
+        // Update system media transport (Windows flyout / AirPods / media keys)
+        {
+            SystemMediaInfo info;
+            const MusicTrack *track = m_playbackController.GetCurrentTrack();
+            if (track)
+            {
+                info.title = track->GetTitle();
+                info.artist = track->GetArtist();
+                info.album = track->GetAlbum();
+                info.durationSeconds = static_cast<double>(track->GetDuration());
+                info.positionSeconds = m_playbackController.GetCurrentPosition();
+                info.isPlaying = m_playbackController.IsPlaying();
+                info.canPlay = true;
+                info.canPause = true;
+                info.canNext = true;
+                info.canPrevious = true;
+            }
+            m_systemMediaTransport.UpdateInfo(info);
+            m_systemMediaTransport.Update();
         }
     }
 
@@ -299,67 +368,67 @@ namespace moosic
     }
 
     //==========================================================================
-// Save/Load
-//==========================================================================
+    // Save/Load
+    //==========================================================================
 
-void Application::SaveState()
-{
-    // Get the live LibraryDataModel from the UI
-    LibraryDataModel* libData = nullptr;
-    if (auto* panel = m_ui.GetCurrentContentPanel())
-        libData = &panel->GetLibraryData();
-
-    // Fallback – should never happen after UI is fully constructed
-    if (!libData)
+    void Application::SaveState()
     {
-        std::cerr << "[Application] SaveState: no LibraryDataModel available\n";
-        return;
-    }
+        // Get the live LibraryDataModel from the UI
+        LibraryDataModel *libData = nullptr;
+        if (auto *panel = m_ui.GetCurrentContentPanel())
+            libData = &panel->GetLibraryData();
 
-    m_savingSystem.Save(
-        m_library,
-        m_ui.GetPlaylistDataModel(),
-        m_playbackController,
-        m_ui.GetSettingsDataModel(),
-        m_ui.GetLayoutState(),
-        *libData);                                 // ← NEW
-}
+        // Fallback – should never happen after UI is fully constructed
+        if (!libData)
+        {
+            std::cerr << "[Application] SaveState: no LibraryDataModel available\n";
+            return;
+        }
 
-void Application::LoadState()
-{
-    LibraryDataModel* libData = nullptr;
-    if (auto* panel = m_ui.GetCurrentContentPanel())
-        libData = &panel->GetLibraryData();
-
-    if (!libData)
-    {
-        std::cerr << "[Application] LoadState: no LibraryDataModel available\n";
-        return;
-    }
-
-    if (m_savingSystem.Load(
+        m_savingSystem.Save(
             m_library,
             m_ui.GetPlaylistDataModel(),
             m_playbackController,
             m_ui.GetSettingsDataModel(),
             m_ui.GetLayoutState(),
-            *libData))                             // ← NEW
-    {
-        // Refresh the filtered list after tracks + config are restored
-        libData->Refresh();
-
-        const auto &settings = m_ui.GetSettingsDataModel();
-        m_ui.SetTheme(settings.GetThemeName());
-        m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
-
-        std::string savedLogo = settings.GetLogoPath();
-        if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
-        {
-            m_ui.LoadSavedLogo(savedLogo);
-        }
+            *libData); // ← NEW
     }
 
-    m_playbackController.Pause();
-}
+    void Application::LoadState()
+    {
+        LibraryDataModel *libData = nullptr;
+        if (auto *panel = m_ui.GetCurrentContentPanel())
+            libData = &panel->GetLibraryData();
+
+        if (!libData)
+        {
+            std::cerr << "[Application] LoadState: no LibraryDataModel available\n";
+            return;
+        }
+
+        if (m_savingSystem.Load(
+                m_library,
+                m_ui.GetPlaylistDataModel(),
+                m_playbackController,
+                m_ui.GetSettingsDataModel(),
+                m_ui.GetLayoutState(),
+                *libData)) // ← NEW
+        {
+            // Refresh the filtered list after tracks + config are restored
+            libData->Refresh();
+
+            const auto &settings = m_ui.GetSettingsDataModel();
+            m_ui.SetTheme(settings.GetThemeName());
+            m_playbackController.SetVisualizerMode(settings.GetVisualizerMode());
+
+            std::string savedLogo = settings.GetLogoPath();
+            if (!savedLogo.empty() && std::filesystem::exists(savedLogo))
+            {
+                m_ui.LoadSavedLogo(savedLogo);
+            }
+        }
+
+        m_playbackController.Pause();
+    }
 
 } // namespace moosic

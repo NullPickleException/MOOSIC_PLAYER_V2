@@ -39,6 +39,7 @@ set(APP_SOURCES
     src/Services/Metadata/WavMetadataParser.cpp
     src/Services/Metadata/AiffMetadataParser.cpp
     src/Services/Metadata/WavPackMetadataParser.cpp
+    src/Services/SystemMediaTransport.cpp
 
     src/UI/UI.cpp
 
@@ -355,6 +356,26 @@ target_compile_definitions(
         ${PLATFORM_DEFINE}
         $<$<BOOL:${WIN32}>:_CRT_SECURE_NO_WARNINGS>
 )
+
+# =============================================================================
+# D-Bus (enables MPRIS on Linux)
+# =============================================================================
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(DBUS QUIET dbus-1)
+    endif()
+
+    if(DBUS_FOUND)
+        message(STATUS "  D-Bus (MPRIS)     : FOUND")
+        target_compile_definitions(MOOSIC_PLAYER PRIVATE MOOSIC_HAVE_DBUS=1)
+        target_include_directories(MOOSIC_PLAYER PRIVATE ${DBUS_INCLUDE_DIRS})
+        target_link_libraries(MOOSIC_PLAYER PRIVATE ${DBUS_LIBRARIES})
+    else()
+        message(STATUS "  D-Bus (MPRIS)     : not found (system media controls disabled on Linux)")
+    endif()
+endif()
+
 
 # =============================================================================
 # CPack - Simple Windows Installer

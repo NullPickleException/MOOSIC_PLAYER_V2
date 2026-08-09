@@ -29,41 +29,81 @@ namespace moosic
             break;
 
         case SDL_KEYDOWN:
+        {
+            // Always update the held state
+            m_keyStates[event.key.keysym.sym] = true;
+
+            // Normal keys still ignore auto-repeat
             if (!event.key.repeat)
-            {
-                m_keyStates[event.key.keysym.sym] = true;
                 m_keyPressed.insert(event.key.keysym.sym);
 
-                // Handle media keys using scancodes
-                switch (event.key.keysym.scancode)
-                {
-                case SDL_SCANCODE_AUDIOPLAY: // Play/Pause button
-                    m_mediaKeyPressed.insert(HotkeyAction::PlayPause);
-                    break;
-                case SDL_SCANCODE_AUDIONEXT:
-                    m_mediaKeyPressed.insert(HotkeyAction::NextTrack);
-                    break;
-                case SDL_SCANCODE_AUDIOPREV:
-                    m_mediaKeyPressed.insert(HotkeyAction::PreviousTrack);
-                    break;
-                case SDL_SCANCODE_AUDIOSTOP:
-                    m_mediaKeyPressed.insert(HotkeyAction::Stop);
-                    break;
-                case SDL_SCANCODE_AUDIOMUTE:
-                    m_mediaKeyPressed.insert(HotkeyAction::MuteToggle);
-                    break;
-                default:
-                    break;
-                }
+            // ---- Media keys (AirPods, keyboard media row, Bluetooth headsets) ----
+            // Accept them EVEN when the driver sets the repeat flag.
+            // Also check both scancode AND keycode because different platforms
+            // fill only one of the two fields.
+            switch (event.key.keysym.scancode)
+            {
+            case SDL_SCANCODE_AUDIOPLAY:
+                m_mediaKeyPressed.insert(HotkeyAction::PlayPause);
+                break;
+            case SDL_SCANCODE_AUDIONEXT:
+                m_mediaKeyPressed.insert(HotkeyAction::NextTrack);
+                break;
+            case SDL_SCANCODE_AUDIOPREV:
+                m_mediaKeyPressed.insert(HotkeyAction::PreviousTrack);
+                break;
+            case SDL_SCANCODE_AUDIOSTOP:
+                m_mediaKeyPressed.insert(HotkeyAction::Stop);
+                break;
+            case SDL_SCANCODE_AUDIOMUTE:
+                m_mediaKeyPressed.insert(HotkeyAction::MuteToggle);
+                break;
+            case SDL_SCANCODE_VOLUMEUP:
+                m_mediaKeyPressed.insert(HotkeyAction::VolumeUp);
+                break;
+            case SDL_SCANCODE_VOLUMEDOWN:
+                m_mediaKeyPressed.insert(HotkeyAction::VolumeDown);
+                break;
+            default:
+                break;
+            }
+
+            // Some platforms only set the keycode
+            switch (event.key.keysym.sym)
+            {
+            case SDLK_AUDIOPLAY:
+                m_mediaKeyPressed.insert(HotkeyAction::PlayPause);
+                break;
+            case SDLK_AUDIONEXT:
+                m_mediaKeyPressed.insert(HotkeyAction::NextTrack);
+                break;
+            case SDLK_AUDIOPREV:
+                m_mediaKeyPressed.insert(HotkeyAction::PreviousTrack);
+                break;
+            case SDLK_AUDIOSTOP:
+                m_mediaKeyPressed.insert(HotkeyAction::Stop);
+                break;
+            case SDLK_AUDIOMUTE:
+                m_mediaKeyPressed.insert(HotkeyAction::MuteToggle);
+                break;
+            case SDLK_VOLUMEUP:
+                m_mediaKeyPressed.insert(HotkeyAction::VolumeUp);
+                break;
+            case SDLK_VOLUMEDOWN:
+                m_mediaKeyPressed.insert(HotkeyAction::VolumeDown);
+                break;
+            default:
+                break;
             }
             break;
+        }
 
         case SDL_KEYUP:
             m_keyStates[event.key.keysym.sym] = false;
             m_keyReleased.insert(event.key.keysym.sym);
             break;
 
-        // Handle controller/headphone buttons (if they map to SDL controller events)
+        // Game-controller / some headphone buttons
         case SDL_CONTROLLERBUTTONDOWN:
             switch (event.cbutton.button)
             {

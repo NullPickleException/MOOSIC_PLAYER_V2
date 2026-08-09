@@ -382,30 +382,89 @@ namespace moosic
     {
         ImGuiIO &io = ImGui::GetIO();
 
-        // Media keys (from AirPods, keyboard media buttons, etc.) - always process these
-        // regardless of ImGui focus
+        // =====================================================================
+        // Media keys from headphones / AirPods / keyboard media row
+        // Debounced so a single double-tap cannot toggle twice
+        // =====================================================================
+        static Uint32 lastMediaActionTime = 0;
+        const Uint32 now = SDL_GetTicks();
+        const Uint32 MEDIA_DEBOUNCE_MS = 350; // 350 ms is enough for AirPods
+
         if (input.IsMediaKeyPressed(HotkeyAction::PlayPause))
         {
-            m_playbackController.TogglePlayPause();
+            if (now - lastMediaActionTime > MEDIA_DEBOUNCE_MS)
+            {
+                m_playbackController.TogglePlayPause();
+                lastMediaActionTime = now;
+            }
             return;
         }
         if (input.IsMediaKeyPressed(HotkeyAction::NextTrack))
         {
-            m_playbackController.Next();
+            if (now - lastMediaActionTime > MEDIA_DEBOUNCE_MS)
+            {
+                m_playbackController.Next();
+                lastMediaActionTime = now;
+            }
             return;
         }
         if (input.IsMediaKeyPressed(HotkeyAction::PreviousTrack))
         {
-            m_playbackController.Previous();
+            if (now - lastMediaActionTime > MEDIA_DEBOUNCE_MS)
+            {
+                m_playbackController.Previous();
+                lastMediaActionTime = now;
+            }
             return;
         }
         if (input.IsMediaKeyPressed(HotkeyAction::Stop))
         {
-            m_playbackController.Stop();
+            if (now - lastMediaActionTime > MEDIA_DEBOUNCE_MS)
+            {
+                m_playbackController.Stop();
+                lastMediaActionTime = now;
+            }
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::MuteToggle))
+        {
+            if (now - lastMediaActionTime > MEDIA_DEBOUNCE_MS)
+            {
+                float currentVol = m_playbackController.GetVolume();
+                if (currentVol > 0.0f)
+                {
+                    m_lastVolumeBeforeMute = currentVol;
+                    m_playbackController.SetVolume(0.0f);
+                }
+                else
+                {
+                    m_playbackController.SetVolume(m_lastVolumeBeforeMute);
+                }
+                lastMediaActionTime = now;
+            }
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::VolumeUp))
+        {
+            // Volume can stay more responsive – optional smaller debounce
+            float vol = m_playbackController.GetVolume() + 0.05f;
+            if (vol > 1.0f)
+                vol = 1.0f;
+            m_playbackController.SetVolume(vol);
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::VolumeDown))
+        {
+            float vol = m_playbackController.GetVolume() - 0.05f;
+            if (vol < 0.0f)
+                vol = 0.0f;
+            m_playbackController.SetVolume(vol);
             return;
         }
 
-        // File Open - Ctrl+O
+        // =====================================================================
+        // Regular keyboard shortcuts (still blocked while typing)
+        // =====================================================================
         if (!io.WantTextInput && input.IsKeyPressed(SDLK_o) &&
             (input.IsKeyDown(SDLK_LCTRL) || input.IsKeyDown(SDLK_RCTRL)))
         {
@@ -413,23 +472,18 @@ namespace moosic
             return;
         }
 
-        // Play/Pause - Space (only when NOT typing in an input field)
         if (!io.WantTextInput && input.IsHotkeyPressed(HotkeyAction::PlayPause))
             m_playbackController.TogglePlayPause();
 
-        // Next Track - Ctrl+Right
         if (input.IsHotkeyPressed(HotkeyAction::NextTrack))
             m_playbackController.Next();
 
-        // Previous Track - Ctrl+Left
         if (input.IsHotkeyPressed(HotkeyAction::PreviousTrack))
             m_playbackController.Previous();
 
-        // Stop - Ctrl+S
         if (input.IsHotkeyPressed(HotkeyAction::Stop))
             m_playbackController.Stop();
 
-        // Volume Up - Ctrl+Up
         if (input.IsHotkeyPressed(HotkeyAction::VolumeUp))
         {
             float vol = m_playbackController.GetVolume() + 0.05f;
@@ -438,7 +492,6 @@ namespace moosic
             m_playbackController.SetVolume(vol);
         }
 
-        // Volume Down - Ctrl+Down
         if (input.IsHotkeyPressed(HotkeyAction::VolumeDown))
         {
             float vol = m_playbackController.GetVolume() - 0.05f;
@@ -447,7 +500,6 @@ namespace moosic
             m_playbackController.SetVolume(vol);
         }
 
-        // Mute Toggle - Ctrl+M
         if (input.IsHotkeyPressed(HotkeyAction::MuteToggle))
         {
             float currentVol = m_playbackController.GetVolume();
@@ -462,7 +514,6 @@ namespace moosic
             }
         }
 
-        // Seek Forward 5s - Right arrow (no Ctrl)
         if (input.IsHotkeyPressed(HotkeyAction::SeekForward))
         {
             float pos = m_playbackController.GetCurrentPosition();
@@ -471,7 +522,6 @@ namespace moosic
                 m_playbackController.SeekTo((std::min)(pos + 5.0f, dur));
         }
 
-        // Seek Backward 5s - Left arrow (no Ctrl)
         if (input.IsHotkeyPressed(HotkeyAction::SeekBackward))
         {
             float pos = m_playbackController.GetCurrentPosition();
