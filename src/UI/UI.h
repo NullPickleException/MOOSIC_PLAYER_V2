@@ -88,7 +88,6 @@ namespace moosic
         void OnHelpAbout();
         void OpenAndPlayTemporaryAudioFile(const std::filesystem::path& filePath);
 
-        // ──── NEW: Global Hotkey Handler ────
         void HandleGlobalHotkeys(InputManager &input);
 
         LibraryDataModel m_libraryData;

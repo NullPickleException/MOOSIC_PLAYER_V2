@@ -448,68 +448,68 @@ namespace moosic
 
     // In IPlayerBar.cpp, replace the DrawTrackOptionsButton() method with this:
 
- void IPlayerBar::DrawTrackOptionsButton()
-{
-    if (!m_data || !m_data->hasTrack)
-        return;
-
-    float btnWidth = 30.0f;
-    float btnHeight = ImGui::GetFrameHeight();
-
-    PushNormalButtonStyle();
-    
-    // Use an invisible button for hit detection, then draw custom dots
-    bool pressed = ImGui::Button("##TrackOptions", ImVec2(btnWidth, btnHeight));
-    
-    // Get button rectangle
-    ImVec2 min = ImGui::GetItemRectMin();
-    ImVec2 max = ImGui::GetItemRectMax();
-    ImVec2 center(min.x + btnWidth * 0.5f, min.y + btnHeight * 0.5f);
-    
-    // Draw three horizontal dots perfectly centered
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    ImU32 dotColor = ImGui::GetColorU32(m_theme.TextPrimary);
-    float dotRadius = 1.8f;
-    float spacing = 6.0f;
-    
-    dl->AddCircleFilled(ImVec2(center.x - spacing, center.y), dotRadius, dotColor);
-    dl->AddCircleFilled(center, dotRadius, dotColor);
-    dl->AddCircleFilled(ImVec2(center.x + spacing, center.y), dotRadius, dotColor);
-    
-    if (pressed)
-        ImGui::OpenPopup("TrackOptionsPopup");
-    
-    DrawClassicButtonDecorations(min, max);
-    PopStyle();
-
-    // Draw the popup
-    if (ImGui::BeginPopup("TrackOptionsPopup"))
+    void IPlayerBar::DrawTrackOptionsButton()
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
-        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, m_theme.ButtonHovered);
+        if (!m_data || !m_data->hasTrack)
+            return;
 
-        if (ImGui::Selectable("Edit Track Info..."))
+        float btnWidth = 30.0f;
+        float btnHeight = ImGui::GetFrameHeight();
+
+        PushNormalButtonStyle();
+
+        // Use an invisible button for hit detection, then draw custom dots
+        bool pressed = ImGui::Button("##TrackOptions", ImVec2(btnWidth, btnHeight));
+
+        // Get button rectangle
+        ImVec2 min = ImGui::GetItemRectMin();
+        ImVec2 max = ImGui::GetItemRectMax();
+        ImVec2 center(min.x + btnWidth * 0.5f, min.y + btnHeight * 0.5f);
+
+        // Draw three horizontal dots perfectly centered
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+        ImU32 dotColor = ImGui::GetColorU32(m_theme.TextPrimary);
+        float dotRadius = 1.8f;
+        float spacing = 6.0f;
+
+        dl->AddCircleFilled(ImVec2(center.x - spacing, center.y), dotRadius, dotColor);
+        dl->AddCircleFilled(center, dotRadius, dotColor);
+        dl->AddCircleFilled(ImVec2(center.x + spacing, center.y), dotRadius, dotColor);
+
+        if (pressed)
+            ImGui::OpenPopup("TrackOptionsPopup");
+
+        DrawClassicButtonDecorations(min, max);
+        PopStyle();
+
+        // Draw the popup
+        if (ImGui::BeginPopup("TrackOptionsPopup"))
         {
-            if (m_onEditTrackInfo)
-                m_onEditTrackInfo();
-            else
-                OnEditTrackInfoDefault();
-            ImGui::CloseCurrentPopup();
-        }
+            ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, m_theme.ButtonHovered);
 
-        if (ImGui::Selectable("Open Folder"))
-        {
-            if (m_onOpenTrackFolder)
-                m_onOpenTrackFolder();
-            else
-                OnOpenTrackFolderDefault();
-            ImGui::CloseCurrentPopup();
-        }
+            if (ImGui::Selectable("Edit Track Info..."))
+            {
+                if (m_onEditTrackInfo)
+                    m_onEditTrackInfo();
+                else
+                    OnEditTrackInfoDefault();
+                ImGui::CloseCurrentPopup();
+            }
 
-        ImGui::PopStyleColor(2);
-        ImGui::EndPopup();
+            if (ImGui::Selectable("Open Folder"))
+            {
+                if (m_onOpenTrackFolder)
+                    m_onOpenTrackFolder();
+                else
+                    OnOpenTrackFolderDefault();
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::PopStyleColor(2);
+            ImGui::EndPopup();
+        }
     }
-}
 
     // Add these default implementations to IPlayerBar.cpp:
 
@@ -799,89 +799,92 @@ namespace moosic
         PopStyle();
     }
 
-  void IPlayerBar::DrawVolumeIcon()
-{
-    if (!m_data)
-        return;
+    void IPlayerBar::DrawVolumeIcon()
+    {
+        if (!m_data)
+            return;
 
-    float volume = m_data->volume;
-    
-    // Calculate button size
-    const char *label = "Vol";
-    ImVec2 textSize = ImGui::CalcTextSize(label);
-    ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
-                      textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
-    
-    // Use invisible button - completely transparent for all states
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-    
-    bool pressed = ImGui::Button("##VolumeIcon", buttonSize);
-    
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(3);
-    
-    // Get button rectangle
-    ImVec2 min = ImGui::GetItemRectMin();
-    ImVec2 max = ImGui::GetItemRectMax();
-    ImVec2 center(min.x + buttonSize.x * 0.5f, min.y + buttonSize.y * 0.5f);
-    
-    ImDrawList* dl = ImGui::GetWindowDrawList();
-    
-    if (volume <= 0.0f)
-    {
-        // Draw red [X] text manually on top of invisible button
-        ImU32 xColor = ImGui::GetColorU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-        const char* xText = "[X]";
-        ImVec2 xTextSize = ImGui::CalcTextSize(xText);
-        ImVec2 xPos(center.x - xTextSize.x * 0.5f, center.y - xTextSize.y * 0.5f);
-        dl->AddText(xPos, xColor, xText);
-    }
-    else
-    {
-        // Draw volume circles
-        int numCircles = 1;
-        if (volume > 0.25f) numCircles = 2;
-        if (volume > 0.5f)  numCircles = 3;
-        if (volume > 0.75f) numCircles = 4;
-        
-        float baseRadius = 4.0f;
-        float radiusStep = 3.0f;
-        float thickness = 1.5f;
-        int numSegments = 16;
-        
-        ImU32 activeColor = ImGui::GetColorU32(m_theme.TextPrimary);
-        ImU32 inactiveColor = ImGui::GetColorU32(m_theme.TextSecondary);
-        
-        for (int i = 0; i < 4; i++)
+        float volume = m_data->volume;
+
+        // Calculate button size
+        const char *label = "Vol";
+        ImVec2 textSize = ImGui::CalcTextSize(label);
+        ImVec2 buttonSize(textSize.x + ImGui::GetStyle().FramePadding.x * 2.0f + m_theme.NormalButtonExtraWidth,
+                          textSize.y + ImGui::GetStyle().FramePadding.y * 2.0f + m_theme.ButtonHeightExtra);
+
+        // Use invisible button - completely transparent for all states
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
+
+        bool pressed = ImGui::Button("##VolumeIcon", buttonSize);
+
+        ImGui::PopStyleVar();
+        ImGui::PopStyleColor(3);
+
+        // Get button rectangle
+        ImVec2 min = ImGui::GetItemRectMin();
+        ImVec2 max = ImGui::GetItemRectMax();
+        ImVec2 center(min.x + buttonSize.x * 0.5f, min.y + buttonSize.y * 0.5f);
+
+        ImDrawList *dl = ImGui::GetWindowDrawList();
+
+        if (volume <= 0.0f)
         {
-            float radius = baseRadius + i * radiusStep;
-            ImU32 color = (i < numCircles) ? activeColor : inactiveColor;
-            
-            if (i >= numCircles)
-            {
-                ImVec4 col = m_theme.TextSecondary;
-                color = ImGui::GetColorU32(ImVec4(col.x, col.y, col.z, col.w * 0.3f));
-            }
-            
-            dl->AddCircle(center, radius, color, numSegments, thickness);
+            // Draw red [X] text manually on top of invisible button
+            ImU32 xColor = ImGui::GetColorU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+            const char *xText = "[X]";
+            ImVec2 xTextSize = ImGui::CalcTextSize(xText);
+            ImVec2 xPos(center.x - xTextSize.x * 0.5f, center.y - xTextSize.y * 0.5f);
+            dl->AddText(xPos, xColor, xText);
         }
+        else
+        {
+            // Draw volume circles
+            int numCircles = 1;
+            if (volume > 0.25f)
+                numCircles = 2;
+            if (volume > 0.5f)
+                numCircles = 3;
+            if (volume > 0.75f)
+                numCircles = 4;
+
+            float baseRadius = 4.0f;
+            float radiusStep = 3.0f;
+            float thickness = 1.5f;
+            int numSegments = 16;
+
+            ImU32 activeColor = ImGui::GetColorU32(m_theme.TextPrimary);
+            ImU32 inactiveColor = ImGui::GetColorU32(m_theme.TextSecondary);
+
+            for (int i = 0; i < 4; i++)
+            {
+                float radius = baseRadius + i * radiusStep;
+                ImU32 color = (i < numCircles) ? activeColor : inactiveColor;
+
+                if (i >= numCircles)
+                {
+                    ImVec4 col = m_theme.TextSecondary;
+                    color = ImGui::GetColorU32(ImVec4(col.x, col.y, col.z, col.w * 0.3f));
+                }
+
+                dl->AddCircle(center, radius, color, numSegments, thickness);
+            }
+        }
+
+        if (pressed)
+            OnVolumeIconPressed();
     }
-    
-    if (pressed)
-        OnVolumeIconPressed();
-}
 
     void IPlayerBar::DrawVolumeSlider()
     {
         if (!m_data)
             return;
         PushSliderStyle();
-        float tempVolume = m_data->volume;
-        if (ImGui::SliderFloat("##Volume", &tempVolume, 0.0f, 1.0f))
-            OnVolumeSliderChanged(tempVolume);
+        float tempVolume = m_data->volume * 100.0f;                              // Convert to percentage
+        if (ImGui::SliderFloat("##Volume", &tempVolume, 0.0f, 100.0f, "%.0f%%")) // Show as percentage
+            OnVolumeSliderChanged(tempVolume / 100.0f);                          // Convert back to 0.0-1.0
         PopSliderStyle();
     }
 

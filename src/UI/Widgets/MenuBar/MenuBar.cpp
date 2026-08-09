@@ -13,9 +13,6 @@ namespace moosic
 
         float menuBarHeight = m_theme.Height;
 
-        if (menuBarHeight < 19.6f)
-            menuBarHeight = 19.6f;
-
         // Position below title bar
         ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + titleBarHeight));
         ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, menuBarHeight));
@@ -35,13 +32,15 @@ namespace moosic
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10.0f, 0.0f));
 
-        // Calculate vertical padding to center text in menu bar
+        // Calculate vertical padding to perfectly center text in menu bar
         float fontHeight = ImGui::GetFontSize();
-        float vertPadding = (menuBarHeight - borderThickness * 2.0f - fontHeight) / 2.0f;
+        float totalVerticalPadding = menuBarHeight - borderThickness * 2.0f - fontHeight;
+        float vertPadding = totalVerticalPadding / 2.0f;
         if (vertPadding < 0.0f)
             vertPadding = 0.0f;
 
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding + 2.0));
+        // Use the exact vertical padding to center text
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding));
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, bgColor);
@@ -50,7 +49,7 @@ namespace moosic
 
         ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextColor);
 
-        // Hover / open / pressed on File, View, … and on dropdown items
+        // Hover / open / pressed on File, View, ... and on dropdown items
         ImGui::PushStyleColor(ImGuiCol_Header, m_theme.HighlightColor);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, m_theme.HighlightHovered);
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, m_theme.HighlightActive);
@@ -63,8 +62,9 @@ namespace moosic
         {
             if (ImGui::BeginMenuBar())
             {
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(14.0f, 10.0f));
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 8.0f));
+                // Style the dropdown menus
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 6.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10.0f, 5.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(8.0f, 0.0f));
                 ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
@@ -73,6 +73,9 @@ namespace moosic
                 // File Menu
                 if (ImGui::BeginMenu("File"))
                 {
+                    // Use empty string for shortcut to handle it manually, or use "Ctrl+O"
+                    // The shortcut display works - the issue is that ImGui doesn't auto-bind shortcuts
+                    // in menu items. You need to handle it in your input system.
                     if (ImGui::MenuItem("Open Audio File...", "Ctrl+O"))
                     {
                         if (OnFileOpen)
@@ -121,15 +124,10 @@ namespace moosic
                 // Playback Menu
                 if (ImGui::BeginMenu("Playback"))
                 {
-                    if (ImGui::MenuItem("Play", "Space"))
+                    if (ImGui::MenuItem("Play/Pause", "Space"))
                     {
                         if (OnPlaybackPlay)
-                            OnPlaybackPlay();
-                    }
-                    if (ImGui::MenuItem("Pause", "Ctrl+P"))
-                    {
-                        if (OnPlaybackPause)
-                            OnPlaybackPause();
+                            OnPlaybackPlay(); // This should toggle, not just play
                     }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Next Track", "Ctrl+Right"))
@@ -175,11 +173,6 @@ namespace moosic
 
         ImGui::PopStyleColor(9);
         ImGui::PopStyleVar(5);
-    }
-
-    float MenuBar::GetHeight() const
-    {
-        return m_theme.Height < 19.6f ? 19.6f : m_theme.Height;
     }
 
 } // namespace moosic

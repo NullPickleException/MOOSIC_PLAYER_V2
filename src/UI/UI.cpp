@@ -148,7 +148,7 @@ namespace moosic
         menuTheme.HighlightActive = theme.Window.ButtonActive;
         menuTheme.PopupBackground = theme.Window.WindowBg;
         menuTheme.BorderColor = theme.ContentPanel.BorderColor;
-        menuTheme.Height = 19.6f;
+
         m_menuBar.ApplyTheme(menuTheme);
 
         m_standardLayout.ApplyTheme(theme);
@@ -378,11 +378,43 @@ namespace moosic
     //==============================================================================
     // Global Hotkeys
     //==============================================================================
-
     void UI::HandleGlobalHotkeys(InputManager &input)
     {
-        // Play/Pause - Space
-        if (input.IsHotkeyPressed(HotkeyAction::PlayPause))
+        ImGuiIO &io = ImGui::GetIO();
+
+        // Media keys (from AirPods, keyboard media buttons, etc.) - always process these
+        // regardless of ImGui focus
+        if (input.IsMediaKeyPressed(HotkeyAction::PlayPause))
+        {
+            m_playbackController.TogglePlayPause();
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::NextTrack))
+        {
+            m_playbackController.Next();
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::PreviousTrack))
+        {
+            m_playbackController.Previous();
+            return;
+        }
+        if (input.IsMediaKeyPressed(HotkeyAction::Stop))
+        {
+            m_playbackController.Stop();
+            return;
+        }
+
+        // File Open - Ctrl+O
+        if (!io.WantTextInput && input.IsKeyPressed(SDLK_o) &&
+            (input.IsKeyDown(SDLK_LCTRL) || input.IsKeyDown(SDLK_RCTRL)))
+        {
+            OnFileOpen();
+            return;
+        }
+
+        // Play/Pause - Space (only when NOT typing in an input field)
+        if (!io.WantTextInput && input.IsHotkeyPressed(HotkeyAction::PlayPause))
             m_playbackController.TogglePlayPause();
 
         // Next Track - Ctrl+Right
@@ -464,7 +496,7 @@ namespace moosic
         m_menuBar.OnViewLayout = [this](int mode)
         { OnViewLayout(static_cast<LayoutMode>(mode)); };
         m_menuBar.OnPlaybackPlay = [this]()
-        { OnPlaybackPlay(); };
+        { m_playbackController.TogglePlayPause(); };
         m_menuBar.OnPlaybackPause = [this]()
         { OnPlaybackPause(); };
         m_menuBar.OnPlaybackStop = [this]()

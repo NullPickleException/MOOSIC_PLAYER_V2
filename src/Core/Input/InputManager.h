@@ -33,7 +33,7 @@ namespace moosic
 
         // ---- Event Processing ----
         void Reset();                              // Clear per-frame states
-        void ProcessEvent(const SDL_Event& event); // Process individual event
+        void ProcessEvent(const SDL_Event &event); // Process individual event
 
         // ---- Keyboard ----
         bool IsKeyDown(SDL_Keycode key) const;
@@ -44,8 +44,8 @@ namespace moosic
         bool IsMouseButtonDown(int button) const;
         bool IsMouseButtonPressed(int button) const;
         bool IsMouseButtonReleased(int button) const;
-        void GetMousePosition(int& x, int& y) const;
-        void GetMouseDelta(int& dx, int& dy) const;
+        void GetMousePosition(int &x, int &y) const;
+        void GetMouseDelta(int &dx, int &dy) const;
         int GetMouseWheelDelta() const { return m_mouseWheelDelta; }
 
         // ---- Window ----
@@ -59,7 +59,8 @@ namespace moosic
 
         // ---- Hotkey Support ----
         bool IsHotkeyPressed(HotkeyAction action) const;
-        void ProcessHotkeys();  // Call once per frame after ProcessEvent
+        bool IsMediaKeyPressed(HotkeyAction action) const;
+        void ProcessHotkeys(); // Call once per frame after ProcessEvent
 
     private:
         // ---- State ----
@@ -79,5 +80,8 @@ namespace moosic
         std::unordered_map<int, bool> m_mouseButtonStates;
         std::unordered_set<int> m_mouseButtonPressed;
         std::unordered_set<int> m_mouseButtonReleased;
+
+        // ---- Media Keys ----
+        std::unordered_set<HotkeyAction> m_mediaKeyPressed;
     };
 }

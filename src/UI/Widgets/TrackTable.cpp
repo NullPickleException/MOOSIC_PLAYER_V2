@@ -268,8 +268,11 @@ namespace moosic
 
                 if (column == TrackColumn::Title)
                 {
+                    // Combine display text with unique ID to avoid conflicts with duplicate titles
+                    std::string selectableLabel = cellText + "##" + std::to_string(track->GetId());
+
                     bool clicked = ImGui::Selectable(
-                        cellText.c_str(), false,
+                        selectableLabel.c_str(), false,
                         ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_SpanAllColumns,
                         ImVec2(0, 0));
 

@@ -147,11 +147,12 @@ set(NFD_INCLUDE_DIRECTORIES ${SDL2_ROOT}/include)
 add_subdirectory(thirdparty/nativefiledialog-extended)
 
 # =============================================================================
-# Executable
+# Executable (WIN32 flag hides console in Release)
 # =============================================================================
 
 add_executable(
     MOOSIC_PLAYER
+    WIN32
     ${APP_SOURCES}
     ${IMGUI_SOURCES}
 )
@@ -170,6 +171,17 @@ if(WIN32)
         message(WARNING "  App Icon not found: ${APP_ICON_PATH}")
     endif()
 endif()
+
+# =============================================================================
+# Linker: Set subsystem to Windows (no console) for Release, Console for Debug
+# =============================================================================
+if(MSVC)
+    set_target_properties(MOOSIC_PLAYER PROPERTIES
+        LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+        LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE"
+    )
+endif()
+
 # =============================================================================
 # Include Directories
 # =============================================================================
@@ -343,6 +355,31 @@ target_compile_definitions(
         ${PLATFORM_DEFINE}
         $<$<BOOL:${WIN32}>:_CRT_SECURE_NO_WARNINGS>
 )
+
+# =============================================================================
+# CPack - Simple Windows Installer
+# =============================================================================
+
+if(WIN32)
+    set(CPACK_PACKAGE_NAME "MOOSIC Player")
+    set(CPACK_PACKAGE_VENDOR "MOOSIC")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MOOSIC Player - Beta")
+    set(CPACK_PACKAGE_VERSION_MAJOR "1")
+    set(CPACK_PACKAGE_VERSION_MINOR "0")
+    set(CPACK_PACKAGE_VERSION_PATCH "0")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "MOOSIC Player")
+    
+    set(CPACK_GENERATOR "NSIS;ZIP")
+    set(CPACK_NSIS_DISPLAY_NAME "MOOSIC Player Beta")
+    set(CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
+    set(CPACK_NSIS_MENU_LINKS "MOOSIC_PLAYER.exe" "MOOSIC Player")
+    set(CPACK_NSIS_MUI_FINISHPAGE_RUN "MOOSIC_PLAYER.exe")
+    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+    
+    set(CPACK_PACKAGE_FILE_NAME "MOOSIC_Player_Beta_1.0.0_x64")
+
+    include(CPack)
+endif()
 
 message(STATUS "")
 message(STATUS "========================================")

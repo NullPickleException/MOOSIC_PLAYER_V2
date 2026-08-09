@@ -25,7 +25,7 @@ namespace moosic
         ImVec4 PopupBackground = ImVec4(0.12f, 0.12f, 0.14f, 1.0f);
         ImVec4 BorderColor = ImVec4(0.30f, 0.30f, 0.35f, 1.0f);
 
-        float Height = 19.6f;
+        float Height = 12.0f;  // Single source of truth for menu bar height
     };
 
     class MenuBar
@@ -35,9 +35,10 @@ namespace moosic
 
         void ApplyTheme(const MenuBarTheme &theme) { m_theme = theme; }
         const MenuBarTheme &GetTheme() const { return m_theme; }
-        float GetHeight() const;
+        float GetHeight() const { return m_theme.Height; }  // Just return theme height directly
 
         void SetVersionText(const std::string &text) { m_versionText = text; }
+        
         // Callbacks
         std::function<void()> OnFileOpen;
         std::function<void()> OnFileExit;
