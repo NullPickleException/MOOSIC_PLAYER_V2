@@ -126,7 +126,8 @@ namespace moosic
     // Main API - Metadata ONLY (no BASS - duration is 0)
     //==============================================================================
 
-    MusicTrack MetadataReader::ReadMetadataForSingleTrack(const std::filesystem::path &filePath) const
+    MusicTrack MetadataReader::ReadMetadataForSingleTrack(const std::filesystem::path &filePath,
+                                                          bool extractAlbumArt) const
     {
         //----------------------------------------------------------------------
         // Validate file - DON'T convert to string for file operations!
@@ -163,19 +164,19 @@ namespace moosic
         try
         {
             if (ext == ".mp3" || ext == ".mp2" || ext == ".mp1")
-                hasMetadata = ParseMP3Metadata(filePath, track);
+                hasMetadata = ParseMP3Metadata(filePath, track, extractAlbumArt);
             else if (ext == ".flac")
-                hasMetadata = ParseFLACMetadata(filePath, track);
+                hasMetadata = ParseFLACMetadata(filePath, track, extractAlbumArt);
             else if (ext == ".m4a" || ext == ".mp4" || ext == ".m4b")
-                hasMetadata = ParseMP4Metadata(filePath, track);
+                hasMetadata = ParseMP4Metadata(filePath, track, extractAlbumArt);
             else if (ext == ".ogg" || ext == ".opus")
-                hasMetadata = ParseOGGMetadata(filePath, track);
+                hasMetadata = ParseOGGMetadata(filePath, track, extractAlbumArt);
             else if (ext == ".wav")
-                hasMetadata = ParseWAVMetadata(filePath, track);
+                hasMetadata = ParseWAVMetadata(filePath, track, extractAlbumArt);
             else if (ext == ".aiff" || ext == ".aif")
-                hasMetadata = ParseAIFFMetadata(filePath, track);
+                hasMetadata = ParseAIFFMetadata(filePath, track, extractAlbumArt);
             else if (ext == ".wv")
-                hasMetadata = ParseWVMetadata(filePath, track);
+                hasMetadata = ParseWVMetadata(filePath, track, extractAlbumArt);
         }
         catch (...)
         {
@@ -233,46 +234,63 @@ namespace moosic
         return track;
     }
 
+
     //==============================================================================
     // Format-Specific Parsers (delegated to individual parser classes)
     //==============================================================================
-    bool MetadataReader::ParseMP3Metadata(const std::filesystem::path &filePath, MusicTrack &track) const
+
+    bool MetadataReader::ParseMP3Metadata(const std::filesystem::path &filePath,
+                                          MusicTrack &track,
+                                          bool extractAlbumArt) const
     {
         Mp3MetadataParser parser;
-        return parser.Parse(filePath, track);
+        return parser.Parse(filePath, track, extractAlbumArt);
     }
 
-    bool MetadataReader::ParseFLACMetadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    // These other parsers don't support extractAlbumArt flag yet - just ignore the flag
+    bool MetadataReader::ParseFLACMetadata(const std::filesystem::path &filePath,
+                                           MusicTrack &track,
+                                           bool extractAlbumArt) const
     {
         FlacMetadataParser parser;
         return parser.Parse(filePath, track);
     }
 
-    bool MetadataReader::ParseMP4Metadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    bool MetadataReader::ParseMP4Metadata(const std::filesystem::path &filePath,
+                                          MusicTrack &track,
+                                          bool extractAlbumArt) const
     {
         Mp4MetadataParser parser;
         return parser.Parse(filePath, track);
     }
 
-    bool MetadataReader::ParseOGGMetadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    bool MetadataReader::ParseOGGMetadata(const std::filesystem::path &filePath,
+                                          MusicTrack &track,
+                                          bool extractAlbumArt) const
     {
         OggMetadataParser parser;
         return parser.Parse(filePath, track);
     }
 
-    bool MetadataReader::ParseWAVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    bool MetadataReader::ParseWAVMetadata(const std::filesystem::path &filePath,
+                                          MusicTrack &track,
+                                          bool extractAlbumArt) const
     {
         WavMetadataParser parser;
         return parser.Parse(filePath, track);
     }
 
-    bool MetadataReader::ParseAIFFMetadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    bool MetadataReader::ParseAIFFMetadata(const std::filesystem::path &filePath,
+                                           MusicTrack &track,
+                                           bool extractAlbumArt) const
     {
         AiffMetadataParser parser;
         return parser.Parse(filePath, track);
     }
 
-    bool MetadataReader::ParseWVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const
+    bool MetadataReader::ParseWVMetadata(const std::filesystem::path &filePath,
+                                         MusicTrack &track,
+                                         bool extractAlbumArt) const
     {
         WavPackMetadataParser parser;
         return parser.Parse(filePath, track);
@@ -281,122 +299,128 @@ namespace moosic
     // BASS: Get duration (called in Phase 2, separate from metadata parsing)
     //==============================================================================
 
-   unsigned int MetadataReader::GetDurationWithBASS(const std::filesystem::path &filePath) const
-{
-    // Use wstring on Windows for Unicode-safe cache key
-#ifdef _WIN32
-    std::wstring cacheKey = filePath.wstring();
-#else
-    std::string cacheKey = filePath.string();
-#endif
-
+    unsigned int MetadataReader::GetDurationWithBASS(const std::filesystem::path &filePath) const
     {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        // Use wstring on Windows for Unicode-safe cache key
 #ifdef _WIN32
-        // Convert wstring to string for cache lookup (lossy but works for cache)
-        std::string narrowKey(cacheKey.begin(), cacheKey.end());
-        auto it = m_durationCache.find(narrowKey);
+        std::wstring cacheKey = filePath.wstring();
 #else
-        auto it = m_durationCache.find(cacheKey);
+        std::string cacheKey = filePath.string();
 #endif
-        if (it != m_durationCache.end())
-            return it->second;
-    }
 
-    std::string ext = GetLowercaseExtension(filePath);
-    unsigned int duration = 0;
+        {
+            std::lock_guard<std::mutex> lock(m_cacheMutex);
+#ifdef _WIN32
+            // Convert wstring to string for cache lookup (lossy but works for cache)
+            std::string narrowKey(cacheKey.begin(), cacheKey.end());
+            auto it = m_durationCache.find(narrowKey);
+#else
+            auto it = m_durationCache.find(cacheKey);
+#endif
+            if (it != m_durationCache.end())
+                return it->second;
+        }
+
+        std::string ext = GetLowercaseExtension(filePath);
+        unsigned int duration = 0;
 
 #if defined(_WIN32)
-    const std::wstring wpath = filePath.wstring();
-    const void *filename = wpath.c_str();
-    DWORD flags = BASS_STREAM_DECODE | BASS_STREAM_PRESCAN | BASS_UNICODE;
+        const std::wstring wpath = filePath.wstring();
+        const void *filename = wpath.c_str();
+        DWORD flags = BASS_STREAM_DECODE | BASS_STREAM_PRESCAN | BASS_UNICODE;
 #else
-    const std::string path = filePath.string();
-    const void *filename = path.c_str();
-    DWORD flags = BASS_STREAM_DECODE | BASS_STREAM_PRESCAN;
+        const std::string path = filePath.string();
+        const void *filename = path.c_str();
+        DWORD flags = BASS_STREAM_DECODE | BASS_STREAM_PRESCAN;
 #endif
 
-    HSTREAM stream = 0;
+        HSTREAM stream = 0;
 
-    stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, flags);
+        stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, flags);
 
 #if defined(_WIN32) || defined(__linux__)
-    if (!stream && (ext == ".m4a" || ext == ".m4b" || ext == ".mp4"))
-        stream = BASS_AAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
+        if (!stream && (ext == ".m4a" || ext == ".m4b" || ext == ".mp4"))
+            stream = BASS_AAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
 
-    if (!stream && ext == ".flac")
-        stream = BASS_FLAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
+        if (!stream && ext == ".flac")
+            stream = BASS_FLAC_StreamCreateFile(FALSE, filename, 0, 0, flags);
 
-    if (!stream && ext == ".opus")
-        stream = BASS_OPUS_StreamCreateFile(FALSE, filename, 0, 0, flags);
+        if (!stream && ext == ".opus")
+            stream = BASS_OPUS_StreamCreateFile(FALSE, filename, 0, 0, flags);
 #endif
 
 #if defined(_WIN32)
-    if (!stream && ext == ".wma")
-        stream = BASS_WMA_StreamCreateFile(FALSE, filename, 0, 0, flags);
+        if (!stream && ext == ".wma")
+            stream = BASS_WMA_StreamCreateFile(FALSE, filename, 0, 0, flags);
 #endif
 
-    if (!stream)
-    {
+        if (!stream)
+        {
 #if defined(_WIN32)
-        stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE | BASS_UNICODE);
+            stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE | BASS_UNICODE);
 #else
-        stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE);
+            stream = BASS_StreamCreateFile(FALSE, filename, 0, 0, BASS_STREAM_DECODE);
 #endif
-    }
+        }
 
-    if (stream)
-    {
-        QWORD length = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
-        if (length != static_cast<QWORD>(-1) && length > 0)
-            duration = static_cast<unsigned int>(BASS_ChannelBytes2Seconds(stream, length));
-        BASS_StreamFree(stream);
-    }
+        if (stream)
+        {
+            QWORD length = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
+            if (length != static_cast<QWORD>(-1) && length > 0)
+                duration = static_cast<unsigned int>(BASS_ChannelBytes2Seconds(stream, length));
+            BASS_StreamFree(stream);
+        }
 
-    {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        {
+            std::lock_guard<std::mutex> lock(m_cacheMutex);
 #ifdef _WIN32
-        std::string narrowKey(cacheKey.begin(), cacheKey.end());
-        m_durationCache[narrowKey] = duration;
+            std::string narrowKey(cacheKey.begin(), cacheKey.end());
+            m_durationCache[narrowKey] = duration;
 #else
-        m_durationCache[cacheKey] = duration;
+            m_durationCache[cacheKey] = duration;
 #endif
-    }
+        }
 
-    return duration;
-}
+        return duration;
+    }
     //==============================================================================
     // Fallback track creation
     //==============================================================================
 
-MusicTrack MetadataReader::CreateFallbackTrack(const std::filesystem::path &filePath) const
-{
-    MusicTrack track;
-    track.SetPath(filePath);
-    
-    // Use u8string() for cross-platform Unicode-safe filename
-    std::string title;
-    try {
-        title = TruncateString(CleanString(filePath.stem().u8string()), 80);
-    } catch (...) {
-        try {
-            title = TruncateString(CleanString(filePath.stem().string()), 80);
-        } catch (...) {
-            title = "Unknown Track";
+    MusicTrack MetadataReader::CreateFallbackTrack(const std::filesystem::path &filePath) const
+    {
+        MusicTrack track;
+        track.SetPath(filePath);
+
+        // Use u8string() for cross-platform Unicode-safe filename
+        std::string title;
+        try
+        {
+            title = TruncateString(CleanString(filePath.stem().u8string()), 80);
         }
+        catch (...)
+        {
+            try
+            {
+                title = TruncateString(CleanString(filePath.stem().string()), 80);
+            }
+            catch (...)
+            {
+                title = "Unknown Track";
+            }
+        }
+
+        track.SetTitle(title);
+        track.SetArtist("Unknown Artist");
+        track.SetAlbum("Unknown Album");
+        track.SetGenre("Unknown");
+        track.SetDuration(0);
+        track.SetBitRate(0);
+        track.SetSampleRate(0);
+        track.SetChannels(0);
+        track.SetHasAlbumArt(false);
+        return track;
     }
-    
-    track.SetTitle(title);
-    track.SetArtist("Unknown Artist");
-    track.SetAlbum("Unknown Album");
-    track.SetGenre("Unknown");
-    track.SetDuration(0);
-    track.SetBitRate(0);
-    track.SetSampleRate(0);
-    track.SetChannels(0);
-    track.SetHasAlbumArt(false);
-    return track;
-}
     //==============================================================================
     // Utilities
     //==============================================================================

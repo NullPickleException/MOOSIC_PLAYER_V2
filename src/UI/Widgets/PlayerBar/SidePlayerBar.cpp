@@ -181,9 +181,9 @@ void SidePlayerBar::Draw()
 
     ImGui::Spacing();
 
+    // Draw lightbox and edit track dialog
     m_lightbox.Draw();
     
-    // Draw the edit track dialog (modal popup)
     if (m_editTrackDialog)
         m_editTrackDialog->Draw();
 }

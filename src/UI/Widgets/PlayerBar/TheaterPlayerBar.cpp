@@ -178,9 +178,9 @@ void TheaterPlayerBar::Draw()
     // Bottom spacing so buttons aren't on the border edge
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + bottomPadding);
 
+    // Draw lightbox and edit track dialog
     m_lightbox.Draw();
     
-    // Draw the edit track dialog (modal popup)
     if (m_editTrackDialog)
         m_editTrackDialog->Draw();
 }

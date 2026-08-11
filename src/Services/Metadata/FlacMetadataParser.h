@@ -2,6 +2,7 @@
 // FlacMetadataParser.h
 //==============================================================================
 // Custom binary parser for FLAC metadata (Vorbis comments, pictures)
+// OPTIMIZED: Targeted reads - only reads metadata blocks, not the entire file
 //==============================================================================
 
 #pragma once
@@ -23,9 +24,18 @@ public:
     FlacMetadataParser() = default;
     ~FlacMetadataParser() = default;
 
-    bool Parse(const std::filesystem::path& filePath, MusicTrack& track) const;
+    bool Parse(const std::filesystem::path& filePath, 
+               MusicTrack& track,
+               bool extractAlbumArt = true) const;
 
 private:
+    // Optimized file reading
+    std::vector<uint8_t> ReadFileRange(const std::filesystem::path& filePath,
+                                        size_t offset, size_t length) const;
+    size_t GetFileSize(const std::filesystem::path& filePath) const;
+    std::vector<uint8_t> ReadFileHead(const std::filesystem::path& filePath,
+                                       size_t length) const;
+
     // FLAC metadata block parsing
     bool ParseVorbisComments(const std::vector<uint8_t>& data, size_t offset, size_t length, MusicTrack& track) const;
     bool ParsePicture(const std::vector<uint8_t>& data, size_t offset, MusicTrack& track) const;
@@ -35,9 +45,6 @@ private:
     uint32_t ReadUInt32LE(const std::vector<uint8_t>& data, size_t offset) const;
     uint32_t ReadUInt24BE(const std::vector<uint8_t>& data, size_t offset) const;
     std::string ReadString(const std::vector<uint8_t>& data, size_t offset, size_t length) const;
-    
-    // File I/O
-  std::vector<uint8_t> ReadFileBytes(const std::filesystem::path& filePath) const;
     
     // String utilities
     std::string CleanString(const std::string& input) const;

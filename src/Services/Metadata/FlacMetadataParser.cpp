@@ -2,6 +2,7 @@
 // FlacMetadataParser.cpp
 //==============================================================================
 // Custom binary parser for FLAC metadata (Vorbis comments, pictures)
+// OPTIMIZED: Targeted reads - only reads metadata blocks, not the entire file
 //==============================================================================
 
 #include "FlacMetadataParser.h"
@@ -13,15 +14,18 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool FlacMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
+bool FlacMetadataParser::Parse(const std::filesystem::path& filePath,
+                                MusicTrack& track,
+                                bool extractAlbumArt) const
 {
-    auto data = ReadFileBytes(filePath);
-    if (data.size() < 42) return false;
+    // Read FLAC header + STREAMINFO (first 42 bytes)
+    auto header = ReadFileHead(filePath, 42);
+    if (header.size() < 42) return false;
 
     //----------------------------------------------------------------------
     // Check for "fLaC" marker
     //----------------------------------------------------------------------
-    if (data[0] != 'f' || data[1] != 'L' || data[2] != 'a' || data[3] != 'C')
+    if (header[0] != 'f' || header[1] != 'L' || header[2] != 'a' || header[3] != 'C')
         return false;
 
     bool hasMetadata = false;
@@ -29,31 +33,100 @@ bool FlacMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack
     bool lastBlock = false;
 
     //----------------------------------------------------------------------
-    // Parse metadata blocks
+    // Parse metadata blocks using targeted reads
     //----------------------------------------------------------------------
-    while (!lastBlock && offset + 4 <= data.size())
+    while (!lastBlock && offset + 4 <= header.size())
     {
-        uint8_t blockHeader = data[offset];
+        uint8_t blockHeader = header[offset];
         lastBlock = (blockHeader & 0x80) != 0;
         uint8_t blockType = blockHeader & 0x7F;
-        uint32_t blockSize = ReadUInt24BE(data, offset);
+        uint32_t blockSize = ReadUInt24BE(header, offset);
         offset += 4;
 
-        if (offset + blockSize > data.size()) break;
-
-        if (blockType == 4) // VORBIS_COMMENT
+        if (offset + blockSize > header.size())
         {
-            hasMetadata = ParseVorbisComments(data, offset, blockSize, track);
+            // Need to read more data for this block
+            // Read the block data from file
+            auto blockData = ReadFileRange(filePath, offset, blockSize);
+            if (blockData.size() < blockSize) break;
+
+            if (blockType == 4) // VORBIS_COMMENT
+            {
+                hasMetadata = ParseVorbisComments(blockData, 0, blockSize, track);
+            }
+            else if (blockType == 6 && extractAlbumArt) // PICTURE
+            {
+                ParsePicture(blockData, 0, track);
+            }
+
+            offset += blockSize;
         }
-        else if (blockType == 6) // PICTURE
+        else
         {
-            ParsePicture(data, offset, track);
+            // Block data is already in header buffer
+            if (blockType == 4) // VORBIS_COMMENT
+            {
+                hasMetadata = ParseVorbisComments(header, offset, blockSize, track);
+            }
+            else if (blockType == 6 && extractAlbumArt) // PICTURE
+            {
+                ParsePicture(header, offset, track);
+            }
+
+            offset += blockSize;
         }
 
-        offset += blockSize;
+        // If we've exhausted the header buffer, read the next block header
+        if (offset + 4 > header.size() && !lastBlock)
+        {
+            auto nextHeader = ReadFileRange(filePath, offset, 4);
+            if (nextHeader.size() < 4) break;
+            header = nextHeader;
+            offset = 0;
+        }
     }
 
     return hasMetadata;
+}
+
+//==============================================================================
+// Optimized File Reading Helpers
+//==============================================================================
+
+size_t FlacMetadataParser::GetFileSize(const std::filesystem::path& filePath) const
+{
+    std::error_code ec;
+    size_t size = std::filesystem::file_size(filePath, ec);
+    if (ec) return 0;
+    return size;
+}
+
+std::vector<uint8_t> FlacMetadataParser::ReadFileRange(const std::filesystem::path& filePath,
+                                                        size_t offset, size_t length) const
+{
+    if (length == 0 || length > 100 * 1024 * 1024) return {};
+    
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) return {};
+    
+    file.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!file.good()) return {};
+    
+    std::vector<uint8_t> buffer(length);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(length)))
+    {
+        size_t actualRead = static_cast<size_t>(file.gcount());
+        if (actualRead == 0) return {};
+        buffer.resize(actualRead);
+    }
+    
+    return buffer;
+}
+
+std::vector<uint8_t> FlacMetadataParser::ReadFileHead(const std::filesystem::path& filePath,
+                                                        size_t length) const
+{
+    return ReadFileRange(filePath, 0, length);
 }
 
 //==============================================================================
@@ -186,28 +259,6 @@ std::string FlacMetadataParser::ReadString(const std::vector<uint8_t>& data, siz
 {
     if (offset + length > data.size()) return "";
     return std::string(reinterpret_cast<const char*>(&data[offset]), length);
-}
-
-//==============================================================================
-// File I/O
-//==============================================================================
-
-std::vector<uint8_t> FlacMetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
-{
-    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) return {};
-    
-    std::streamsize size = file.tellg();
-    if (size <= 0 || size > 100 * 1024 * 1024) return {};
-    
-    file.seekg(0, std::ios::beg);
-    std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
-        return {};
-    
-    return buffer;
 }
 
 //==============================================================================

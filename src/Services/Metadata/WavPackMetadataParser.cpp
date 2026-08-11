@@ -2,6 +2,7 @@
 // WavPackMetadataParser.cpp
 //==============================================================================
 // Custom binary parser for WavPack metadata (APEv2 tags)
+// OPTIMIZED: Targeted reads - only reads metadata blocks, not the entire file
 //==============================================================================
 
 #include "WavPackMetadataParser.h"
@@ -13,72 +14,139 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool WavPackMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
+bool WavPackMetadataParser::Parse(const std::filesystem::path& filePath,
+                                   MusicTrack& track,
+                                   bool /*extractAlbumArt*/) const
 {
-    auto data = ReadFileBytes(filePath);
-    if (data.size() < 32) return false;
+    // Read first block header (32 bytes)
+    auto header = ReadFileHead(filePath, 32);
+    if (header.size() < 32) return false;
 
     //----------------------------------------------------------------------
     // Check for "wvpk" marker
     //----------------------------------------------------------------------
-    if (data[0] != 'w' || data[1] != 'v' || data[2] != 'p' || data[3] != 'k')
+    if (header[0] != 'w' || header[1] != 'v' || header[2] != 'p' || header[3] != 'k')
         return false;
 
     bool hasMetadata = false;
     size_t offset = 32; // Skip first block header
+    size_t fileSize = GetFileSize(filePath);
 
     //----------------------------------------------------------------------
-    // Parse blocks
+    // Parse blocks using targeted reads
     //----------------------------------------------------------------------
-    while (offset + 8 <= data.size())
+    while (offset + 8 <= fileSize)
     {
-        std::string blockId = ReadString(data, offset, 4);
-        uint32_t blockSize = ReadUInt32LE(data, offset + 4);
+        // Read just the block header (8 bytes)
+        auto blockHeader = ReadFileRange(filePath, offset, 8);
+        if (blockHeader.size() < 8) break;
+
+        std::string blockId = ReadString(blockHeader, 0, 4);
+        uint32_t blockSize = ReadUInt32LE(blockHeader, 4);
 
         //------------------------------------------------------------------
-        // APET block - APEv2 tags
+        // APET block - APEv2 tags (read the tag data)
         //------------------------------------------------------------------
-        if (blockId == "APET" && offset + 16 + blockSize <= data.size())
+        if (blockId == "APET" && blockSize >= 24)
         {
-            if (data[offset + 8] == 'A' && data[offset + 9] == 'P' &&
-                data[offset + 10] == 'E' && data[offset + 11] == 'T' &&
-                data[offset + 12] == 'A' && data[offset + 13] == 'G' &&
-                data[offset + 14] == 'E' && data[offset + 15] == 'X')
+            // Read the APEv2 header (24 bytes: ID + version + size + items + flags)
+            auto apeHeader = ReadFileRange(filePath, offset + 8, 24);
+            if (apeHeader.size() >= 24)
             {
-                uint32_t itemCount = ReadUInt32LE(data, offset + 20);
-                size_t tagOffset = offset + 32;
-
-                //----------------------------------------------------------
-                // Parse each tag item
-                //----------------------------------------------------------
-                for (uint32_t i = 0; i < itemCount && tagOffset + 8 <= data.size(); ++i)
+                // Check for "APETAGEX" signature
+                if (apeHeader[0] == 'A' && apeHeader[1] == 'P' &&
+                    apeHeader[2] == 'E' && apeHeader[3] == 'T' &&
+                    apeHeader[4] == 'A' && apeHeader[5] == 'G' &&
+                    apeHeader[6] == 'E' && apeHeader[7] == 'X')
                 {
-                    uint32_t valueLength = ReadUInt32LE(data, tagOffset);
-                    tagOffset += 8; // Skip value length and flags
+                    uint32_t tagSize = ReadUInt32LE(apeHeader, 12);
+                    uint32_t itemCount = ReadUInt32LE(apeHeader, 16);
+                    
+                    // Read the tag data (APEv2 tags are typically small, < 100KB)
+                    size_t readSize = (std::min)(static_cast<size_t>(tagSize), static_cast<size_t>(256 * 1024));
+                    auto tagData = ReadFileRange(filePath, offset + 32, readSize);
+                    
+                    if (!tagData.empty())
+                    {
+                        size_t tagOffset = 0;
 
-                    // Read key (null-terminated)
-                    std::string key;
-                    while (tagOffset < data.size() && data[tagOffset] != 0)
-                        key += static_cast<char>(data[tagOffset++]);
-                    tagOffset++; // Skip null terminator
+                        //----------------------------------------------------------
+                        // Parse each tag item
+                        //----------------------------------------------------------
+                        for (uint32_t i = 0; i < itemCount && tagOffset + 8 <= tagData.size(); ++i)
+                        {
+                            uint32_t valueLength = ReadUInt32LE(tagData, tagOffset);
+                            tagOffset += 8; // Skip value length and flags
 
-                    if (tagOffset + valueLength > data.size()) break;
+                            // Read key (null-terminated)
+                            std::string key;
+                            while (tagOffset < tagData.size() && tagData[tagOffset] != 0)
+                                key += static_cast<char>(tagData[tagOffset++]);
+                            tagOffset++; // Skip null terminator
 
-                    std::string value = ReadString(data, tagOffset, valueLength);
-                    tagOffset += valueLength;
-                    std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+                            if (tagOffset + valueLength > tagData.size()) break;
 
-                    if (key == "TITLE")      { track.SetTitle(CleanString(value)); hasMetadata = true; }
-                    else if (key == "ARTIST") { track.SetArtist(CleanString(value)); hasMetadata = true; }
-                    else if (key == "ALBUM")  { track.SetAlbum(CleanString(value)); }
+                            std::string value = ReadString(tagData, tagOffset, valueLength);
+                            tagOffset += valueLength;
+                            std::transform(key.begin(), key.end(), key.begin(), ::toupper);
+
+                            if (key == "TITLE")      { track.SetTitle(CleanString(value)); hasMetadata = true; }
+                            else if (key == "ARTIST") { track.SetArtist(CleanString(value)); hasMetadata = true; }
+                            else if (key == "ALBUM")  { track.SetAlbum(CleanString(value)); }
+                            else if (key == "GENRE")  { track.SetGenre(CleanString(value)); }
+                            else if (key == "YEAR" || key == "DATE") { try { track.SetYear(std::stoi(value)); } catch (...) {} }
+                            else if (key == "TRACK" || key == "TRACKNUMBER") { try { track.SetTrackNumber(std::stoi(value)); } catch (...) {} }
+                        }
+                    }
                 }
             }
         }
 
-        offset += blockSize;
+        offset += 8 + blockSize;
+        if (blockSize == 0) break; // Prevent infinite loop on zero-size blocks
     }
 
     return hasMetadata;
+}
+
+//==============================================================================
+// Optimized File Reading Helpers
+//==============================================================================
+
+size_t WavPackMetadataParser::GetFileSize(const std::filesystem::path& filePath) const
+{
+    std::error_code ec;
+    size_t size = std::filesystem::file_size(filePath, ec);
+    if (ec) return 0;
+    return size;
+}
+
+std::vector<uint8_t> WavPackMetadataParser::ReadFileRange(const std::filesystem::path& filePath,
+                                                           size_t offset, size_t length) const
+{
+    if (length == 0 || length > 100 * 1024 * 1024) return {};
+    
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) return {};
+    
+    file.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!file.good()) return {};
+    
+    std::vector<uint8_t> buffer(length);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(length)))
+    {
+        size_t actualRead = static_cast<size_t>(file.gcount());
+        if (actualRead == 0) return {};
+        buffer.resize(actualRead);
+    }
+    
+    return buffer;
+}
+
+std::vector<uint8_t> WavPackMetadataParser::ReadFileHead(const std::filesystem::path& filePath,
+                                                           size_t length) const
+{
+    return ReadFileRange(filePath, 0, length);
 }
 
 //==============================================================================
@@ -98,28 +166,6 @@ std::string WavPackMetadataParser::ReadString(const std::vector<uint8_t>& data, 
 {
     if (offset + length > data.size()) return "";
     return std::string(reinterpret_cast<const char*>(&data[offset]), length);
-}
-
-//==============================================================================
-// File I/O
-//==============================================================================
-
-std::vector<uint8_t> WavPackMetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
-{
-    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) return {};
-    
-    std::streamsize size = file.tellg();
-    if (size <= 0 || size > 100 * 1024 * 1024) return {};
-    
-    file.seekg(0, std::ios::beg);
-    std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
-        return {};
-    
-    return buffer;
 }
 
 //==============================================================================

@@ -2,6 +2,7 @@
 // WavMetadataParser.cpp
 //==============================================================================
 // Custom binary parser for WAV RIFF metadata (INFO chunks)
+// OPTIMIZED: Targeted reads - only reads metadata chunks, not the entire file
 //==============================================================================
 
 #include "WavMetadataParser.h"
@@ -13,36 +14,50 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool WavMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
+bool WavMetadataParser::Parse(const std::filesystem::path& filePath,
+                               MusicTrack& track,
+                               bool /*extractAlbumArt*/) const
 {
-    auto data = ReadFileBytes(filePath);
-    if (data.size() < 12) return false;
+    // Read RIFF header (first 12 bytes)
+    auto header = ReadFileHead(filePath, 12);
+    if (header.size() < 12) return false;
 
     //----------------------------------------------------------------------
     // Check RIFF header
     //----------------------------------------------------------------------
-    if (data[0] != 'R' || data[1] != 'I' || data[2] != 'F' || data[3] != 'F') return false;
-    if (data[8] != 'W' || data[9] != 'A' || data[10] != 'V' || data[11] != 'E') return false;
+    if (header[0] != 'R' || header[1] != 'I' || header[2] != 'F' || header[3] != 'F') return false;
+    if (header[8] != 'W' || header[9] != 'A' || header[10] != 'V' || header[11] != 'E') return false;
 
     bool hasMetadata = false;
     size_t offset = 12;
+    size_t fileSize = GetFileSize(filePath);
 
     //----------------------------------------------------------------------
-    // Parse chunks
+    // Parse chunks using targeted reads
     //----------------------------------------------------------------------
-    while (offset + 8 <= data.size())
+    while (offset + 8 <= fileSize)
     {
-        std::string chunkId = ReadString(data, offset, 4);
-        uint32_t chunkSize = ReadUInt32LE(data, offset + 4);
+        // Read just the chunk header (8 bytes)
+        auto chunkHeader = ReadFileRange(filePath, offset, 8);
+        if (chunkHeader.size() < 8) break;
+
+        std::string chunkId = ReadString(chunkHeader, 0, 4);
+        uint32_t chunkSize = ReadUInt32LE(chunkHeader, 4);
 
         //------------------------------------------------------------------
-        // LIST chunk (contains INFO)
+        // LIST chunk (contains INFO) - read the LIST type (4 more bytes)
         //------------------------------------------------------------------
-        if (chunkId == "LIST" && offset + 12 <= data.size())
+        if (chunkId == "LIST" && chunkSize >= 4)
         {
-            std::string listType = ReadString(data, offset + 8, 4);
-            if (listType == "INFO")
-                hasMetadata |= ParseRIFFInfo(data, offset + 12, chunkSize - 4, track);
+            auto listTypeData = ReadFileRange(filePath, offset + 8, 4);
+            if (listTypeData.size() >= 4)
+            {
+                std::string listType = ReadString(listTypeData, 0, 4);
+                if (listType == "INFO")
+                {
+                    hasMetadata |= ParseRIFFInfo(filePath, offset + 12, chunkSize - 4, track);
+                }
+            }
         }
 
         offset += 8 + chunkSize;
@@ -53,22 +68,70 @@ bool WavMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack&
 }
 
 //==============================================================================
-// RIFF INFO Chunk Parser
+// Optimized File Reading Helpers
 //==============================================================================
 
-bool WavMetadataParser::ParseRIFFInfo(const std::vector<uint8_t>& data, size_t offset, size_t length, MusicTrack& track) const
+size_t WavMetadataParser::GetFileSize(const std::filesystem::path& filePath) const
 {
-    size_t end = offset + length;
+    std::error_code ec;
+    size_t size = std::filesystem::file_size(filePath, ec);
+    if (ec) return 0;
+    return size;
+}
+
+std::vector<uint8_t> WavMetadataParser::ReadFileRange(const std::filesystem::path& filePath,
+                                                       size_t offset, size_t length) const
+{
+    if (length == 0 || length > 100 * 1024 * 1024) return {};
+    
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) return {};
+    
+    file.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!file.good()) return {};
+    
+    std::vector<uint8_t> buffer(length);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(length)))
+    {
+        size_t actualRead = static_cast<size_t>(file.gcount());
+        if (actualRead == 0) return {};
+        buffer.resize(actualRead);
+    }
+    
+    return buffer;
+}
+
+std::vector<uint8_t> WavMetadataParser::ReadFileHead(const std::filesystem::path& filePath,
+                                                       size_t length) const
+{
+    return ReadFileRange(filePath, 0, length);
+}
+
+//==============================================================================
+// RIFF INFO Chunk Parser (reads only the INFO section)
+//==============================================================================
+
+bool WavMetadataParser::ParseRIFFInfo(const std::filesystem::path& filePath,
+                                       size_t offset, size_t length,
+                                       MusicTrack& track) const
+{
+    // Read the entire INFO section (typically very small, < 1KB)
+    size_t readSize = (std::min)(length, static_cast<size_t>(64 * 1024)); // Cap at 64KB
+    auto data = ReadFileRange(filePath, offset, readSize);
+    if (data.empty()) return false;
+
+    size_t end = data.size();
+    size_t pos = 0;
     bool hasMetadata = false;
 
-    while (offset + 8 <= end)
+    while (pos + 8 <= end)
     {
-        std::string chunkId = ReadString(data, offset, 4);
-        uint32_t chunkSize = ReadUInt32LE(data, offset + 4);
+        std::string chunkId = ReadString(data, pos, 4);
+        uint32_t chunkSize = ReadUInt32LE(data, pos + 4);
 
-        if (offset + 8 + chunkSize > end) break;
+        if (pos + 8 + chunkSize > end) break;
 
-        std::string value = CleanString(ReadString(data, offset + 8, chunkSize));
+        std::string value = CleanString(ReadString(data, pos + 8, chunkSize));
 
         if (chunkId == "INAM" && !value.empty())      { track.SetTitle(value); hasMetadata = true; }
         else if (chunkId == "IART" && !value.empty()) { track.SetArtist(value); hasMetadata = true; }
@@ -76,8 +139,8 @@ bool WavMetadataParser::ParseRIFFInfo(const std::vector<uint8_t>& data, size_t o
         else if (chunkId == "IGNR" && !value.empty()) { track.SetGenre(value); }
         else if (chunkId == "ICRD" && !value.empty()) { try { track.SetYear(std::stoi(value)); } catch (...) {} }
 
-        offset += 8 + chunkSize;
-        if (chunkSize % 2) offset++; // Padding byte
+        pos += 8 + chunkSize;
+        if (chunkSize % 2) pos++; // Padding byte
     }
 
     return hasMetadata;
@@ -100,28 +163,6 @@ std::string WavMetadataParser::ReadString(const std::vector<uint8_t>& data, size
 {
     if (offset + length > data.size()) return "";
     return std::string(reinterpret_cast<const char*>(&data[offset]), length);
-}
-
-//==============================================================================
-// File I/O
-//==============================================================================
-
-std::vector<uint8_t> WavMetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
-{
-    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) return {};
-    
-    std::streamsize size = file.tellg();
-    if (size <= 0 || size > 100 * 1024 * 1024) return {};
-    
-    file.seekg(0, std::ios::beg);
-    std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
-        return {};
-    
-    return buffer;
 }
 
 //==============================================================================

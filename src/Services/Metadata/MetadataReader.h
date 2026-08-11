@@ -3,6 +3,8 @@
 //==============================================================================
 // Central metadata reader that dispatches to format-specific parsers
 // Duration is always handled by BASS
+// extractAlbumArt parameter controls whether album art is extracted
+// Set to false during bulk imports for massive speed improvement
 //==============================================================================
 
 #pragma once
@@ -41,9 +43,11 @@ namespace moosic
 
         //--------------------------------------------------------------------------
         // Main API
+        // extractAlbumArt: set to false for bulk imports (much faster!)
         //--------------------------------------------------------------------------
 
-        MusicTrack ReadMetadataForSingleTrack(const std::filesystem::path &filePath) const;
+        MusicTrack ReadMetadataForSingleTrack(const std::filesystem::path &filePath,
+                                              bool extractAlbumArt = true) const;
 
         //--------------------------------------------------------------------------
         // Duration API (for 2-phase import - called separately)
@@ -56,13 +60,27 @@ namespace moosic
         // Format-Specific Parsers (delegated to individual parser classes)
         //--------------------------------------------------------------------------
 
-        bool ParseMP3Metadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseFLACMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseMP4Metadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseOGGMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseWAVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseAIFFMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
-        bool ParseWVMetadata(const std::filesystem::path &filePath, MusicTrack &track) const;
+        bool ParseMP3Metadata(const std::filesystem::path &filePath, 
+                              MusicTrack &track,
+                              bool extractAlbumArt) const;
+        bool ParseFLACMetadata(const std::filesystem::path &filePath, 
+                               MusicTrack &track,
+                               bool extractAlbumArt) const;
+        bool ParseMP4Metadata(const std::filesystem::path &filePath, 
+                              MusicTrack &track,
+                              bool extractAlbumArt) const;
+        bool ParseOGGMetadata(const std::filesystem::path &filePath, 
+                              MusicTrack &track,
+                              bool extractAlbumArt) const;
+        bool ParseWAVMetadata(const std::filesystem::path &filePath, 
+                              MusicTrack &track,
+                              bool extractAlbumArt) const;
+        bool ParseAIFFMetadata(const std::filesystem::path &filePath, 
+                               MusicTrack &track,
+                               bool extractAlbumArt) const;
+        bool ParseWVMetadata(const std::filesystem::path &filePath, 
+                             MusicTrack &track,
+                             bool extractAlbumArt) const;
 
         //--------------------------------------------------------------------------
         // Helpers

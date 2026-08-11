@@ -1,6 +1,8 @@
 //==============================================================================
 // UI.cpp
 //==============================================================================
+// Main UI controller implementation
+//==============================================================================
 
 #include "UI.h"
 #include "Windows/WindowContentPanel.h"
@@ -60,6 +62,7 @@ namespace moosic
         const float titleBarHeight = m_titleBar.GetTheme().Height;
         const float borderThickness = m_themeManager.GetTheme().ContentPanel.BorderThickness;
 
+        // Draw menu bar
         m_menuBar.Draw(titleBarHeight, borderThickness,
                        m_themeManager.GetTheme().ContentPanel.BorderColor,
                        m_themeManager.GetTheme().Window.TitleBar);
@@ -67,23 +70,31 @@ namespace moosic
         const float menuBarHeight = m_menuBar.GetHeight();
         const float topChrome = titleBarHeight + menuBarHeight + borderThickness;
 
+        // Save original viewport
         const ImVec2 originalPos = viewport->Pos;
         const ImVec2 originalSize = viewport->Size;
         const ImVec2 originalWorkPos = viewport->WorkPos;
         const ImVec2 originalWorkSize = viewport->WorkSize;
 
+        // Adjust viewport to exclude title bar and menu bar
         viewport->Pos = ImVec2(originalPos.x, originalPos.y + topChrome);
         viewport->Size = ImVec2(originalSize.x, originalSize.y - topChrome);
         viewport->WorkPos = viewport->Pos;
         viewport->WorkSize = viewport->Size;
 
+        // Draw current layout content
         DrawCurrentLayout(renderer);
 
+        // Restore viewport BEFORE drawing popups so they render on the full screen
         viewport->Pos = originalPos;
         viewport->Size = originalSize;
         viewport->WorkPos = originalWorkPos;
         viewport->WorkSize = originalWorkSize;
 
+        // Draw popups (must be after viewport restore)
+        DrawAboutPopup();
+
+        // Draw title bar last (always on top)
         m_titleBar.Render();
     }
 
@@ -167,6 +178,7 @@ namespace moosic
         const auto &w = theme.Window;
         const auto &cp = theme.ContentPanel;
 
+        // Colors
         style.Colors[ImGuiCol_WindowBg] = w.WindowBg;
         style.Colors[ImGuiCol_Border] = cp.BorderColor;
         style.Colors[ImGuiCol_TitleBg] = w.TitleBar;
@@ -199,6 +211,7 @@ namespace moosic
         style.Colors[ImGuiCol_TabUnfocused] = cp.TabInactive;
         style.Colors[ImGuiCol_TabUnfocusedActive] = cp.TabActive;
 
+        // Sizing
         style.WindowRounding = 0.0f;
         style.ChildRounding = 4.0f;
         style.FrameRounding = w.ButtonRounding;
@@ -378,17 +391,18 @@ namespace moosic
     //==============================================================================
     // Global Hotkeys
     //==============================================================================
+
     void UI::HandleGlobalHotkeys(InputManager &input)
     {
         ImGuiIO &io = ImGui::GetIO();
 
-        // =====================================================================
-        // Media keys from headphones / AirPods / keyboard media row
-        // Debounced so a single double-tap cannot toggle twice
-        // =====================================================================
+        //====================================================================
+        // Media keys (headphones / AirPods / keyboard media row)
+        // Debounced to prevent double-tap issues
+        //====================================================================
         static Uint32 lastMediaActionTime = 0;
         const Uint32 now = SDL_GetTicks();
-        const Uint32 MEDIA_DEBOUNCE_MS = 350; // 350 ms is enough for AirPods
+        const Uint32 MEDIA_DEBOUNCE_MS = 350;
 
         if (input.IsMediaKeyPressed(HotkeyAction::PlayPause))
         {
@@ -446,7 +460,6 @@ namespace moosic
         }
         if (input.IsMediaKeyPressed(HotkeyAction::VolumeUp))
         {
-            // Volume can stay more responsive – optional smaller debounce
             float vol = m_playbackController.GetVolume() + 0.05f;
             if (vol > 1.0f)
                 vol = 1.0f;
@@ -462,9 +475,9 @@ namespace moosic
             return;
         }
 
-        // =====================================================================
-        // Regular keyboard shortcuts (still blocked while typing)
-        // =====================================================================
+        //====================================================================
+        // Keyboard shortcuts (blocked while typing in text fields)
+        //====================================================================
         if (!io.WantTextInput && input.IsKeyPressed(SDLK_o) &&
             (input.IsKeyDown(SDLK_LCTRL) || input.IsKeyDown(SDLK_RCTRL)))
         {
@@ -673,7 +686,268 @@ namespace moosic
 
     void UI::OnHelpAbout()
     {
-        ImGui::OpenPopup("About Moosic");
+        m_showAboutPopup = true;
     }
+
+    void UI::DrawAboutPopup()
+{
+    // Open the popup if requested this frame
+    if (m_showAboutPopup)
+    {
+        ImGui::OpenPopup("About Moosic");
+        m_showAboutPopup = false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Popup configuration - responsive to window size
+    // -------------------------------------------------------------------------
+
+    ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+    
+    // Calculate popup size as percentage of viewport
+    // Min size: 400x380, Max size: 600x500
+    float popupWidth = std::clamp(viewportSize.x * 0.35f, 470.0f, 600.0f);
+    float popupHeight = std::clamp(viewportSize.y * 0.55f, 445.0f, 500.0f);
+    ImVec2 popupSize(popupWidth, popupHeight);
+
+    ImGui::SetNextWindowSize(popupSize, ImGuiCond_Always);
+
+    // Center the popup on screen
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopupModal(
+            "About Moosic",
+            nullptr,
+            ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoSavedSettings))
+    {
+        // ---------------------------------------------------------------------
+        // Header
+        // ---------------------------------------------------------------------
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + popupHeight * 0.025f);
+
+        const char *title = "MOOSIC";
+        const char *version = "Version 2.0.0";
+
+        float titleWidth = ImGui::CalcTextSize(title).x;
+        ImGui::SetCursorPosX((popupSize.x - titleWidth) * 0.5f);
+        ImGui::TextColored(ImVec4(0.30f, 0.70f, 1.00f, 1.0f), "%s", title);
+
+        float versionWidth = ImGui::CalcTextSize(version).x;
+        ImGui::SetCursorPosX((popupSize.x - versionWidth) * 0.5f);
+        ImGui::TextDisabled("%s", version);
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // Divider
+        // ---------------------------------------------------------------------
+
+        const float paddingX = popupWidth * 0.05f;
+        ImGui::SetCursorPosX(paddingX);
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // About MOOSIC
+        // ---------------------------------------------------------------------
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.90f, 1.0f), "About MOOSIC");
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::PushTextWrapPos(popupSize.x - paddingX - 6.0f);
+        ImGui::TextWrapped(
+            "MOOSIC is a free, open-source, cross-platform music player "
+            "made for desktop. Built with C++ and focuses on a lightweight "
+            "desktop experience, local music playback, customizable themes, "
+            "and a clean library management workflow.");
+        ImGui::PopTextWrapPos();
+
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // GitHub (selectable text)
+        // ---------------------------------------------------------------------
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.90f, 1.0f), "Source Code");
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::Text("GitHub: ");
+
+        ImGui::SameLine(0.0f, 0.0f);
+
+        // Selectable link text
+        const char *githubUrl = "github.com/NullPickleException/MOOSIC_PLAYER_V2";
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.40f, 0.75f, 1.00f, 1.0f));
+        ImGui::TextUnformatted(githubUrl);
+
+        // Store the position and size for hit testing
+        ImVec2 githubMin = ImGui::GetItemRectMin();
+        ImVec2 githubMax = ImGui::GetItemRectMax();
+
+        // Make it selectable - draw invisible selectable over it
+        ImGui::SetCursorScreenPos(githubMin);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.3f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.26f, 0.59f, 0.98f, 0.5f));
+        bool githubClicked = ImGui::Selectable("##GitHubLink", false, 0, ImVec2(githubMax.x - githubMin.x, githubMax.y - githubMin.y));
+        ImGui::PopStyleColor(4);
+
+        if (githubClicked)
+        {
+#ifdef _WIN32
+            ShellExecuteA(NULL, "open", "https://github.com/NullPickleException/MOOSIC_PLAYER_V2", NULL, NULL, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+            system("open https://github.com/NullPickleException/MOOSIC_PLAYER_V2");
+#else
+            system("xdg-open https://github.com/NullPickleException/MOOSIC_PLAYER_V2");
+#endif
+        }
+
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip("Click to open in browser");
+        }
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // Artwork Credit
+        // ---------------------------------------------------------------------
+
+        ImGui::SetCursorPosX(paddingX);
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::TextColored(ImVec4(0.85f, 0.85f, 0.90f, 1.0f), "Artwork & Icon Design");
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::PushTextWrapPos(popupSize.x - paddingX - 6.0f);
+        ImGui::TextWrapped(
+            "Pixel art and cow artwork used throughout MOOSIC "
+            "were created by my friend, whose work helped give "
+            "the project its visual identity.");
+        ImGui::PopTextWrapPos();
+
+        ImGui::Spacing();
+
+        // Artist name
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::Text("Artist: ");
+
+        ImGui::SameLine(0.0f, 0.0f);
+
+        const char *artistName = "Friend's Name";
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.85f, 0.85f, 0.90f, 1.0f));
+        ImGui::TextUnformatted(artistName);
+        ImGui::PopStyleColor();
+
+        ImGui::Spacing();
+
+        // ArtStation link
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::TextDisabled("ArtStation:");
+
+        ImGui::SameLine(0.0f, 8.0f);
+
+        const char *artStationLink = "[ArtStation link]";
+        ImVec2 artStationMin = ImGui::GetCursorScreenPos();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.40f, 0.75f, 1.00f, 1.0f));
+        ImGui::TextUnformatted(artStationLink);
+        ImGui::PopStyleColor();
+        ImVec2 artStationMax = ImGui::GetItemRectMax();
+
+        // Make it clickable
+        ImGui::SetCursorScreenPos(artStationMin);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.3f));
+        bool artStationClicked = ImGui::Selectable("##ArtStationLink", false, 0, ImVec2(artStationMax.x - artStationMin.x, artStationMax.y - artStationMin.y));
+        ImGui::PopStyleColor(2);
+
+        if (artStationClicked)
+        {
+            // Handle ArtStation click
+        }
+
+        // Pinterest link
+        ImGui::SetCursorPosX(paddingX + 6.0f);
+        ImGui::TextDisabled("Pinterest:");
+
+        ImGui::SameLine(0.0f, 14.0f);
+
+        const char *pinterestLink = "[Pinterest link]";
+        ImVec2 pinterestMin = ImGui::GetCursorScreenPos();
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.40f, 0.75f, 1.00f, 1.0f));
+        ImGui::TextUnformatted(pinterestLink);
+        ImGui::PopStyleColor();
+        ImVec2 pinterestMax = ImGui::GetItemRectMax();
+
+        // Make it clickable
+        ImGui::SetCursorScreenPos(pinterestMin);
+        ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.26f, 0.59f, 0.98f, 0.3f));
+        bool pinterestClicked = ImGui::Selectable("##PinterestLink", false, 0, ImVec2(pinterestMax.x - pinterestMin.x, pinterestMax.y - pinterestMin.y));
+        ImGui::PopStyleColor(2);
+
+        if (pinterestClicked)
+        {
+            // Handle Pinterest click
+        }
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // Footer
+        // ---------------------------------------------------------------------
+
+        ImGui::SetCursorPosX(paddingX);
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        const char *footer = "Thank You for Choosing MOOSIC, Enjoy.";
+        float footerWidth = ImGui::CalcTextSize(footer).x;
+        ImGui::SetCursorPosX((popupSize.x - footerWidth) * 0.5f);
+        ImGui::TextDisabled("%s", footer);
+
+        ImGui::Spacing();
+
+        // ---------------------------------------------------------------------
+        // Close button
+        // ---------------------------------------------------------------------
+
+        // Scale button size with popup
+        float buttonWidth = std::clamp(popupWidth * 0.25f, 100.0f, 140.0f);
+        float buttonHeight = std::clamp(popupHeight * 0.07f, 28.0f, 36.0f);
+        ImGui::SetCursorPosX((popupSize.x - buttonWidth) * 0.5f);
+
+        if (ImGui::Button("OK", ImVec2(buttonWidth, buttonHeight)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + popupHeight * 0.01f);
+
+        ImGui::EndPopup();
+    }
+}
+
 
 } // namespace moosic

@@ -2,6 +2,7 @@
 // OggMetadataParser.cpp
 //==============================================================================
 // Custom binary parser for OGG Vorbis/Opus metadata
+// OPTIMIZED: Targeted reads - only reads metadata pages, not the entire file
 //==============================================================================
 
 #include "OggMetadataParser.h"
@@ -13,9 +14,17 @@ namespace moosic
 // Main Parse API
 //==============================================================================
 
-bool OggMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack& track) const
+bool OggMetadataParser::Parse(const std::filesystem::path& filePath,
+                               MusicTrack& track,
+                               bool /*extractAlbumArt*/) const
 {
-    auto data = ReadFileBytes(filePath);
+    size_t fileSize = GetFileSize(filePath);
+    if (fileSize < 28) return false;
+
+    // OGG metadata is typically in the first few pages (first ~8KB)
+    // Read enough to cover the comment headers
+    size_t readSize = (std::min)(fileSize, static_cast<size_t>(64 * 1024)); // Read first 64KB max
+    auto data = ReadFileHead(filePath, readSize);
     if (data.size() < 28) return false;
 
     //----------------------------------------------------------------------
@@ -64,6 +73,46 @@ bool OggMetadataParser::Parse(const std::filesystem::path& filePath, MusicTrack&
     }
 
     return false;
+}
+
+//==============================================================================
+// Optimized File Reading Helpers
+//==============================================================================
+
+size_t OggMetadataParser::GetFileSize(const std::filesystem::path& filePath) const
+{
+    std::error_code ec;
+    size_t size = std::filesystem::file_size(filePath, ec);
+    if (ec) return 0;
+    return size;
+}
+
+std::vector<uint8_t> OggMetadataParser::ReadFileRange(const std::filesystem::path& filePath,
+                                                       size_t offset, size_t length) const
+{
+    if (length == 0 || length > 100 * 1024 * 1024) return {};
+    
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) return {};
+    
+    file.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+    if (!file.good()) return {};
+    
+    std::vector<uint8_t> buffer(length);
+    if (!file.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(length)))
+    {
+        size_t actualRead = static_cast<size_t>(file.gcount());
+        if (actualRead == 0) return {};
+        buffer.resize(actualRead);
+    }
+    
+    return buffer;
+}
+
+std::vector<uint8_t> OggMetadataParser::ReadFileHead(const std::filesystem::path& filePath,
+                                                       size_t length) const
+{
+    return ReadFileRange(filePath, 0, length);
 }
 
 //==============================================================================
@@ -136,27 +185,6 @@ std::string OggMetadataParser::ReadString(const std::vector<uint8_t>& data, size
     return std::string(reinterpret_cast<const char*>(&data[offset]), length);
 }
 
-//==============================================================================
-// File I/O
-//==============================================================================
-
-std::vector<uint8_t> OggMetadataParser::ReadFileBytes(const std::filesystem::path& filePath) const
-{
-    // std::ifstream accepts std::filesystem::path natively - handles Unicode on all platforms
-    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) return {};
-    
-    std::streamsize size = file.tellg();
-    if (size <= 0 || size > 100 * 1024 * 1024) return {};
-    
-    file.seekg(0, std::ios::beg);
-    std::vector<uint8_t> buffer(static_cast<size_t>(size));
-    
-    if (!file.read(reinterpret_cast<char*>(buffer.data()), size))
-        return {};
-    
-    return buffer;
-}
 //==============================================================================
 // String Utilities
 //==============================================================================

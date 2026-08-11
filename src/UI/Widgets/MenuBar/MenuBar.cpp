@@ -34,13 +34,13 @@ namespace moosic
 
         // Calculate vertical padding to perfectly center text in menu bar
         float fontHeight = ImGui::GetFontSize();
-        float totalVerticalPadding = menuBarHeight - borderThickness * 2.0f - fontHeight;
-        float vertPadding = totalVerticalPadding / 2.0f;
+
+        float vertPadding = (menuBarHeight - fontHeight) / 2.0f;
         if (vertPadding < 0.0f)
             vertPadding = 0.0f;
 
         // Use the exact vertical padding to center text
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, vertPadding));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, vertPadding));
 
         ImGui::PushStyleColor(ImGuiCol_WindowBg, bgColor);
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, bgColor);
@@ -122,12 +122,13 @@ namespace moosic
                 }
 
                 // Playback Menu
+                // Playback Menu
                 if (ImGui::BeginMenu("Playback"))
                 {
                     if (ImGui::MenuItem("Play/Pause", "Space"))
                     {
                         if (OnPlaybackPlay)
-                            OnPlaybackPlay(); // This should toggle, not just play
+                            OnPlaybackPlay(); // This now calls TogglePlayPause (fixed in UI.cpp setup)
                     }
                     ImGui::Separator();
                     if (ImGui::MenuItem("Next Track", "Ctrl+Right"))

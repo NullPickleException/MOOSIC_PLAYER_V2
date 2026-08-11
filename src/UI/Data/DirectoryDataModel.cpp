@@ -210,7 +210,8 @@ namespace moosic
                 MusicTrack track;
                 try
                 {
-                    track = reader.ReadMetadataForSingleTrack(file);
+                    // SKIP album art during bulk import for speed
+                    track = reader.ReadMetadataForSingleTrack(file, false);
 
                     // Get duration with BASS
                     try
@@ -265,7 +266,7 @@ namespace moosic
             // For many files, use the async import with progress bar
             // Use first directory as the "pending" directory for UI purposes
             m_pendingDirectory = directories[0];
-            StartIncrementalImport(directories[0], allNewFiles); // FIXED: was 'allFiles', now 'allNewFiles'
+            StartIncrementalImport(directories[0], allNewFiles);
         }
     }
 
@@ -371,7 +372,8 @@ namespace moosic
                             
                             try
                             {
-                                track = m_reader.ReadMetadataForSingleTrack(files[i]);
+                                // SKIP album art during bulk import for massive speed improvement
+                                track = m_reader.ReadMetadataForSingleTrack(files[i], false);
                                 track.SetDuration(0);
                             }
                             catch (...)
@@ -413,13 +415,27 @@ namespace moosic
             for (auto& f : futures)
                 if (f.valid()) f.get();
 
-            // PHASE 2: BASS duration
-            if (!pendingBASS.empty())
+           // PHASE 2: BASS duration (parallel, limited concurrency)
+if (!pendingBASS.empty())
+{
+    m_processedFiles.store(0, std::memory_order_release);
+
+    const unsigned int maxBassThreads = std::min(4u, std::thread::hardware_concurrency());
+    std::vector<std::future<void>> bassFutures;
+    std::atomic<int> bassProcessed{0};
+
+    size_t bassChunk = (pendingBASS.size() + maxBassThreads - 1) / maxBassThreads;
+
+    for (unsigned int t = 0; t < maxBassThreads; ++t)
+    {
+        size_t start = t * bassChunk;
+        if (start >= pendingBASS.size()) break;
+        size_t end = std::min(start + bassChunk, pendingBASS.size());
+
+        bassFutures.push_back(std::async(std::launch::async,
+            [this, &tracks, &pendingBASS, start, end, &bassProcessed]()
             {
-                m_processedFiles.store(0, std::memory_order_release);
-                
-                // DO BASS SEQUENTIALLY to avoid threading issues
-                for (size_t i = 0; i < pendingBASS.size(); ++i)
+                for (size_t i = start; i < end; ++i)
                 {
                     size_t trackIndex = pendingBASS[i];
                     if (trackIndex < tracks.size())
@@ -432,9 +448,15 @@ namespace moosic
                         }
                         catch (...) {}
                     }
-                    m_processedFiles.store(static_cast<int>(i + 1), std::memory_order_release);
+                    int count = bassProcessed.fetch_add(1, std::memory_order_relaxed) + 1;
+                    m_processedFiles.store(count, std::memory_order_release);
                 }
-            }
+            }));
+    }
+
+    for (auto& f : bassFutures)
+        if (f.valid()) f.get();
+}
 
             m_importedTracks = std::move(tracks);
         }
@@ -488,7 +510,8 @@ namespace moosic
                     MusicTrack track;
                     try
                     {
-                        track = m_reader.ReadMetadataForSingleTrack(file);
+                        // SKIP album art during bulk import for speed
+                        track = m_reader.ReadMetadataForSingleTrack(file, false);
                         track.SetDuration(0);
                     }
                     catch (...)
@@ -539,7 +562,8 @@ namespace moosic
                                 MusicTrack track;
                                 try
                                 {
-                                    track = m_reader.ReadMetadataForSingleTrack(newFiles[i]);
+                                    // SKIP album art during bulk import for speed
+                                    track = m_reader.ReadMetadataForSingleTrack(newFiles[i], false);
                                     track.SetDuration(0);
                                 }
                                 catch (...)
@@ -581,12 +605,27 @@ namespace moosic
                     if (f.valid()) f.get();
             }
 
-            // PHASE 2: BASS duration (sequential to avoid threading issues)
-            if (!pendingBASS.empty())
+           // PHASE 2: BASS duration (parallel, limited concurrency)
+if (!pendingBASS.empty())
+{
+    m_processedFiles.store(0, std::memory_order_release);
+
+    const unsigned int maxBassThreads = std::min(4u, std::thread::hardware_concurrency());
+    std::vector<std::future<void>> bassFutures;
+    std::atomic<int> bassProcessed{0};
+
+    size_t bassChunk = (pendingBASS.size() + maxBassThreads - 1) / maxBassThreads;
+
+    for (unsigned int t = 0; t < maxBassThreads; ++t)
+    {
+        size_t start = t * bassChunk;
+        if (start >= pendingBASS.size()) break;
+        size_t end = std::min(start + bassChunk, pendingBASS.size());
+
+        bassFutures.push_back(std::async(std::launch::async,
+            [this, &tracks, &pendingBASS, start, end, &bassProcessed]()
             {
-                m_processedFiles.store(0, std::memory_order_release);
-                
-                for (size_t i = 0; i < pendingBASS.size(); ++i)
+                for (size_t i = start; i < end; ++i)
                 {
                     size_t trackIndex = pendingBASS[i];
                     if (trackIndex < tracks.size())
@@ -599,9 +638,15 @@ namespace moosic
                         }
                         catch (...) {}
                     }
-                    m_processedFiles.store(static_cast<int>(i + 1), std::memory_order_release);
+                    int count = bassProcessed.fetch_add(1, std::memory_order_relaxed) + 1;
+                    m_processedFiles.store(count, std::memory_order_release);
                 }
-            }
+            }));
+    }
+
+    for (auto& f : bassFutures)
+        if (f.valid()) f.get();
+}
 
             m_importedTracks = std::move(tracks);
         }

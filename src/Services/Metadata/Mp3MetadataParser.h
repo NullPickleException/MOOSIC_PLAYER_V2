@@ -2,7 +2,8 @@
 // Mp3MetadataParser.h
 //==============================================================================
 // Custom binary parser for MP3 metadata (ID3v1 and ID3v2 tags)
-// Extracts: title, artist, album, genre, year, track number, album art
+// Extracts: title, artist, album, genre, year, track number, album art (optional)
+// OPTIMIZED: Targeted reads - only reads metadata sections, not the entire file
 //==============================================================================
 
 #pragma once
@@ -11,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <fstream>
 
 namespace moosic
 {
@@ -33,16 +35,37 @@ public:
     // Main Parse API
     //--------------------------------------------------------------------------
     // Parses MP3 file and fills track metadata
+    // extractAlbumArt: set to false for bulk imports (much faster)
     // Returns true if any metadata was successfully extracted
     
-  bool Parse(const std::filesystem::path& filePath, MusicTrack& track) const;
+    bool Parse(const std::filesystem::path& filePath, 
+               MusicTrack& track,
+               bool extractAlbumArt = true) const;
 
 private:
+    //--------------------------------------------------------------------------
+    // Optimized File Reading Helpers
+    //--------------------------------------------------------------------------
+    
+    std::vector<uint8_t> ReadFileRange(const std::filesystem::path& filePath, 
+                                       size_t offset, size_t length) const;
+    
+    size_t GetFileSize(const std::filesystem::path& filePath) const;
+    
+    std::vector<uint8_t> ReadFileHead(const std::filesystem::path& filePath, 
+                                      size_t length) const;
+    
+    std::vector<uint8_t> ReadFileTail(const std::filesystem::path& filePath, 
+                                      size_t length) const;
+
     //--------------------------------------------------------------------------
     // ID3v2 Parsing
     //--------------------------------------------------------------------------
     
-    bool ParseID3v2(const std::vector<uint8_t>& data, MusicTrack& track) const;
+    bool ParseID3v2(const std::filesystem::path& filePath, 
+                    MusicTrack& track,
+                    uint32_t tagSize,
+                    bool extractAlbumArt) const;
     
     void ExtractAlbumArt(const std::vector<uint8_t>& data, 
                          size_t offset, 
@@ -69,12 +92,6 @@ private:
     std::string ReadString(const std::vector<uint8_t>& data, size_t offset, size_t length) const;
     std::string ReadNullTerminatedString(const std::vector<uint8_t>& data, size_t offset, size_t maxLength) const;
     
-    //--------------------------------------------------------------------------
-    // File I/O
-    //--------------------------------------------------------------------------
-    
-    std::vector<uint8_t> ReadFileBytes(const std::filesystem::path& filePath) const;
-
     //--------------------------------------------------------------------------
     // String Utilities
     //--------------------------------------------------------------------------

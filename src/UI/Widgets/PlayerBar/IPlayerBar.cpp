@@ -44,9 +44,13 @@ namespace moosic
     void IPlayerBar::SetRenderer(SDL_Renderer *renderer)
     {
         m_renderer = renderer;
+        // Only set themes, don't clear textures
         m_lightbox.ApplyTheme(m_theme.Lightbox);
         m_albumArtBox.ApplyTheme(m_theme.AlbumArtBox);
         m_visualizer.ApplyTheme(m_theme.Visualizer);
+
+        // Reset art load attempt so it reloads with the new renderer
+        m_artLoadAttempted = false;
     }
 
     void IPlayerBar::SetPlaybackController(PlaybackController *controller)
@@ -111,7 +115,14 @@ namespace moosic
 
     void IPlayerBar::LoadAlbumArtForCurrentTrack()
     {
-        if (!m_data || !m_renderer || m_artLoadAttempted)
+        if (!m_data || !m_renderer)
+            return;
+
+        // Reset art load attempt if track changed or no art loaded yet
+        if (m_data->trackJustChanged || !m_albumArtTexture)
+            m_artLoadAttempted = false;
+
+        if (m_artLoadAttempted)
             return;
 
         if (!m_data->hasTrack)
@@ -122,15 +133,23 @@ namespace moosic
             return;
         }
 
+        // Check if we already have the correct art loaded
         if (m_lastAlbumArtTrackId == m_data->currentTrackId && m_albumArtTexture)
+        {
+            m_artLoadAttempted = true;
             return;
+        }
+
         LoadAlbumArtFromData();
     }
 
     void IPlayerBar::LoadAlbumArtFromData()
     {
-        if (!m_data)
+        if (!m_data || !m_renderer)
+        {
+            m_artLoadAttempted = true;
             return;
+        }
 
         DestroyAlbumArtTexture();
         m_albumArtBox.ClearTexture();
@@ -151,20 +170,23 @@ namespace moosic
                 return;
             }
 
+            // Try to get album art from the track
             const auto &trackArt = track->GetAlbumArtData();
             if (!trackArt.empty())
             {
                 artData = trackArt;
             }
-            else
+            else if (m_playbackController)
             {
+                // Re-read metadata with album art extraction enabled
                 MetadataReader reader;
-                MusicTrack refreshed = reader.ReadMetadataForSingleTrack(track->GetPath());
+                MusicTrack refreshed = reader.ReadMetadataForSingleTrack(track->GetPath(), true);
                 if (refreshed.HasAlbumArt())
                     artData = refreshed.GetAlbumArtData();
             }
 
-            if (!artData.empty())
+            // Cache for other player bars
+            if (!artData.empty() && m_playbackController)
                 m_playbackController->CacheAlbumArt(m_data->currentTrackId, artData, 0, 0);
         }
 
@@ -200,9 +222,12 @@ namespace moosic
         m_albumArtHeight = image.height;
         m_lastAlbumArtTrackId = m_data->currentTrackId;
 
+        // Set texture on child widgets
         m_albumArtBox.SetTexture(texture, image.width, image.height);
         m_lightbox.SetTexture(texture, image.width, image.height);
         m_lightbox.SetInfo(m_data->title.c_str(), m_data->artist.c_str());
+
+        m_artLoadAttempted = true;
     }
 
     //==========================================================================

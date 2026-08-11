@@ -25,7 +25,7 @@ namespace moosic
         ImVec4 PopupBackground = ImVec4(0.12f, 0.12f, 0.14f, 1.0f);
         ImVec4 BorderColor = ImVec4(0.30f, 0.30f, 0.35f, 1.0f);
 
-        float Height = 12.0f;  // Single source of truth for menu bar height
+        float Height = 15.0f;  // Single source of truth for menu bar height
     };
 
     class MenuBar
