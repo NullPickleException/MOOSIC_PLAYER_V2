@@ -1,12 +1,13 @@
 //==============================================================================
 // UI/Windows/LibraryWindow.h
 //==============================================================================
+// Library view – pure renderer, no data ownership / no frame ticks
+//==============================================================================
 
 #pragma once
 
 #include "IWindow.h"
 #include "../Data/LibraryDataModel.h"
-#include "../Data/DirectoryDataModel.h"
 #include "../Data/PlaylistDataModel.h"
 #include "../Widgets/TrackTable.h"
 #include "../Widgets/TrackSearchBar.h"
@@ -20,81 +21,73 @@
 namespace moosic
 {
 
-    struct LibraryToolbarOptions
+struct LibraryToolbarOptions
+{
+    bool ShowSearchBar     = true;
+    bool ShowRefreshButton = true;
+    bool ShowClearButton   = false;
+    bool ShowTrackCount    = true;
+    bool ShowBrandHeader   = true;
+
+    std::string BrandText      = "MOOSIC LIBRARY";
+    std::string SearchHint     = "Search title, artist or album...";
+    float       SearchBarWidth = 500.0f;
+};
+
+class LibraryWindow : public IWindow
+{
+public:
+    explicit LibraryWindow(LibraryDataModel& dataModel,
+                           PlaybackController* playbackController = nullptr);
+
+    void Draw() override;
+
+    void ApplyTheme(const WindowTheme& theme) override { m_theme = theme; }
+    void ApplyTrackTableTheme(const TrackTableStyle& theme) { m_trackTable.ApplyTheme(theme); }
+    void ApplySearchBarTheme(const TrackSearchBarTheme& theme) { m_searchBar.SetTheme(theme); }
+    void ApplyContextMenuTheme(const PopupMenuTheme& theme) { m_contextMenu.ApplyTheme(theme); }
+
+    void SetToolbarOptions(const LibraryToolbarOptions& options) { m_toolbarOptions = options; }
+    LibraryToolbarOptions& GetToolbarOptions() { return m_toolbarOptions; }
+
+    void SetPlaylistDataModel(PlaylistDataModel* playlistModel)
     {
-        bool ShowSearchBar = true;
-        bool ShowRefreshButton = true;
-        bool ShowClearButton = false;
-        bool ShowTrackCount = true;
-        bool ShowBrandHeader = true;
+        m_playlistModel = playlistModel;
+    }
 
-        std::string BrandText = "MOOSIC LIBRARY";
-        std::string SearchHint = "Search title, artist or album...";
-        float SearchBarWidth = 500.0f;
-    };
+    void SetUseDropdownSearch(bool useDropdown) { m_useDropdownSearch = useDropdown; }
+    bool IsUsingDropdownSearch() const { return m_useDropdownSearch; }
 
-    class LibraryWindow : public IWindow
-    {
-    public:
-        explicit LibraryWindow(LibraryDataModel &dataModel,
-                               PlaybackController *playbackController = nullptr);
-        void Draw() override;
+private:
+    void DrawHeader();
+    void DrawToolbar();
+    void DrawTrackTable();
 
-        void ApplyTheme(const WindowTheme &theme) override { m_theme = theme; }
-        void ApplyTrackTableTheme(const TrackTableStyle &theme) { m_trackTable.ApplyTheme(theme); }
-        void ApplySearchBarTheme(const TrackSearchBarTheme &theme) { m_searchBar.SetTheme(theme); }
-        void ApplyContextMenuTheme(const PopupMenuTheme &theme)
-        {
-            m_contextMenu.ApplyTheme(theme);
-        }
+    void OnTrackClicked(const MusicTrack* track, int rowIndex);
+    void SetupSearchBar();
+    void BuildContextMenu(std::vector<MenuItem>& items);
 
-        void SetToolbarOptions(const LibraryToolbarOptions &options) { m_toolbarOptions = options; }
-        LibraryToolbarOptions &GetToolbarOptions() { return m_toolbarOptions; }
+    void DrawDropdownSearch();
+    void DrawInlineSearch(float searchBarWidth);
 
-        void SetPlaylistDataModel(PlaylistDataModel *playlistModel)
-        {
-            m_playlistModel = playlistModel;
-        }
+private:
+    LibraryDataModel&       m_data;
+    PlaybackController*     m_playbackController = nullptr;
+    PlaylistDataModel*      m_playlistModel      = nullptr;
 
-        // NEW: Set directory data model so Refresh button can scan for new files
-        void SetDirectoryDataModel(DirectoryDataModel* directoryData);
+    TrackTable              m_trackTable;
+    TrackSearchBar          m_searchBar;
+    WindowTheme             m_theme;
+    LibraryToolbarOptions   m_toolbarOptions;
 
-        void SetUseDropdownSearch(bool useDropdown) { m_useDropdownSearch = useDropdown; }
-        bool IsUsingDropdownSearch() const { return m_useDropdownSearch; }
+    ContextMenu             m_contextMenu;
+    int                     m_contextRow   = -1;
+    const MusicTrack*       m_contextTrack = nullptr;
 
-    private:
-        void DrawHeader();
-        void DrawToolbar();
-        void DrawTrackTable();
-        void DrawFooter();
+    EditTrackDialog         m_editTrackDialog;
 
-        void OnTrackClicked(const MusicTrack *track, int rowIndex);
-        void HandleTableSorting();
-        void SetupSearchBar();
-
-        void BuildContextMenu(std::vector<MenuItem> &items);
-
-        void DrawDropdownSearch();
-        void DrawInlineSearch(float searchBarWidth);
-
-    private:
-        LibraryDataModel &m_data;
-        PlaybackController *m_playbackController;
-        PlaylistDataModel *m_playlistModel = nullptr;
-        DirectoryDataModel *m_directoryData = nullptr;  // NEW
-        TrackTable m_trackTable;
-        TrackSearchBar m_searchBar;
-        WindowTheme m_theme;
-        LibraryToolbarOptions m_toolbarOptions;
-
-        ContextMenu m_contextMenu;
-        int m_contextRow = -1;
-        const MusicTrack *m_contextTrack = nullptr;
-
-        EditTrackDialog m_editTrackDialog;
-
-        bool m_useDropdownSearch = false;
-        char m_searchBuffer[256] = "";
-    };
+    bool m_useDropdownSearch = false;
+    char m_searchBuffer[256] = "";
+};
 
 } // namespace moosic

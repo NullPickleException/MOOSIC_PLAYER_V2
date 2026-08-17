@@ -97,8 +97,12 @@ namespace moosic
         }
 
         ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + pad, ImGui::GetCursorPosY() + pad));
-        ImVec2 innerSize = ImVec2(ImGui::GetContentRegionAvail().x - pad, ImGui::GetContentRegionAvail().y - pad);
+        ImVec2 innerSize = ImVec2(ImGui::GetContentRegionAvail().x - pad,
+                                  ImGui::GetContentRegionAvail().y - pad);
         ImGui::BeginChild("##ContentPanelInner", innerSize, false);
+
+        // NOTE: Data-layer ticks (directory Update + library Refresh) live in UI::Draw.
+        // Do not call them here.
 
         const auto desiredTab = m_layoutState.GetCurrentTab();
         const bool needForceSelect = (desiredTab != m_appliedTab);
@@ -115,7 +119,6 @@ namespace moosic
                 {
                     if (needForceSelect)
                     {
-                        // Layout switch / first show: only the forced tab draws
                         if (desiredTab == tab)
                         {
                             m_appliedTab = tab;
@@ -124,7 +127,6 @@ namespace moosic
                     }
                     else
                     {
-                        // Normal interaction: whatever ImGui selected is authoritative
                         m_layoutState.SetCurrentTab(tab);
                         m_appliedTab = tab;
                         drawContent();
@@ -148,10 +150,10 @@ namespace moosic
 
             handleTab("Settings", LayoutStateDataModel::Tab::Settings, [&]()
                       {
-                ImGui::BeginChild("##SettingsScrollRegion", ImVec2(0, 0), false,
-                                  ImGuiWindowFlags_AlwaysVerticalScrollbar);
-                m_settingsWindow.Draw();
-                ImGui::EndChild(); });
+            ImGui::BeginChild("##SettingsScrollRegion", ImVec2(0, 0), false,
+                              ImGuiWindowFlags_AlwaysVerticalScrollbar);
+            m_settingsWindow.Draw();
+            ImGui::EndChild(); });
 
             ImGui::EndTabBar();
         }

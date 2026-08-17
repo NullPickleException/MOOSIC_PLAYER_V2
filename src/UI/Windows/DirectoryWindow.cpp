@@ -15,31 +15,27 @@ namespace moosic
 DirectoryWindow::DirectoryWindow(DirectoryDataModel& dataModel)
     : m_data(dataModel)
 {
-    m_data.SetOnDataChanged([this]() {
-        // Data changed - next Draw() will pick it up
-    });
+    // Pure renderer – no callbacks needed. Data changes are picked up
+    // on the next frame via the shared model.
 }
 
 //==============================================================================
-// Draw - Just renders what the data model gives us
+// Draw – pure rendering only
 //==============================================================================
 
 void DirectoryWindow::Draw()
 {
-    // Check for finished imports
-    m_data.Update();
-
     ImGui::TextColored(m_theme.BrandText, "Directories");
     ImGui::Separator();
 
-    bool isImporting = m_data.IsImporting();
+    const bool isImporting = m_data.IsImporting();
 
-    // Action buttons with theme
-    ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+    // Action buttons
+    ImGui::PushStyleColor(ImGuiCol_Button,        m_theme.ButtonNormal);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, m_theme.ButtonActive);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  m_theme.ButtonActive);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-    
+
     if (ImGui::Button(isImporting ? "Scanning..." : "Add Folder"))
     {
         if (!isImporting)
@@ -53,7 +49,7 @@ void DirectoryWindow::Draw()
         if (!isImporting)
             m_data.ClearAll();
     }
-    
+
     ImGui::PopStyleVar();
     ImGui::PopStyleColor(3);
 
@@ -63,16 +59,17 @@ void DirectoryWindow::Draw()
         ImGui::Spacing();
         ImGui::TextColored(m_theme.TextPrimary, "Importing...");
         ImGui::ProgressBar(m_data.GetProgress(), ImVec2(-1.0f, 0.0f));
-        ImGui::TextColored(m_theme.TextSecondary, "%d / %d files | Added: %d", 
-                    m_data.GetProcessedFiles(), 
-                    m_data.GetTotalFiles(),
-                    m_data.GetSuccessfulFiles());
+        ImGui::TextColored(m_theme.TextSecondary, "%d / %d files | Added: %d",
+                           m_data.GetProcessedFiles(),
+                           m_data.GetTotalFiles(),
+                           m_data.GetSuccessfulFiles());
         ImGui::Separator();
     }
 
     // Directory list
     const auto& directories = m_data.GetDirectories();
-    ImGui::TextColored(m_theme.TextPrimary, "Added Directories (%d)", static_cast<int>(directories.size()));
+    ImGui::TextColored(m_theme.TextPrimary, "Added Directories (%d)",
+                       static_cast<int>(directories.size()));
 
     if (directories.empty())
     {
@@ -90,15 +87,13 @@ void DirectoryWindow::Draw()
 
         if (!isImporting)
         {
-            ImGui::PushStyleColor(ImGuiCol_Button, m_theme.ButtonNormal);
+            ImGui::PushStyleColor(ImGuiCol_Button,        m_theme.ButtonNormal);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, m_theme.ButtonHovered);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, m_theme.ButtonRounding);
-            
+
             if (ImGui::SmallButton("Remove"))
-            {
                 m_data.RemoveDirectory(dir);
-            }
-            
+
             ImGui::PopStyleVar();
             ImGui::PopStyleColor(2);
         }
