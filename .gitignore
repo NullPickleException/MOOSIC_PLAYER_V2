@@ -1,4 +1,4 @@
-# Build output
+# Build directories
 build/
 out/
 dist/
@@ -12,28 +12,29 @@ Makefile
 *.cmake
 !CMakeLists.txt
 
-# Visual Studio / IDE
+# Visual Studio
 .vs/
 .vscode/
-.idea/
-*.sln
-*.suo
 *.vcxproj
 *.vcxproj.filters
+*.sln
+*.suo
 *.user
 
-# Compiled binaries / libraries
-*.exe
-*.dll
-*.so
-*.dylib
-*.lib
-*.a
+# Root-level compiled binaries only
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/*.lib
+/*.a
 
-# Debug / object files
+# Debug symbols
 *.pdb
 *.ilk
 *.exp
+
+# Object files
 *.obj
 *.o
 *.d
@@ -46,12 +47,15 @@ Makefile
 Thumbs.db
 desktop.ini
 
-# Temporary files
+# IDE
 *.swp
 *.swo
 *~
+.idea/
+
+# Logs / temporary files
 *.log
 *.tmp
 
-# CMake presets/user files
-CMakeUserPresets.json
+# Gradle
+.gradle/
