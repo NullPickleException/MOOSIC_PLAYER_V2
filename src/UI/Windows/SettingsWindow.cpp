@@ -6,6 +6,8 @@
 #include <imgui.h>
 #include <filesystem>
 #include <iostream>
+#include <algorithm>
+#include <string>
 
 namespace moosic
 {
