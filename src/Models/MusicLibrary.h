@@ -40,6 +40,12 @@ public:
     const std::deque<MusicTrack>& GetTracks() const;
     std::deque<MusicTrack>& GetTracks();
     std::size_t GetTrackCount() const;
+    
+    // Update track metadata by ID
+    void UpdateTrackMetadata(std::size_t trackId,
+                             const std::string& title,
+                             const std::string& artist,
+                             const std::string& album);
 
     //--------------------------------------------------------------------------
     // Clear

@@ -19,6 +19,7 @@ namespace moosic
         Title,
         Artist,
         Album,
+        Genre,
         Extension,
         Duration
     };
@@ -58,6 +59,7 @@ namespace moosic
         ImVec4 HeaderTextTitle = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         ImVec4 HeaderTextArtist = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         ImVec4 HeaderTextAlbum = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+        ImVec4 HeaderTextGenre = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         ImVec4 HeaderTextExtension = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         ImVec4 HeaderTextDuration = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
 
@@ -65,6 +67,7 @@ namespace moosic
         ImVec4 RowTextTitle = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         ImVec4 RowTextArtist = ImVec4(0.62f, 0.62f, 0.62f, 1.00f);
         ImVec4 RowTextAlbum = ImVec4(0.62f, 0.62f, 0.62f, 1.00f);
+        ImVec4 RowTextGenre = ImVec4(0.62f, 0.62f, 0.62f, 1.00f);
         ImVec4 RowTextExtension = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
         ImVec4 RowTextDuration = ImVec4(0.62f, 0.62f, 0.62f, 1.00f);
 
@@ -86,6 +89,7 @@ namespace moosic
         float TitleWidth = 300.0f;
         float ArtistWidth = 200.0f;
         float AlbumWidth = 200.0f;
+        float GenreWidth = 120.0f;
         float ExtensionWidth = 60.0f;
         float DurationWidth = 80.0f;
         float DefaultColumnWidth = 150.0f;
@@ -136,6 +140,7 @@ namespace moosic
             TrackColumn::Title,
             TrackColumn::Artist,
             TrackColumn::Album,
+            TrackColumn::Genre,
             TrackColumn::Extension,
             TrackColumn::Duration};
 
@@ -144,6 +149,7 @@ namespace moosic
             TrackColumn::Title,
             TrackColumn::Artist,
             TrackColumn::Album,
+            TrackColumn::Genre,
             TrackColumn::Extension,
             TrackColumn::Duration};
     };

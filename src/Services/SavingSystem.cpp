@@ -36,6 +36,7 @@ static const char* ColumnToString(TrackColumn col)
     case TrackColumn::Title:     return "Title";
     case TrackColumn::Artist:    return "Artist";
     case TrackColumn::Album:     return "Album";
+    case TrackColumn::Genre:     return "Genre";
     case TrackColumn::Extension: return "Extension";
     case TrackColumn::Duration:  return "Duration";
     }
@@ -47,6 +48,7 @@ static std::optional<TrackColumn> StringToColumn(const std::string& s)
     if (s == "Title")     return TrackColumn::Title;
     if (s == "Artist")    return TrackColumn::Artist;
     if (s == "Album")     return TrackColumn::Album;
+    if (s == "Genre")     return TrackColumn::Genre;
     if (s == "Extension") return TrackColumn::Extension;
     if (s == "Duration")  return TrackColumn::Duration;
     return std::nullopt;
@@ -98,6 +100,7 @@ static TrackTableConfig DeserializeTableConfig(const json& j)
                 TrackColumn::Title,
                 TrackColumn::Artist,
                 TrackColumn::Album,
+                TrackColumn::Genre,
                 TrackColumn::Extension,
                 TrackColumn::Duration
             };

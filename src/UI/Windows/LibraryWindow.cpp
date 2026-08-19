@@ -33,6 +33,7 @@ LibraryWindow::LibraryWindow(LibraryDataModel& dataModel,
     style.TitleWidth     = 350.0f;
     style.ArtistWidth    = 180.0f;
     style.AlbumWidth     = 180.0f;
+    style.GenreWidth     = 120.0f; 
     style.ExtensionWidth = 50.0f;
     style.DurationWidth  = 80.0f;
     style.RowHeight      = 18.0f;

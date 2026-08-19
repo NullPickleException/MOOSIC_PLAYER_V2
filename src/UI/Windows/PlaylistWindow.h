@@ -43,7 +43,6 @@ namespace moosic
         void DrawRenamePlaylistPopup();
 
         void OnTrackClicked(const MusicTrack *track, int rowIndex);
-        void HandleTableSorting();
 
     private:
         PlaylistDataModel &m_data;
@@ -61,26 +60,12 @@ namespace moosic
         static constexpr float MIN_SIDEBAR_WIDTH = 100.0f;
         static constexpr float MAX_SIDEBAR_WIDTH = 400.0f;
 
-        // ── UI State ────────────────────────────────
+        // ── Input Buffers (UI-only) ─────────────────
         char m_playlistSearchBuffer[256] = "";
         char m_newPlaylistNameBuffer[256] = "";
         char m_renamePlaylistBuffer[256] = "";
         char m_trackSearchBuffer[256] = "";
         char m_addTrackSearchBuffer[256] = "";
-
-        bool m_showAddTrackPopup = false;
-        bool m_showCreatePlaylistPopup = false;
-        bool m_showRenamePopup = false;
-        int m_selectedPlaylistForAdd = -1;
-        int m_renamePlaylistIndex = -1;
-
-        // ── Add Track Selection ─────────────────────
-        int m_selectedAddTrackIndex = -1;
-        const MusicTrack *m_selectedAddTrack = nullptr;
-
-        // ── Context Menu State ──────────────────────
-        int m_contextRow = -1;
-        const MusicTrack *m_contextTrack = nullptr;
 
         // ── Edit Track Dialog ───────────────────────
         EditTrackDialog m_editTrackDialog;

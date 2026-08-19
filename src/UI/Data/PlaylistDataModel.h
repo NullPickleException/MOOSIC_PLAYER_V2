@@ -54,12 +54,22 @@ public:
     std::vector<const MusicTrack*> GetActivePlaylistTracks() const;
 
     //--------------------------------------------------------------------------
-    // Search within library (for adding tracks to playlist)
+    // Search & Filter
     //--------------------------------------------------------------------------
 
+    // Search within library (for adding tracks to playlist)
     void SetAddTrackSearchFilter(const std::string& query);
     const std::string& GetAddTrackSearchFilter() const { return m_addTrackSearchQuery; }
     std::vector<const MusicTrack*> SearchLibraryForTracks() const;
+
+    // Search within active playlist
+    void SetSearchFilter(const std::string& query);
+    const std::string& GetSearchFilter() const { return m_searchQuery; }
+
+    // Playlist sidebar search
+    void SetPlaylistSearchFilter(const std::string& query);
+    const std::string& GetPlaylistSearchFilter() const { return m_playlistSearchQuery; }
+    std::vector<const PlaylistInfo*> GetFilteredPlaylists() const;
 
     //--------------------------------------------------------------------------
     // Data Access for Active Playlist (FILTERED + SORTED)
@@ -88,21 +98,24 @@ public:
     void SyncPlayingTrack(const MusicTrack* currentTrack);
 
     //--------------------------------------------------------------------------
+    // Add Track Selection State
+    //--------------------------------------------------------------------------
+
+    void SetSelectedAddTrackIndex(int index);
+    int GetSelectedAddTrackIndex() const { return m_selectedAddTrackIndex; }
+    const MusicTrack* GetSelectedAddTrack() const;
+    void ClearAddTrackSelection();
+
+    //--------------------------------------------------------------------------
     // Sorting
     //--------------------------------------------------------------------------
 
     void ApplySort(const SortRequest& request);
     void ClearSort();
+    const std::optional<SortRequest>& GetCurrentSort() const { return m_currentSort; }
 
     //--------------------------------------------------------------------------
-    // Search within active playlist
-    //--------------------------------------------------------------------------
-
-    void SetSearchFilter(const std::string& query);
-    const std::string& GetSearchFilter() const { return m_searchQuery; }
-
-    //--------------------------------------------------------------------------
-    // Track Table Configurations (NEW - for save/load)
+    // Track Table Configurations
     //--------------------------------------------------------------------------
 
     void SetTrackTableConfig(const TrackTableConfig& config);
@@ -112,7 +125,35 @@ public:
     const TrackTableConfig& GetAddTrackTableConfig() const { return m_addTrackTableConfig; }
 
     //--------------------------------------------------------------------------
-    // Library Access (for direct track manipulation like play count)
+    // UI State
+    //--------------------------------------------------------------------------
+
+    // Popup visibility states
+    void SetShowAddTrackPopup(bool show);
+    bool GetShowAddTrackPopup() const { return m_showAddTrackPopup; }
+    
+    void SetShowCreatePlaylistPopup(bool show);
+    bool GetShowCreatePlaylistPopup() const { return m_showCreatePlaylistPopup; }
+    
+    void SetShowRenamePopup(bool show);
+    bool GetShowRenamePopup() const { return m_showRenamePopup; }
+
+    // Playlist selection for adding tracks
+    void SetSelectedPlaylistForAdd(int index);
+    int GetSelectedPlaylistForAdd() const { return m_selectedPlaylistForAdd; }
+
+    // Rename playlist index
+    void SetRenamePlaylistIndex(int index);
+    int GetRenamePlaylistIndex() const { return m_renamePlaylistIndex; }
+
+    // Context menu state
+    void SetContextRow(int row);
+    int GetContextRow() const { return m_contextRow; }
+    void SetContextTrack(const MusicTrack* track);
+    const MusicTrack* GetContextTrack() const { return m_contextTrack; }
+
+    //--------------------------------------------------------------------------
+    // Library Access
     //--------------------------------------------------------------------------
 
     MusicLibrary& GetLibrary() { return m_library; }
@@ -140,6 +181,7 @@ public:
 private:
     void ApplyFilterAndSort();
     bool MatchesSearch(const MusicTrack* track) const;
+    void RebuildFilteredPlaylists();
 
 private:
     MusicLibrary& m_library;
@@ -149,19 +191,36 @@ private:
     
     std::vector<const MusicTrack*> m_activeTracks;      // Full active playlist tracks (unfiltered)
     std::vector<const MusicTrack*> m_filteredTracks;    // After filter + sort (what UI displays)
+    std::vector<const PlaylistInfo*> m_filteredPlaylists; // After playlist search filter
+    std::vector<const MusicTrack*> m_addTrackSearchResults; // Cached library search results
     
-    std::string m_searchQuery;
-    std::string m_addTrackSearchQuery;
+    // Search queries
+    std::string m_searchQuery;           // Track search within active playlist
+    std::string m_addTrackSearchQuery;   // Library search for adding tracks
+    std::string m_playlistSearchQuery;   // Playlist sidebar search
+    
     std::optional<SortRequest> m_currentSort;
     
+    // Selection state
     int m_selectedIndex = -1;
     int m_playingIndex = -1;
+    int m_selectedAddTrackIndex = -1;
+    const MusicTrack* m_selectedAddTrack = nullptr;
     
-    DataChangedCallback m_onDataChanged;
-
-    // NEW: Track table configurations
+    // UI State
+    bool m_showAddTrackPopup = false;
+    bool m_showCreatePlaylistPopup = false;
+    bool m_showRenamePopup = false;
+    int m_selectedPlaylistForAdd = -1;
+    int m_renamePlaylistIndex = -1;
+    int m_contextRow = -1;
+    const MusicTrack* m_contextTrack = nullptr;
+    
+    // Track table configurations
     TrackTableConfig m_trackTableConfig;
     TrackTableConfig m_addTrackTableConfig;
+    
+    DataChangedCallback m_onDataChanged;
 };
 
 } // namespace moosic

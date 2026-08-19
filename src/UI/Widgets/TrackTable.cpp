@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <cstdio>
 
 namespace moosic
 {
@@ -74,7 +75,6 @@ namespace moosic
     // Main Draw
     //==============================================================================
 
-    // Add to TrackTable::DrawRows or Draw method, after ImGui::EndTable()
     void TrackTable::Draw(const std::vector<const MusicTrack *> &tracks)
     {
         m_pendingSort = std::nullopt;
@@ -124,6 +124,7 @@ namespace moosic
             case TrackColumn::Title:
             case TrackColumn::Artist:
             case TrackColumn::Album:
+            case TrackColumn::Genre:
                 flags |= ImGuiTableColumnFlags_WidthStretch;
                 break;
             case TrackColumn::Extension:
@@ -248,6 +249,9 @@ namespace moosic
                     break;
                 case TrackColumn::Album:
                     fullText = track->GetAlbum();
+                    break;
+                case TrackColumn::Genre:
+                    fullText = track->GetGenre();
                     break;
                 case TrackColumn::Extension:
                 {
@@ -473,6 +477,8 @@ namespace moosic
             return "Artist";
         case TrackColumn::Album:
             return "Album";
+        case TrackColumn::Genre:
+            return "Genre";
         case TrackColumn::Extension:
             return "Type";
         case TrackColumn::Duration:
@@ -501,6 +507,8 @@ namespace moosic
             return m_style.ArtistWidth;
         case TrackColumn::Album:
             return m_style.AlbumWidth;
+        case TrackColumn::Genre:
+            return m_style.GenreWidth;
         case TrackColumn::Extension:
             return m_style.ExtensionWidth;
         case TrackColumn::Duration:
@@ -522,6 +530,8 @@ namespace moosic
                 return m_style.HeaderTextArtist;
             case TrackColumn::Album:
                 return m_style.HeaderTextAlbum;
+            case TrackColumn::Genre:
+                return m_style.HeaderTextGenre;
             case TrackColumn::Extension:
                 return m_style.HeaderTextExtension;
             case TrackColumn::Duration:
@@ -540,6 +550,8 @@ namespace moosic
                 return m_style.RowTextArtist;
             case TrackColumn::Album:
                 return m_style.RowTextAlbum;
+            case TrackColumn::Genre:
+                return m_style.RowTextGenre;
             case TrackColumn::Extension:
                 return m_style.RowTextExtension;
             case TrackColumn::Duration:

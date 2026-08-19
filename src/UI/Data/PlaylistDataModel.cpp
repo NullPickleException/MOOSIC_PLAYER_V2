@@ -17,25 +17,45 @@ namespace moosic
 PlaylistDataModel::PlaylistDataModel(MusicLibrary& library)
     : m_library(library)
 {
-    // Initialize default track table configs
+    // Initialize main playlist track table config - ALL columns available
     m_trackTableConfig.Columns = {
         TrackColumn::Title,
         TrackColumn::Artist,
+        TrackColumn::Album,
+        TrackColumn::Genre,
+        TrackColumn::Extension,
         TrackColumn::Duration
     };
     m_trackTableConfig.VisibleColumns = m_trackTableConfig.Columns;
-    m_trackTableConfig.Sortable = false;
+    m_trackTableConfig.Sortable = true;
+    m_trackTableConfig.Resizable = true;
+    m_trackTableConfig.Reorderable = true;
     m_trackTableConfig.Hideable = true;
+    m_trackTableConfig.Borders = true;
+    m_trackTableConfig.AlternateRows = true;
     
+    // Initialize add track table config - ALL columns available
     m_addTrackTableConfig.Columns = {
         TrackColumn::Title,
         TrackColumn::Artist,
-        TrackColumn::Album
+        TrackColumn::Album,
+        TrackColumn::Genre,
+        TrackColumn::Extension,
+        TrackColumn::Duration
     };
     m_addTrackTableConfig.VisibleColumns = m_addTrackTableConfig.Columns;
     m_addTrackTableConfig.Sortable = true;
     m_addTrackTableConfig.Resizable = true;
+    m_addTrackTableConfig.Reorderable = true;
     m_addTrackTableConfig.Hideable = true;
+    m_addTrackTableConfig.Borders = true;
+    m_addTrackTableConfig.AlternateRows = true;
+    
+    // Initialize filtered playlists
+    RebuildFilteredPlaylists();
+    
+    // Initialize search results
+    m_addTrackSearchResults = SearchLibraryForTracks();
 }
 
 //==============================================================================
@@ -47,6 +67,7 @@ void PlaylistDataModel::CreatePlaylist(const std::string& name)
     PlaylistInfo playlist;
     playlist.name = name;
     m_playlists.push_back(std::move(playlist));
+    RebuildFilteredPlaylists();
     
     if (m_onDataChanged) m_onDataChanged();
 }
@@ -71,6 +92,8 @@ void PlaylistDataModel::DeletePlaylist(size_t playlistIndex)
         }
     }
     
+    RebuildFilteredPlaylists();
+    
     if (m_onDataChanged) m_onDataChanged();
 }
 
@@ -78,6 +101,7 @@ void PlaylistDataModel::RenamePlaylist(size_t playlistIndex, const std::string& 
 {
     if (playlistIndex >= m_playlists.size()) return;
     m_playlists[playlistIndex].name = newName;
+    RebuildFilteredPlaylists();
     
     if (m_onDataChanged) m_onDataChanged();
 }
@@ -195,12 +219,18 @@ std::vector<const MusicTrack*> PlaylistDataModel::GetActivePlaylistTracks() cons
 }
 
 //==============================================================================
-// Search Library for Adding Tracks
+// Search & Filter
 //==============================================================================
 
 void PlaylistDataModel::SetAddTrackSearchFilter(const std::string& query)
 {
+    if (m_addTrackSearchQuery == query) return;
     m_addTrackSearchQuery = query;
+    
+    // Update cached search results
+    m_addTrackSearchResults = SearchLibraryForTracks();
+    
+    ClearAddTrackSelection();
     if (m_onDataChanged) m_onDataChanged();
 }
 
@@ -233,11 +263,32 @@ std::vector<const MusicTrack*> PlaylistDataModel::SearchLibraryForTracks() const
     const auto& allTracks = m_library.GetTracks();
     for (const auto& track : allTracks)
     {
-        if (matches(track.GetTitle()) || matches(track.GetArtist()) || matches(track.GetAlbum()))
+        if (matches(track.GetTitle()) || matches(track.GetArtist()) || matches(track.GetAlbum()) || matches(track.GetGenre()))
             results.push_back(&track);
     }
     
     return results;
+}
+
+void PlaylistDataModel::SetSearchFilter(const std::string& query)
+{
+    if (m_searchQuery == query) return;
+    m_searchQuery = query;
+    ApplyFilterAndSort();
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetPlaylistSearchFilter(const std::string& query)
+{
+    if (m_playlistSearchQuery == query) return;
+    m_playlistSearchQuery = query;
+    RebuildFilteredPlaylists();
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+std::vector<const PlaylistInfo*> PlaylistDataModel::GetFilteredPlaylists() const
+{
+    return m_filteredPlaylists;
 }
 
 //==============================================================================
@@ -345,6 +396,48 @@ void PlaylistDataModel::SyncPlayingTrack(const MusicTrack* currentTrack)
 }
 
 //==============================================================================
+// Add Track Selection State
+//==============================================================================
+
+void PlaylistDataModel::SetSelectedAddTrackIndex(int index)
+{
+    m_selectedAddTrackIndex = index;
+    
+    // Refresh search results to ensure they're up to date
+    m_addTrackSearchResults = SearchLibraryForTracks();
+    
+    // Use cached search results (from library search, not active playlist)
+    if (index >= 0 && index < static_cast<int>(m_addTrackSearchResults.size()))
+    {
+        m_selectedAddTrack = m_addTrackSearchResults[index];
+    }
+    else
+    {
+        m_selectedAddTrack = nullptr;
+        m_selectedAddTrackIndex = -1;
+    }
+    
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+const MusicTrack* PlaylistDataModel::GetSelectedAddTrack() const
+{
+    // If we have a valid index but no track, try to get it from search results
+    if (!m_selectedAddTrack && m_selectedAddTrackIndex >= 0 && 
+        m_selectedAddTrackIndex < static_cast<int>(m_addTrackSearchResults.size()))
+    {
+        return m_addTrackSearchResults[m_selectedAddTrackIndex];
+    }
+    return m_selectedAddTrack;
+}
+
+void PlaylistDataModel::ClearAddTrackSelection()
+{
+    m_selectedAddTrackIndex = -1;
+    m_selectedAddTrack = nullptr;
+}
+
+//==============================================================================
 // Sorting
 //==============================================================================
 
@@ -363,19 +456,7 @@ void PlaylistDataModel::ClearSort()
 }
 
 //==============================================================================
-// Search within Active Playlist
-//==============================================================================
-
-void PlaylistDataModel::SetSearchFilter(const std::string& query)
-{
-    if (m_searchQuery == query) return;
-    m_searchQuery = query;
-    ApplyFilterAndSort();
-    if (m_onDataChanged) m_onDataChanged();
-}
-
-//==============================================================================
-// Track Table Configurations (NEW)
+// Track Table Configurations
 //==============================================================================
 
 void PlaylistDataModel::SetTrackTableConfig(const TrackTableConfig& config)
@@ -391,6 +472,63 @@ void PlaylistDataModel::SetAddTrackTableConfig(const TrackTableConfig& config)
 }
 
 //==============================================================================
+// UI State
+//==============================================================================
+
+void PlaylistDataModel::SetShowAddTrackPopup(bool show)
+{
+    m_showAddTrackPopup = show;
+    
+    // When opening the popup, ensure search results are fresh
+    if (show)
+    {
+        m_addTrackSearchResults = SearchLibraryForTracks();
+    }
+    
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetShowCreatePlaylistPopup(bool show)
+{
+    m_showCreatePlaylistPopup = show;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetShowRenamePopup(bool show)
+{
+    m_showRenamePopup = show;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetSelectedPlaylistForAdd(int index)
+{
+    m_selectedPlaylistForAdd = index;
+    
+    // Reset selection when changing target playlist
+    ClearAddTrackSelection();
+    
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetRenamePlaylistIndex(int index)
+{
+    m_renamePlaylistIndex = index;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetContextRow(int row)
+{
+    m_contextRow = row;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+void PlaylistDataModel::SetContextTrack(const MusicTrack* track)
+{
+    m_contextTrack = track;
+    if (m_onDataChanged) m_onDataChanged();
+}
+
+//==============================================================================
 // Internal Helpers
 //==============================================================================
 
@@ -398,6 +536,33 @@ void PlaylistDataModel::RebuildActiveTrackList()
 {
     m_activeTracks = GetActivePlaylistTracks();
     ApplyFilterAndSort();
+}
+
+void PlaylistDataModel::RebuildFilteredPlaylists()
+{
+    m_filteredPlaylists.clear();
+    
+    if (m_playlistSearchQuery.empty())
+    {
+        for (const auto& playlist : m_playlists)
+            m_filteredPlaylists.push_back(&playlist);
+    }
+    else
+    {
+        std::string lowerQuery = m_playlistSearchQuery;
+        std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        
+        for (const auto& playlist : m_playlists)
+        {
+            std::string nameLower = playlist.name;
+            std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            
+            if (nameLower.find(lowerQuery) != std::string::npos)
+                m_filteredPlaylists.push_back(&playlist);
+        }
+    }
 }
 
 void PlaylistDataModel::ApplyFilterAndSort()
@@ -434,6 +599,8 @@ void PlaylistDataModel::ApplyFilterAndSort()
                           result = a->GetArtist().compare(b->GetArtist()); break;
                       case TrackColumn::Album:
                           result = a->GetAlbum().compare(b->GetAlbum()); break;
+                      case TrackColumn::Genre:
+                          result = a->GetGenre().compare(b->GetGenre()); break;
                       case TrackColumn::Duration:
                           result = static_cast<int>(a->GetDuration()) - static_cast<int>(b->GetDuration()); break;
                       case TrackColumn::Extension:
@@ -474,7 +641,7 @@ bool PlaylistDataModel::MatchesSearch(const MusicTrack* track) const
         return lower.find(lowerQuery) != std::string::npos;
     };
     
-    return matches(track->GetTitle()) || matches(track->GetArtist()) || matches(track->GetAlbum());
+    return matches(track->GetTitle()) || matches(track->GetArtist()) || matches(track->GetAlbum()) || matches(track->GetGenre());
 }
 
 } // namespace moosic

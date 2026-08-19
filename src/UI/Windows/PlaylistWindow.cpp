@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -45,9 +46,8 @@ namespace moosic
                                       { OnTrackClicked(event.track, event.rowIndex); });
 
         // Track columns changed callback - save to DataModel
-        m_trackTable.OnColumnsChanged([this](const TrackTableConfig& config) {
-            m_data.SetTrackTableConfig(config);
-        });
+        m_trackTable.OnColumnsChanged([this](const TrackTableConfig &config)
+                                      { m_data.SetTrackTableConfig(config); });
 
         //======================================================================
         // Track Right-Click Context Menu
@@ -55,13 +55,15 @@ namespace moosic
 
         m_trackTable.OnRowRightClick([this](const RowEventData &event)
                                      {
-            m_contextRow = event.rowIndex;
-            m_contextTrack = event.track;
+            m_data.SetContextRow(event.rowIndex);
+            m_data.SetContextTrack(event.track);
             
             std::vector<MenuItem> items;
+            const int contextRow = m_data.GetContextRow();
+            const MusicTrack* contextTrack = m_data.GetContextTrack();
             
-            items.push_back({"Play", true, false, [this]() {
-                OnTrackClicked(m_contextTrack, m_contextRow);
+            items.push_back({"Play", true, false, [this, contextRow, contextTrack]() {
+                OnTrackClicked(contextTrack, contextRow);
             }});
             
             items.push_back({"", false, true, nullptr});
@@ -69,29 +71,36 @@ namespace moosic
             items.push_back({"Remove from Playlist", true, false, [this]() {
                 auto activeIdx = m_data.GetActivePlaylistIndex();
                 if (activeIdx.has_value())
-                    m_data.RemoveTrackFromPlaylist(activeIdx.value(), static_cast<size_t>(m_contextRow));
+                    m_data.RemoveTrackFromPlaylist(activeIdx.value(), static_cast<size_t>(m_data.GetContextRow()));
             }});
             
             items.push_back({"", false, true, nullptr});
             
-            items.push_back({"Move Up", m_contextRow > 0, false, [this]() {
+            items.push_back({"Move Up", m_data.GetContextRow() > 0, false, [this]() {
                 auto activeIdx = m_data.GetActivePlaylistIndex();
                 if (activeIdx.has_value())
-                    m_data.MoveTrack(activeIdx.value(), static_cast<size_t>(m_contextRow), static_cast<size_t>(m_contextRow - 1));
+                    m_data.MoveTrack(activeIdx.value(), 
+                                   static_cast<size_t>(m_data.GetContextRow()), 
+                                   static_cast<size_t>(m_data.GetContextRow() - 1));
             }});
             
-            items.push_back({"Move Down", m_contextRow < static_cast<int>(m_data.GetFilteredTrackCount()) - 1, false, [this]() {
+            items.push_back({"Move Down", 
+                           m_data.GetContextRow() < static_cast<int>(m_data.GetFilteredTrackCount()) - 1, 
+                           false, [this]() {
                 auto activeIdx = m_data.GetActivePlaylistIndex();
                 if (activeIdx.has_value())
-                    m_data.MoveTrack(activeIdx.value(), static_cast<size_t>(m_contextRow), static_cast<size_t>(m_contextRow + 1));
+                    m_data.MoveTrack(activeIdx.value(), 
+                                   static_cast<size_t>(m_data.GetContextRow()), 
+                                   static_cast<size_t>(m_data.GetContextRow() + 1));
             }});
             
             items.push_back({"", false, true, nullptr});
             
             items.push_back({"Open Folder", true, false, [this]() {
-                if (!m_contextTrack) return;
+                const MusicTrack* contextTrack = m_data.GetContextTrack();
+                if (!contextTrack) return;
                 try {
-                    std::filesystem::path filePath = m_contextTrack->GetPath();
+                    std::filesystem::path filePath = contextTrack->GetPath();
                     if (filePath.empty()) return;
 
 #ifdef _WIN32
@@ -109,8 +118,8 @@ namespace moosic
             }});
             
             items.push_back({"Edit Track Info...", true, false, [this]() {
-    m_editTrackDialog.Open(m_contextTrack);
-                }});
+                m_editTrackDialog.Open(m_data.GetContextTrack());
+            }});
             
             m_trackContextMenu.SetItems(items);
             m_trackContextMenu.Open(
@@ -133,24 +142,22 @@ namespace moosic
 
         m_addTrackTable.OnRowClick([this](const RowEventData &event)
                                    {
-            m_selectedAddTrackIndex = event.rowIndex;
-            m_selectedAddTrack = event.track; });
+            m_data.SetSelectedAddTrackIndex(event.rowIndex); });
 
         m_addTrackTable.OnRowDoubleClick([this](const RowEventData &event)
                                          {
-            m_selectedAddTrackIndex = event.rowIndex;
-            m_selectedAddTrack = event.track;
-            if (m_selectedPlaylistForAdd >= 0 && event.track)
+            m_data.SetSelectedAddTrackIndex(event.rowIndex);
+            const MusicTrack* selectedTrack = m_data.GetSelectedAddTrack();
+            if (m_data.GetSelectedPlaylistForAdd() >= 0 && selectedTrack)
             {
                 m_data.AddTrackToPlaylist(
-                    static_cast<size_t>(m_selectedPlaylistForAdd),
-                    event.track->GetId());
+                    static_cast<size_t>(m_data.GetSelectedPlaylistForAdd()),
+                    selectedTrack->GetId());
             } });
 
         // Add track table columns changed callback - save to DataModel
-        m_addTrackTable.OnColumnsChanged([this](const TrackTableConfig& config) {
-            m_data.SetAddTrackTableConfig(config);
-        });
+        m_addTrackTable.OnColumnsChanged([this](const TrackTableConfig &config)
+                                         { m_data.SetAddTrackTableConfig(config); });
 
         //======================================================================
         // Edit Track Dialog
@@ -161,14 +168,11 @@ namespace moosic
                                                  const std::string &artist,
                                                  const std::string &album)
                                           {
-    MusicTrack* mutableTrack = const_cast<MusicTrack*>(track);
-    mutableTrack->UpdateTitle(title);
-    mutableTrack->UpdateArtist(artist);
-    mutableTrack->UpdateAlbum(album);
-    
-    m_data.NotifyDataChanged(); });
-
-        m_data.SetOnDataChanged([this]() {});
+            if (track)
+            {
+                m_data.GetLibrary().UpdateTrackMetadata(track->GetId(), title, artist, album);
+                m_data.NotifyDataChanged();
+            } });
     }
 
     //==============================================================================
@@ -183,6 +187,11 @@ namespace moosic
         // Apply config from data model each frame
         m_trackTable.ApplyConfig(m_data.GetTrackTableConfig());
         m_addTrackTable.ApplyConfig(m_data.GetAddTrackTableConfig());
+
+        // Sync search buffers with data model
+        strncpy(m_playlistSearchBuffer, m_data.GetPlaylistSearchFilter().c_str(), sizeof(m_playlistSearchBuffer) - 1);
+        strncpy(m_trackSearchBuffer, m_data.GetSearchFilter().c_str(), sizeof(m_trackSearchBuffer) - 1);
+        strncpy(m_addTrackSearchBuffer, m_data.GetAddTrackSearchFilter().c_str(), sizeof(m_addTrackSearchBuffer) - 1);
 
         DrawPlaylistSidebar();
 
@@ -240,7 +249,7 @@ namespace moosic
         if (ImGui::Button("+ New Playlist", ImVec2(-1, 0)))
         {
             m_newPlaylistNameBuffer[0] = '\0';
-            m_showCreatePlaylistPopup = true;
+            m_data.SetShowCreatePlaylistPopup(true);
         }
 
         ImGui::PopStyleVar();
@@ -252,75 +261,82 @@ namespace moosic
         ImGui::PushStyleColor(ImGuiCol_FrameBg, m_theme.ChildBg);
         ImGui::PushStyleColor(ImGuiCol_Text, m_theme.TextPrimary);
         ImGui::SetNextItemWidth(-1);
-        ImGui::InputTextWithHint("##PlaylistSearch", "Search...",
-                                 m_playlistSearchBuffer, sizeof(m_playlistSearchBuffer));
+        if (ImGui::InputTextWithHint("##PlaylistSearch", "Search...",
+                                     m_playlistSearchBuffer, sizeof(m_playlistSearchBuffer)))
+        {
+            m_data.SetPlaylistSearchFilter(m_playlistSearchBuffer);
+        }
         ImGui::PopStyleColor(2);
 
         ImGui::Separator();
         ImGui::Spacing();
 
         // ── Playlist List ──
-        const auto &playlists = m_data.GetAllPlaylists();
-        std::string filter = m_playlistSearchBuffer;
-        std::transform(filter.begin(), filter.end(), filter.begin(),
-                       [](unsigned char c)
-                       { return static_cast<char>(std::tolower(c)); });
+        const auto &playlists = m_data.GetFilteredPlaylists();
+        const auto activeIndex = m_data.GetActivePlaylistIndex();
 
         for (size_t i = 0; i < playlists.size(); ++i)
         {
-            const auto &playlist = playlists[i];
-
-            std::string nameLower = playlist.name;
-            std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(),
-                           [](unsigned char c)
-                           { return static_cast<char>(std::tolower(c)); });
-
-            if (!filter.empty() && nameLower.find(filter) == std::string::npos)
+            const auto *playlist = playlists[i];
+            if (!playlist)
                 continue;
 
-            bool isActive = m_data.GetActivePlaylistIndex().has_value() &&
-                            m_data.GetActivePlaylistIndex().value() == i;
+            // Find the actual index in the full playlist vector
+            size_t actualIndex = 0;
+            const auto &allPlaylists = m_data.GetAllPlaylists();
+            for (size_t j = 0; j < allPlaylists.size(); ++j)
+            {
+                if (&allPlaylists[j] == playlist)
+                {
+                    actualIndex = j;
+                    break;
+                }
+            }
+
+            bool isActive = activeIndex.has_value() && activeIndex.value() == actualIndex;
 
             if (isActive)
                 ImGui::PushStyleColor(ImGuiCol_Text, m_theme.BrandText);
 
             char label[512];
-            snprintf(label, sizeof(label), "  %s", playlist.name.c_str());
+            snprintf(label, sizeof(label), "  %s", playlist->name.c_str());
 
-            ImGui::PushID(static_cast<int>(i));
+            ImGui::PushID(static_cast<int>(actualIndex));
 
             if (ImGui::Selectable(label, isActive, 0, ImVec2(0, 22.0f)))
             {
-                m_data.SetActivePlaylist(i);
+                m_data.SetActivePlaylist(actualIndex);
             }
 
             if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
             {
                 std::vector<MenuItem> items;
 
-                items.push_back({"Add Tracks", true, false, [this, i]()
+                items.push_back({"Add Tracks", true, false, [this, actualIndex]()
                                  {
-                                     m_selectedPlaylistForAdd = static_cast<int>(i);
-                                     m_addTrackSearchBuffer[0] = '\0';
+                                     m_data.SetSelectedPlaylistForAdd(static_cast<int>(actualIndex));
                                      m_data.SetAddTrackSearchFilter("");
-                                     m_selectedAddTrackIndex = -1;
-                                     m_selectedAddTrack = nullptr;
-                                     m_showAddTrackPopup = true;
+                                     m_data.ClearAddTrackSelection();
+                                     m_data.SetShowAddTrackPopup(true);
                                  }});
 
-                items.push_back({"Rename", true, false, [this, i, &playlist]()
+                items.push_back({"Rename", true, false, [this, actualIndex]()
                                  {
-                                     m_renamePlaylistIndex = static_cast<int>(i);
-                                     strncpy(m_renamePlaylistBuffer, playlist.name.c_str(), sizeof(m_renamePlaylistBuffer) - 1);
-                                     m_renamePlaylistBuffer[sizeof(m_renamePlaylistBuffer) - 1] = '\0';
-                                     m_showRenamePopup = true;
+                                     m_data.SetRenamePlaylistIndex(static_cast<int>(actualIndex));
+                                     const auto* playlist = m_data.GetPlaylist(actualIndex);
+                                     if (playlist)
+                                     {
+                                         strncpy(m_renamePlaylistBuffer, playlist->name.c_str(), sizeof(m_renamePlaylistBuffer) - 1);
+                                         m_renamePlaylistBuffer[sizeof(m_renamePlaylistBuffer) - 1] = '\0';
+                                     }
+                                     m_data.SetShowRenamePopup(true);
                                  }});
 
                 items.push_back({"", false, true, nullptr});
 
-                items.push_back({"Delete", true, false, [this, i]()
+                items.push_back({"Delete", true, false, [this, actualIndex]()
                                  {
-                                     m_data.DeletePlaylist(i);
+                                     m_data.DeletePlaylist(actualIndex);
                                  }});
 
                 m_playlistContextMenu.SetItems(items);
@@ -330,7 +346,7 @@ namespace moosic
             }
 
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 30);
-            ImGui::TextColored(m_theme.TextDisabled, "%zu", playlist.trackIds.size());
+            ImGui::TextColored(m_theme.TextDisabled, "%zu", playlist->trackIds.size());
 
             if (isActive)
                 ImGui::PopStyleColor();
@@ -391,12 +407,10 @@ namespace moosic
 
         if (ImGui::Button("+ Add Tracks", ImVec2(buttonWidth, 0)))
         {
-            m_selectedPlaylistForAdd = static_cast<int>(activeIndex.value());
-            m_addTrackSearchBuffer[0] = '\0';
+            m_data.SetSelectedPlaylistForAdd(static_cast<int>(activeIndex.value()));
             m_data.SetAddTrackSearchFilter("");
-            m_selectedAddTrackIndex = -1;
-            m_selectedAddTrack = nullptr;
-            m_showAddTrackPopup = true;
+            m_data.ClearAddTrackSelection();
+            m_data.SetShowAddTrackPopup(true);
         }
 
         ImGui::PopStyleVar();
@@ -449,10 +463,10 @@ namespace moosic
 
     void PlaylistWindow::DrawAddTrackPopup()
     {
-        if (m_showAddTrackPopup)
+        if (m_data.GetShowAddTrackPopup())
         {
             ImGui::OpenPopup("AddTrackToPlaylist");
-            m_showAddTrackPopup = false;
+            m_data.SetShowAddTrackPopup(false);
         }
 
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -492,7 +506,7 @@ namespace moosic
                 ImGui::Separator();
                 float tableHeight = ImGui::GetContentRegionAvail().y - 60.0f;
                 ImGui::BeginChild("##AddTrackTableContainer", ImVec2(0, tableHeight), true);
-                m_addTrackTable.SetSelectedRow(m_selectedAddTrackIndex, m_selectedAddTrack);
+                m_addTrackTable.SetSelectedRow(m_data.GetSelectedAddTrackIndex(), m_data.GetSelectedAddTrack());
                 m_addTrackTable.Draw(results);
                 ImGui::EndChild();
             }
@@ -500,16 +514,17 @@ namespace moosic
             ImGui::Spacing();
             ImGui::Separator();
 
-            if (m_selectedAddTrack)
+            const MusicTrack* selectedAddTrack = m_data.GetSelectedAddTrack();
+            if (selectedAddTrack)
                 ImGui::TextColored(m_theme.TextPrimary, "Selected: %s - %s",
-                                   m_selectedAddTrack->GetTitle().c_str(),
-                                   m_selectedAddTrack->GetArtist().c_str());
+                                   selectedAddTrack->GetTitle().c_str(),
+                                   selectedAddTrack->GetArtist().c_str());
             else
                 ImGui::TextColored(m_theme.TextDisabled, "Select a track to add");
 
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 200.0f);
 
-            bool canAdd = (m_selectedAddTrack != nullptr && m_selectedPlaylistForAdd >= 0);
+            bool canAdd = (selectedAddTrack != nullptr && m_data.GetSelectedPlaylistForAdd() >= 0);
             if (!canAdd)
                 ImGui::BeginDisabled();
 
@@ -521,10 +536,9 @@ namespace moosic
             if (ImGui::Button("Add Selected", ImVec2(100, 0)))
             {
                 m_data.AddTrackToPlaylist(
-                    static_cast<size_t>(m_selectedPlaylistForAdd),
-                    m_selectedAddTrack->GetId());
-                m_selectedAddTrackIndex = -1;
-                m_selectedAddTrack = nullptr;
+                    static_cast<size_t>(m_data.GetSelectedPlaylistForAdd()),
+                    selectedAddTrack->GetId());
+                m_data.ClearAddTrackSelection();
             }
             if (!canAdd)
                 ImGui::EndDisabled();
@@ -533,8 +547,7 @@ namespace moosic
 
             if (ImGui::Button("Close", ImVec2(80, 0)))
             {
-                m_selectedAddTrackIndex = -1;
-                m_selectedAddTrack = nullptr;
+                m_data.ClearAddTrackSelection();
                 ImGui::CloseCurrentPopup();
             }
 
@@ -551,10 +564,10 @@ namespace moosic
 
     void PlaylistWindow::DrawCreatePlaylistPopup()
     {
-        if (m_showCreatePlaylistPopup)
+        if (m_data.GetShowCreatePlaylistPopup())
         {
             ImGui::OpenPopup("CreatePlaylist");
-            m_showCreatePlaylistPopup = false;
+            m_data.SetShowCreatePlaylistPopup(false);
         }
 
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -621,10 +634,10 @@ namespace moosic
 
     void PlaylistWindow::DrawRenamePlaylistPopup()
     {
-        if (m_showRenamePopup)
+        if (m_data.GetShowRenamePopup())
         {
             ImGui::OpenPopup("RenamePlaylist");
-            m_showRenamePopup = false;
+            m_data.SetShowRenamePopup(false);
         }
 
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -650,7 +663,7 @@ namespace moosic
 
             ImGui::Spacing();
 
-            bool canRename = m_renamePlaylistBuffer[0] != '\0' && m_renamePlaylistIndex >= 0;
+            bool canRename = m_renamePlaylistBuffer[0] != '\0' && m_data.GetRenamePlaylistIndex() >= 0;
             if (!canRename)
                 ImGui::BeginDisabled();
 
@@ -661,9 +674,9 @@ namespace moosic
 
             if (ImGui::Button("Rename", ImVec2(120, 0)) || (enter && canRename))
             {
-                m_data.RenamePlaylist(static_cast<size_t>(m_renamePlaylistIndex), m_renamePlaylistBuffer);
+                m_data.RenamePlaylist(static_cast<size_t>(m_data.GetRenamePlaylistIndex()), m_renamePlaylistBuffer);
                 m_renamePlaylistBuffer[0] = '\0';
-                m_renamePlaylistIndex = -1;
+                m_data.SetRenamePlaylistIndex(-1);
                 ImGui::CloseCurrentPopup();
             }
 
@@ -671,7 +684,7 @@ namespace moosic
             if (ImGui::Button("Cancel", ImVec2(120, 0)))
             {
                 m_renamePlaylistBuffer[0] = '\0';
-                m_renamePlaylistIndex = -1;
+                m_data.SetRenamePlaylistIndex(-1);
                 ImGui::CloseCurrentPopup();
             }
 

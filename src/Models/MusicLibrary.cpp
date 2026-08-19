@@ -86,6 +86,23 @@ std::size_t MusicLibrary::GetTrackCount() const
     return m_tracks.size();
 }
 
+void MusicLibrary::UpdateTrackMetadata(std::size_t trackId,
+                                       const std::string& title,
+                                       const std::string& artist,
+                                       const std::string& album)
+{
+    for (auto& track : m_tracks)
+    {
+        if (track.GetId() == trackId)
+        {
+            track.UpdateTitle(title);
+            track.UpdateArtist(artist);
+            track.UpdateAlbum(album);
+            return;
+        }
+    }
+}
+
 //--------------------------------------------------------------------------
 // Clear
 //--------------------------------------------------------------------------

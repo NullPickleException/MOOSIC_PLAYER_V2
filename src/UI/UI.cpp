@@ -51,57 +51,70 @@ namespace moosic
     //==============================================================================
     // Main Draw
     //==============================================================================
-void UI::Draw(SDL_Renderer *renderer, InputManager &input)
-{
-    HandleLayoutSwitch(input);
-    HandleGlobalHotkeys(input);
-    m_playbackController.Update();
+    void UI::Draw(SDL_Renderer *renderer, InputManager &input)
+    {
+        HandleLayoutSwitch(input);
+        HandleGlobalHotkeys(input);
+        m_playbackController.Update();
 
-    // ---- Data-layer ticks (always run, independent of tab/layout) ----
-    m_directoryData.Update();
+        // ---- Data-layer ticks (always run, independent of tab/layout) ----
+        m_directoryData.Update();
 
-    if (m_libraryData.NeedsRefresh())
-        m_libraryData.Refresh();
+        if (m_libraryData.NeedsRefresh())
+            m_libraryData.Refresh();
 
-    ImGuiViewport *viewport = ImGui::GetMainViewport();
-    const float titleBarHeight = m_titleBar.GetTheme().Height;
-    const float borderThickness = m_themeManager.GetTheme().ContentPanel.BorderThickness;
+        // ---- Sync playing track across all data models ----
+        const MusicTrack *currentTrack = m_playbackController.GetCurrentTrack();
+        if (currentTrack)
+        {
+            m_libraryData.SetPlayingTrack(currentTrack);
+            m_playlistData.SyncPlayingTrack(currentTrack);
+        }
+        else
+        {
+            m_libraryData.ClearPlaying();
+            m_playlistData.SyncPlayingTrack(nullptr);
+        }
 
-    // Draw menu bar
-    m_menuBar.Draw(titleBarHeight, borderThickness,
-                   m_themeManager.GetTheme().ContentPanel.BorderColor,
-                   m_themeManager.GetTheme().Window.TitleBar);
+        ImGuiViewport *viewport = ImGui::GetMainViewport();
+        const float titleBarHeight = m_titleBar.GetTheme().Height;
+        const float borderThickness = m_themeManager.GetTheme().ContentPanel.BorderThickness;
 
-    const float menuBarHeight = m_menuBar.GetHeight();
-    const float topChrome = titleBarHeight + menuBarHeight + borderThickness;
+        // Draw menu bar
+        m_menuBar.Draw(titleBarHeight, borderThickness,
+                       m_themeManager.GetTheme().ContentPanel.BorderColor,
+                       m_themeManager.GetTheme().Window.TitleBar);
 
-    // Save original viewport
-    const ImVec2 originalPos = viewport->Pos;
-    const ImVec2 originalSize = viewport->Size;
-    const ImVec2 originalWorkPos = viewport->WorkPos;
-    const ImVec2 originalWorkSize = viewport->WorkSize;
+        const float menuBarHeight = m_menuBar.GetHeight();
+        const float topChrome = titleBarHeight + menuBarHeight + borderThickness;
 
-    // Adjust viewport to exclude title bar and menu bar
-    viewport->Pos = ImVec2(originalPos.x, originalPos.y + topChrome);
-    viewport->Size = ImVec2(originalSize.x, originalSize.y - topChrome);
-    viewport->WorkPos = viewport->Pos;
-    viewport->WorkSize = viewport->Size;
+        // Save original viewport
+        const ImVec2 originalPos = viewport->Pos;
+        const ImVec2 originalSize = viewport->Size;
+        const ImVec2 originalWorkPos = viewport->WorkPos;
+        const ImVec2 originalWorkSize = viewport->WorkSize;
 
-    // Draw current layout content
-    DrawCurrentLayout(renderer);
+        // Adjust viewport to exclude title bar and menu bar
+        viewport->Pos = ImVec2(originalPos.x, originalPos.y + topChrome);
+        viewport->Size = ImVec2(originalSize.x, originalSize.y - topChrome);
+        viewport->WorkPos = viewport->Pos;
+        viewport->WorkSize = viewport->Size;
 
-    // Restore viewport BEFORE drawing popups so they render on the full screen
-    viewport->Pos = originalPos;
-    viewport->Size = originalSize;
-    viewport->WorkPos = originalWorkPos;
-    viewport->WorkSize = originalWorkSize;
+        // Draw current layout content
+        DrawCurrentLayout(renderer);
 
-    // Draw popups (must be after viewport restore)
-    DrawAboutPopup();
+        // Restore viewport BEFORE drawing popups so they render on the full screen
+        viewport->Pos = originalPos;
+        viewport->Size = originalSize;
+        viewport->WorkPos = originalWorkPos;
+        viewport->WorkSize = originalWorkSize;
 
-    // Draw title bar last (always on top)
-    m_titleBar.Render();
-}
+        // Draw popups (must be after viewport restore)
+        DrawAboutPopup();
+
+        // Draw title bar last (always on top)
+        m_titleBar.Render();
+    }
 
     void UI::DrawCurrentLayout(SDL_Renderer *renderer)
     {
