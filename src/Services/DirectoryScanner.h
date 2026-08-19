@@ -6,6 +6,9 @@
 #include <atomic>
 #include <functional>
 
+#include <string>
+#include <algorithm>
+
 namespace moosic
 {
 
