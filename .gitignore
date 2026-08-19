@@ -1,4 +1,4 @@
-# Build directories
+# Build output
 build/
 out/
 dist/
@@ -8,15 +8,50 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 compile_commands.json
+Makefile
+*.cmake
+!CMakeLists.txt
 
-# IDE files
+# Visual Studio / IDE
 .vs/
 .vscode/
 .idea/
-*.swp
-*.swo
+*.sln
+*.suo
+*.vcxproj
+*.vcxproj.filters
+*.user
+
+# Compiled binaries / libraries
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+
+# Debug / object files
+*.pdb
+*.ilk
+*.exp
+*.obj
+*.o
+*.d
+
+# Ninja
+.ninja_*
 
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.log
+*.tmp
+
+# CMake presets/user files
+CMakeUserPresets.json
