@@ -14,7 +14,9 @@
 #else
 #include <array>
 #include <cstdio>
+#include <fstream>
 #include <memory>
+#include <sstream>
 #include <string>
 #endif
 
@@ -172,6 +174,22 @@ static std::optional<std::filesystem::path> RunZenity(const char* cmd)
     return std::filesystem::path(result);
 }
 
+// Helper function to parse zenity's multiple file output (newline-separated)
+static std::vector<std::filesystem::path> ParseMultipleFiles(const std::string& output)
+{
+    std::vector<std::filesystem::path> files;
+    std::istringstream stream(output);
+    std::string line;
+    
+    while (std::getline(stream, line))
+    {
+        if (!line.empty())
+            files.push_back(std::filesystem::path(line));
+    }
+    
+    return files;
+}
+
 std::optional<std::filesystem::path> OpenAudioFileDialog()
 {
     return RunZenity(
@@ -183,23 +201,30 @@ std::optional<std::filesystem::path> OpenAudioFileDialog()
 
 std::vector<std::filesystem::path> OpenMultipleAudioFilesDialog()
 {
-    return RunZenity(
+    auto result = RunZenity(
         "zenity --file-selection --multiple "
         "--title=\"Open Audio Files\" "
         "--file-filter=\"Audio Files | *.mp3 *.flac *.wav *.ogg *.m4a *.aac *.opus *.wma\" "
         "--file-filter=\"All files | *\" "
-        "--separator='\n' 2>/dev/null")
-        .transform([](const std::filesystem::path& p) {
-            std::vector<std::filesystem::path> files;
-            // Zenity returns paths separated by newlines
-            std::ifstream stream(p);
-            std::string line;
-            while (std::getline(stream, line))
-                if (!line.empty())
-                    files.push_back(line);
-            return files;
-        })
-        .value_or(std::vector<std::filesystem::path>{});
+        "--separator='\n' 2>/dev/null");
+    
+    if (!result)
+        return {};
+    
+    // For multiple files, zenity outputs them separated by newlines
+    // If we got a single path, check if it contains newlines
+    std::string pathStr = result->string();
+    
+    if (pathStr.find('\n') != std::string::npos)
+    {
+        // Multiple files selected
+        return ParseMultipleFiles(pathStr);
+    }
+    else
+    {
+        // Single file selected
+        return { *result };
+    }
 }
 
 std::optional<std::filesystem::path> OpenFolderDialog()
