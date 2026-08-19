@@ -8,33 +8,15 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 compile_commands.json
-Makefile
-*.cmake
-!CMakeLists.txt
 
-# Visual Studio
+# IDE files
 .vs/
 .vscode/
-*.vcxproj
-*.vcxproj.filters
-*.sln
-*.suo
-*.user
+.idea/
+*.swp
+*.swo
 
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# IDE
-*.swp
-*.swo
-*~
-.idea/
-
-# Logs
-*.log
-*.tmp
-
-# Gradle (imgui android example)
-.gradle/
