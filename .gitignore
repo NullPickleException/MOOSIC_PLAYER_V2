@@ -21,27 +21,6 @@ Makefile
 *.suo
 *.user
 
-# Executables and libraries - ONLY in root, NOT thirdparty
-/*.exe
-/*.dll
-/*.so
-/*.dylib
-/*.lib
-/*.a
-
-# Debug symbols
-*.pdb
-*.ilk
-*.exp
-
-# Object files
-*.obj
-*.o
-*.d
-
-# Ninja
-.ninja_*
-
 # OS files
 .DS_Store
 Thumbs.db
@@ -53,29 +32,9 @@ desktop.ini
 *~
 .idea/
 
-# Test executables and makefiles in thirdparty
-thirdparty/BASS/**/bin/
-thirdparty/BASS/**/*.exe
-thirdparty/BASS/**/makefile
-thirdparty/BASS/**/*.pdb
-
-# Makefiles (keep source)
-thirdparty/**/Makefile
-thirdparty/**/makefile
-
-# ImGui extras (keep core only)
-thirdparty/imgui/examples/
-thirdparty/imgui/docs/
-thirdparty/imgui/misc/
-
-# Test files
-thirdparty/nlohmann_json/tests/
-thirdparty/nlohmann_json/docs/
-thirdparty/stb/tests/
-
-# Gradle (imgui android example)
-.gradle/
-
 # Logs
 *.log
 *.tmp
+
+# Gradle (imgui android example)
+.gradle/
